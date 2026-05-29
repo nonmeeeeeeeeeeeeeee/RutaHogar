@@ -27,6 +27,9 @@ create table if not exists public.profiles (
 alter table public.profiles
 add column if not exists onboarding_data jsonb;
 
+alter table public.profiles
+add column if not exists consent_data jsonb;
+
 create table if not exists public.evaluations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,

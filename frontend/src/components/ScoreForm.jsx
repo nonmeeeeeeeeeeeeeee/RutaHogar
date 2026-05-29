@@ -1,7 +1,17 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { getLocalConsent } from "../services/profileService";
 
-export default function ScoreForm({ targetCommune, onResult }) {
+const consent = getLocalConsent();
+const consentDate = consent?.timestamp
+  ? new Date(consent.timestamp).toLocaleDateString("es-CL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  : null;
+
+export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
   const [form, setForm] = useState({
     ingreso_mensual: "",
     deuda_mensual: "",
@@ -14,7 +24,7 @@ export default function ScoreForm({ targetCommune, onResult }) {
     complemento_nombre: "",
     complemento_monto: "",
     complemento_relacion: "",
-    consentimiento: false,
+    consentimiento: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -37,7 +47,6 @@ export default function ScoreForm({ targetCommune, onResult }) {
     if (!form.morosidad_actual) missing.push("Situacion de morosidad");
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
     if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
-    if (!form.consentimiento) missing.push("Consentimiento de pre-evaluación");
     if (form.complemento_renta) {
       if (!form.complemento_nombre) missing.push("Nombre de la persona complementaria");
       if (form.complemento_monto === "") missing.push("Monto de complemento de renta");
@@ -252,15 +261,21 @@ export default function ScoreForm({ targetCommune, onResult }) {
         </div>
       )}
 
-      <label className="check-row consent-row">
-        <input
-          type="checkbox"
-          name="consentimiento"
-          checked={form.consentimiento}
-          onChange={handleChange}
-        />
-        Acepto que estos datos sean usados solo para calcular una pre-evaluacion orientativa.
-      </label>
+      <div className="consent-info">
+        <span className="consent-info-icon">✓</span>
+        <span>
+          Autorización de tratamiento de datos personales otorgada el{" "}
+          <strong>{consentDate || "fecha registrada"}</strong>.
+          {onViewConsent && (
+            <>
+              {" "}
+              <button type="button" className="consent-ref-link" onClick={onViewConsent}>
+                Ver detalle
+              </button>
+            </>
+          )}
+        </span>
+      </div>
 
       <div className="form-actions">
         <button type="submit" disabled={loading}>Calcular score</button>
