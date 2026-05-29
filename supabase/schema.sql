@@ -112,9 +112,16 @@ with check (auth.uid() = id);
 
 drop policy if exists "Evaluations select own" on public.evaluations;
 create policy "Evaluations select own"
-on public.evaluations
-for select
-using (auth.uid() = user_id);
+  on public.evaluations
+  for select
+  using (
+    auth.uid() = user_id OR
+    EXISTS
+    (SELECT 1 role FROM public.profiles 
+    WHERE id = auth.uid()
+    AND profiles.role IN ('ejecutivo', 'admin')
+    )
+  );
 
 drop policy if exists "Evaluations insert own" on public.evaluations;
 create policy "Evaluations insert own"
