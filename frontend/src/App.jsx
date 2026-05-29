@@ -101,7 +101,27 @@ export default function App() {
 
       try {
         setDataError("");
-        const storedEvaluations = await getEvaluations(userId);
+        //const storedEvaluations = await getEvaluations(userId);
+        // Si es ejecutivo o admin, obtenemos todos los leads, de lo contrario solo los del usuario
+        const isStaff = profile?.role === roles.sales || profile?.role === roles.admin;
+        const filterId = isStaff ? null : userId;
+        let storedEvaluations = await getEvaluations(filterId);
+
+        // Priorizar leads con score Alto, luego Medio, luego Bajo
+        const classificationOrder = {
+          "Alto": 1,
+          "Medio": 2,
+          "Bajo": 3,
+        };
+        storedEvaluations.sort((a, b) => {
+          const orderA = classificationOrder[a.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
+          const orderB = classificationOrder[b.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
+          if (orderA !== orderB) {
+            return orderA - orderB; // Ordena por clasificación (Alto primero)
+          }
+          // Orden secundario: más reciente primero si las clasificaciones son iguales
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
         if (active) setEvaluations(storedEvaluations);
       } catch (err) {
         console.error(err);

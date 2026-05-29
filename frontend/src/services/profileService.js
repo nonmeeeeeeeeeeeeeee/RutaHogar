@@ -111,7 +111,7 @@ export async function ensureUserProfile(user) {
   if (existingProfile) return existingProfile;
 
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-  const role = "usuario";
+  const role = normalizeRole(user.user_metadata?.role || "usuario");
   return upsertProfile(user.id, fullName, role);
 }
 

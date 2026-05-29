@@ -124,7 +124,8 @@ export async function createEvaluation(userId, evaluationPayload) {
 
 export async function getEvaluations(userId) {
   if (!isSupabaseDataConfigured) {
-    return readLocalEvaluations().filter((item) => item.user_id === userId || item.email === userId);
+    const local = readLocalEvaluations();
+    return userId ? local.filter((item) => item.user_id === userId || item.email === userId) : local;
   }
 
   const user = await getAuthenticatedUser();
@@ -132,12 +133,19 @@ export async function getEvaluations(userId) {
     throw new Error("No hay usuario autenticado para cargar evaluaciones.");
   }
   await ensureUserProfile(user);
-
-  const { data, error } = await supabase
+  //const { data, error } = await supabase
+  let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
+    /*.select(evaluationSelectColumns)
     .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false });*/
+    .select(evaluationSelectColumns);
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     logSupabaseError(error);
@@ -155,13 +163,20 @@ export async function getLatestEvaluation(userId) {
   if (!user?.id) {
     throw new Error("No hay usuario autenticado para cargar la evaluacion actual.");
   }
-
-  const { data, error } = await supabase
+  //const { data, error } = await supabase
+  let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
+    /*.select(evaluationSelectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(1)
+    .limit(1)*/
+    .select(evaluationSelectColumns);
+
+  if (userId) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(1)
     .maybeSingle();
 
   if (error) {
