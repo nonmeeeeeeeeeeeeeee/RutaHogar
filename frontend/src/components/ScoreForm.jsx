@@ -91,7 +91,7 @@ export default function ScoreForm({ targetCommune, onResult }) {
         consentimiento: form.consentimiento,
       };
 
-      const apiBase = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+      const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
       const res = await axios.post(`${apiBase}/score`, payload);
       onResult(res.data, payload);
     } catch (err) {
