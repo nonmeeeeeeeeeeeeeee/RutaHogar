@@ -88,6 +88,6 @@ class ScoreRequest(BaseModel):
 
 
 @app.post("/score")
-def score_endpoint(payload: ScoreRequest):
+async def score_endpoint(payload: ScoreRequest):
     result = calculate_score(payload.model_dump())
     return result
