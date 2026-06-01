@@ -1,5 +1,17 @@
 frontend/.env.local
 backend/.venv/
-frontend/node_modules/
 frontend/.env
+
+# Dependencies
 node_modules/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Python cache
+**/__pycache__/
+**/*.pyc
+
+# Obsidian UI state
+**/.obsidian/workspace.json

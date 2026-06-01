@@ -100,11 +100,12 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
         consentimiento: form.consentimiento,
       };
 
-      const res = await axios.post("http://127.0.0.1:8000/score", payload);
+      const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
+      const res = await axios.post(`${apiBase}/score`, payload);
       onResult(res.data, payload);
     } catch (err) {
       console.error(err);
-      setError("Error comunicando con el backend. Asegúrate de que el servidor esté corriendo en http://127.0.0.1:8000");
+      setError("Error comunicando con el backend. Verifica la variable VITE_API_URL o que el servidor esté corriendo en http://127.0.0.1:8000");
     } finally {
       setLoading(false);
     }
