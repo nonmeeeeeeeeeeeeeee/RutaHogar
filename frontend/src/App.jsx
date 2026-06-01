@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import AdminPanel from "./components/AdminPanel";
 import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
+import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
@@ -15,7 +16,7 @@ import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStore
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
-import { updateProfileOnboarding } from "./services/profileService";
+import { getConsent, saveConsent, updateProfileOnboarding } from "./services/profileService";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
 
@@ -78,6 +79,10 @@ export default function App() {
     }
   });
   const [evaluations, setEvaluations] = useState([]);
+  const [consentGranted, setConsentGranted] = useState(() => {
+    const local = getConsent(null);
+    return local?.granted === true;
+  });
 
   const profile = auth.profile;
   const userId = profile?.user_id || profile?.id || null;
@@ -204,12 +209,24 @@ export default function App() {
       setDataError("No se pudieron guardar tus respuestas preliminares. Puedes intentarlo nuevamente desde Perfil.");
     }
     setResult(null);
-    setPage("evaluate");
+    if (consentGranted) {
+      setPage("evaluate");
+    } else {
+      setPage("dataconsent");
+    }
   };
 
   const handleProfileOnboardingSave = async (answers) => {
     setDataError("");
     await saveOnboardingAnswers(answers);
+  };
+
+  const handleDataConsent = async (consentData) => {
+    if (userId) {
+      await saveConsent(userId, consentData);
+    }
+    setConsentGranted(true);
+    setPage("evaluate");
   };
 
   const handleResult = async (scoreResult, input) => {
@@ -347,6 +364,13 @@ export default function App() {
 
       {page === "onboarding" && profile.role === roles.user ? (
         <Onboarding initialData={userOnboarding} onComplete={handleOnboardingComplete} />
+      ) : page === "dataconsent" && profile.role === roles.user ? (
+        <DataConsent
+          profile={profile}
+          readonly={consentGranted}
+          onAccept={handleDataConsent}
+          onBack={() => setPage(consentGranted ? "evaluate" : "onboarding")}
+        />
       ) : page === "home" ? (
         <>
           <section className="hero">
@@ -418,7 +442,11 @@ export default function App() {
               </button>
             </div>
           )}
-          <ScoreForm targetCommune={userOnboarding?.comuna_interes} onResult={handleResult} />
+          <ScoreForm
+              targetCommune={userOnboarding?.comuna_interes}
+              onResult={handleResult}
+              onViewConsent={() => setPage("dataconsent")}
+            />
         </section>
       ) : page === "profile" && profile.role === roles.user ? (
         <ProfilePage
