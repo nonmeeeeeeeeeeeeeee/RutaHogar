@@ -98,60 +98,60 @@ drop policy if exists "Profiles select own" on public.profiles;
 create policy "Profiles select own"
 on public.profiles
 for select
-using (auth.uid() = id);
+using (auth.uid() = id::uuid);
 
 drop policy if exists "Profiles insert own" on public.profiles;
 create policy "Profiles insert own"
 on public.profiles
 for insert
-with check (auth.uid() = id);
+with check (auth.uid() = id::uuid);
 
 drop policy if exists "Profiles update own" on public.profiles;
 create policy "Profiles update own"
 on public.profiles
 for update
-using (auth.uid() = id)
-with check (auth.uid() = id);
+using (auth.uid() = id::uuid)
+with check (auth.uid() = id::uuid);
 
 drop policy if exists "Evaluations select own" on public.evaluations;
 create policy "Evaluations select own"
 on public.evaluations
 for select
-using (auth.uid() = user_id);
+using (auth.uid() = user_id::uuid);
 
 drop policy if exists "Evaluations insert own" on public.evaluations;
 create policy "Evaluations insert own"
 on public.evaluations
 for insert
-with check (auth.uid() = user_id);
+with check (auth.uid() = user_id::uuid);
 
 drop policy if exists "Evaluations delete own" on public.evaluations;
 create policy "Evaluations delete own"
 on public.evaluations
 for delete
-using (auth.uid() = user_id);
+using (auth.uid() = user_id::uuid);
 
 drop policy if exists "Improvement goals select own" on public.improvement_goals;
 create policy "Improvement goals select own"
 on public.improvement_goals
 for select
-using (auth.uid() = user_id);
+using (auth.uid() = user_id::uuid);
 
 drop policy if exists "Improvement goals insert own" on public.improvement_goals;
 create policy "Improvement goals insert own"
 on public.improvement_goals
 for insert
-with check (auth.uid() = user_id);
+with check (auth.uid() = user_id::uuid);
 
 drop policy if exists "Improvement goals update own" on public.improvement_goals;
 create policy "Improvement goals update own"
 on public.improvement_goals
 for update
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (auth.uid() = user_id::uuid)
+with check (auth.uid() = user_id::uuid);
 
 drop policy if exists "Improvement goals delete own" on public.improvement_goals;
 create policy "Improvement goals delete own"
 on public.improvement_goals
 for delete
-using (auth.uid() = user_id);
+using (auth.uid() = user_id::uuid);
