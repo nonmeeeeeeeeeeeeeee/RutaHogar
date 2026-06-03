@@ -122,11 +122,16 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
-      const res = await axios.post(`${apiBase}/score`, payload);
+      const res = await axios.post(`${apiBase}/score`, payload, { timeout: 60000 });
+      
       onResult(res.data, payload);
     } catch (err) {
       console.error(err);
-      setError("Error comunicando con el backend. Verifica la variable VITE_API_URL o que el servidor esté corriendo en http://127.0.0.1:8000");
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        setError("La petición tardó demasiado, por favor intenta nuevamente.");
+      } else {
+        setError("Hubo un problema con la petición, por favor intenta nuevamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -364,8 +369,10 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       </div>
 
       <div className="form-actions">
-        <button type="submit" disabled={loading}>Calcular score</button>
-        {loading && <span>Calculando...</span>}
+        <button type="submit" disabled={loading}>
+          {loading ? "Calculando..." : "Calcular score"}
+        </button>
+        {loading && <span className="loading-indicator" style={{ marginLeft: "10px", fontWeight: "bold", color: "#555" }}>Procesando...</span>}
       </div>
 
       {error && <div className="error-message">{error}</div>}
