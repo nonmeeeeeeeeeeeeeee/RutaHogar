@@ -24,6 +24,12 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
     complemento_nombre: "",
     complemento_monto: "",
     complemento_relacion: "",
+    complemento_ingreso_mensual: "",
+    complemento_deuda_mensual: "",
+    complemento_morosidad: "",
+    complemento_tipo_contrato: "",
+    complemento_continuidad_laboral: "",
+    complemento_tarjetas_activas: "",
     consentimiento: true,
   });
   const [loading, setLoading] = useState(false);
@@ -51,6 +57,12 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       if (!form.complemento_nombre) missing.push("Nombre de la persona complementaria");
       if (form.complemento_monto === "") missing.push("Monto de complemento de renta");
       if (!form.complemento_relacion) missing.push("Relación con la persona complementaria");
+      if (form.complemento_ingreso_mensual === "") missing.push("Ingreso mensual del co-deudor");
+      if (form.complemento_deuda_mensual === "") missing.push("Deuda mensual del co-deudor");
+      if (!form.complemento_morosidad) missing.push("Morosidad del co-deudor");
+      if (!form.complemento_tipo_contrato) missing.push("Tipo de contrato del co-deudor");
+      if (!form.complemento_continuidad_laboral) missing.push("Continuidad laboral del co-deudor");
+      if (form.complemento_tarjetas_activas === "") missing.push("Tarjetas de crédito activas del co-deudor");
     }
     if (missing.length) {
       setError(`Complete todos los campos: ${missing.join(", ")}`);
@@ -66,6 +78,9 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
 
     if (form.complemento_renta) {
       numericFields.push(["Monto de complemento de renta", form.complemento_monto]);
+      numericFields.push(["Ingreso mensual del co-deudor", form.complemento_ingreso_mensual]);
+      numericFields.push(["Deuda mensual del co-deudor", form.complemento_deuda_mensual]);
+      numericFields.push(["Tarjetas de crédito activas", form.complemento_tarjetas_activas]);
     }
 
     const invalidNumber = numericFields.find(([, value]) => Number(value) < 0);
@@ -97,6 +112,12 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
         complemento_nombre: form.complemento_nombre || undefined,
         complemento_monto: form.complemento_renta ? parseFloat(form.complemento_monto) : undefined,
         complemento_relacion: form.complemento_relacion || undefined,
+        complemento_ingreso_mensual: form.complemento_renta ? parseFloat(form.complemento_ingreso_mensual) : undefined,
+        complemento_deuda_mensual: form.complemento_renta ? parseFloat(form.complemento_deuda_mensual) : undefined,
+        complemento_morosidad: form.complemento_morosidad || undefined,
+        complemento_tipo_contrato: form.complemento_tipo_contrato || undefined,
+        complemento_continuidad_laboral: form.complemento_continuidad_laboral || undefined,
+        complemento_tarjetas_activas: form.complemento_renta ? parseInt(form.complemento_tarjetas_activas, 10) : undefined,
         consentimiento: form.consentimiento,
       };
 
@@ -257,6 +278,70 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
                 <option value="amigo">Amigo</option>
                 <option value="otro">Otro</option>
               </select>
+            </label>
+            <label>
+              Ingreso mensual del co-deudor
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_ingreso_mensual"
+                value={form.complemento_ingreso_mensual}
+                onChange={handleChange}
+                placeholder="Ej: 800000"
+              />
+            </label>
+            <label>
+              Deuda mensual del co-deudor
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_deuda_mensual"
+                value={form.complemento_deuda_mensual}
+                onChange={handleChange}
+                placeholder="Ej: 100000"
+              />
+            </label>
+            <label>
+              Morosidad del co-deudor
+              <select name="complemento_morosidad" value={form.complemento_morosidad} onChange={handleChange}>
+                <option value="">Selecciona una opcion</option>
+                <option value="no">No</option>
+                <option value="si">Si</option>
+                <option value="no_lo_se">No lo se</option>
+              </select>
+            </label>
+            <label>
+              Tipo de contrato del co-deudor
+              <select name="complemento_tipo_contrato" value={form.complemento_tipo_contrato} onChange={handleChange}>
+                <option value="">Selecciona un tipo</option>
+                <option value="indefinido">Indefinido</option>
+                <option value="plazo_fijo">Plazo fijo</option>
+                <option value="independiente">Independiente</option>
+              </select>
+            </label>
+            <label>
+              Continuidad laboral del co-deudor
+              <select name="complemento_continuidad_laboral" value={form.complemento_continuidad_laboral} onChange={handleChange}>
+                <option value="">Selecciona una opcion</option>
+                <option value="menos_6_meses">Menos de 6 meses</option>
+                <option value="entre_6_y_12_meses">Entre 6 y 12 meses</option>
+                <option value="entre_1_y_3_anios">Entre 1 y 3 anos</option>
+                <option value="mas_3_anios">Mas de 3 anos</option>
+              </select>
+            </label>
+            <label>
+              Tarjetas de crédito activas
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_tarjetas_activas"
+                value={form.complemento_tarjetas_activas}
+                onChange={handleChange}
+                placeholder="Ej: 2"
+              />
             </label>
           </div>
         </div>

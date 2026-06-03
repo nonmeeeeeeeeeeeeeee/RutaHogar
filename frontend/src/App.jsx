@@ -249,6 +249,15 @@ export default function App() {
       continuidad_laboral: input.continuidad_laboral,
       morosidad_actual: input.morosidad_actual,
       complemento_renta: input.complemento_renta,
+      complemento_nombre: input.complemento_nombre,
+      complemento_monto: input.complemento_monto,
+      complemento_relacion: input.complemento_relacion,
+      complemento_ingreso_mensual: input.complemento_ingreso_mensual,
+      complemento_deuda_mensual: input.complemento_deuda_mensual,
+      complemento_morosidad: input.complemento_morosidad,
+      complemento_tipo_contrato: input.complemento_tipo_contrato,
+      complemento_continuidad_laboral: input.complemento_continuidad_laboral,
+      complemento_tarjetas_activas: input.complemento_tarjetas_activas,
     };
 
     setResult(resultSnapshot);

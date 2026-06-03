@@ -92,6 +92,23 @@ def generate_ai_explanation(score_result: Dict, user_data: Dict) -> str:
     if "contrato_independiente" in risks:
         messages.append("respaldar mejor la estabilidad de tus ingresos")
 
+    if "complemento_morosidad_alta" in risks:
+        messages.append("evaluar la situacion de morosidad del co-deudor")
+    elif "complemento_morosidad_media" in risks:
+        messages.append("confirmar la situacion financiera del co-deudor")
+
+    if "complemento_deuda_alta" in risks:
+        messages.append("revisar el nivel de endeudamiento del co-deudor")
+
+    if "complemento_tarjetas_excesivas" in risks:
+        messages.append("reducir la cantidad de tarjetas de credito del co-deudor")
+
+    if "complemento_continuidad_baja" in risks or "complemento_continuidad_media" in risks:
+        messages.append("consolidar la continuidad laboral del co-deudor")
+
+    if "complemento_sin_datos" in risks:
+        messages.append("completar la informacion del co-deudor")
+
     if not messages:
         return (
             "Tu perfil no muestra riesgos principales evidentes en esta pre-evaluacion. "
@@ -131,6 +148,26 @@ def generate_improvement_plan(score_result: Dict, user_data: Dict) -> List[str]:
 
     if "ingreso_dividendo" in risks or "precio_objetivo" in risks or score_result.get("classification") != "Alto":
         plan.append("Revisa comuna, precio esperado o dividendo objetivo para que la compra sea mas sostenible.")
+
+    if "complemento_morosidad_alta" in risks:
+        plan.append("Evalua si el co-deudor puede regularizar su situacion de morosidad antes de comprometerse.")
+    elif "complemento_morosidad_media" in risks:
+        plan.append("Confirma la situacion financiera actual del co-deudor y si existen pagos pendientes.")
+
+    if "complemento_deuda_alta" in risks:
+        plan.append("El co-deudor deberia priorizar reducir sus deudas mensuales antes de asumir un nuevo compromiso.")
+
+    if "complemento_tarjetas_excesivas" in risks:
+        plan.append("El co-deudor deberia reducir la cantidad de tarjetas de credito activas para mejorar su perfil.")
+
+    if "complemento_continuidad_baja" in risks or "complemento_continuidad_media" in risks:
+        plan.append("El co-deudor deberia consolidar su estabilidad laboral antes de ser considerado como apoyo.")
+
+    if "complemento_contrato_independiente" in risks:
+        plan.append("Ordena antecedentes de ingresos del co-deudor si trabaja independiente.")
+
+    if "complemento_sin_datos" in risks:
+        plan.append("Completa toda la informacion del co-deudor para una evaluacion precisa.")
 
     if user_data.get("complemento_renta"):
         plan.append("Ordena la informacion de la persona que complementara renta y valida que pueda sostener ese apoyo.")
@@ -251,10 +288,84 @@ def calculate_score(data: Dict) -> Dict:
         riesgos.append("Existe incertidumbre sobre la situacion de pagos actual.")
         recomendaciones.append("Revisar tu situacion financiera antes de avanzar.")
 
-    # Complemento de renta mejora ligeramente
+    # Complemento de renta con evaluacion completa del co-deudor
     if complemento:
-        score += 5
-        positivos.append("Posibilidad de complementar renta")
+        comp_ingreso = float(data.get("complemento_ingreso_mensual", 0) or 0)
+        comp_deuda = float(data.get("complemento_deuda_mensual", 0) or 0)
+        comp_morosidad = data.get("complemento_morosidad", "")
+        comp_contrato = data.get("complemento_tipo_contrato", "")
+        comp_continuidad = data.get("complemento_continuidad_laboral", "")
+        comp_tarjetas = int(data.get("complemento_tarjetas_activas", 0) or 0)
+
+        co_debtor_has_data = (
+            comp_ingreso > 0 or comp_deuda > 0
+            or comp_morosidad or comp_contrato
+            or comp_continuidad or comp_tarjetas > 0
+        )
+
+        if not co_debtor_has_data:
+            score -= 5
+            risk_codes.append("complemento_sin_datos")
+            riesgos.append("Falta informacion detallada del co-deudor para evaluar el riesgo.")
+            recomendaciones.append("Completa los datos del co-deudor para una evaluacion mas precisa.")
+        else:
+            if comp_morosidad == "si":
+                score -= 20
+                risk_codes.append("complemento_morosidad_alta")
+                riesgos.append("El co-deudor declara morosidad, lo que representa un riesgo significativo.")
+                recomendaciones.append("Considera un co-deudor sin antecedentes de morosidad.")
+            elif comp_morosidad == "no_lo_se":
+                score -= 10
+                risk_codes.append("complemento_morosidad_media")
+                riesgos.append("Existe incertidumbre sobre la situacion de pagos del co-deudor.")
+                recomendaciones.append("Confirma la situacion financiera del co-deudor antes de avanzar.")
+
+            if comp_ingreso > 0 and comp_deuda > 0.4 * comp_ingreso:
+                score -= 15
+                risk_codes.append("complemento_deuda_alta")
+                riesgos.append("El co-deudor tiene una carga de deuda elevada en relacion a sus ingresos.")
+                recomendaciones.append("El co-deudor deberia reducir sus deudas antes de comprometerse.")
+
+            if comp_contrato == "independiente":
+                score -= 5
+                risk_codes.append("complemento_contrato_independiente")
+                riesgos.append("El co-deudor trabaja independiente, lo que puede sumar incertidumbre.")
+                recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
+
+            if comp_continuidad == "menos_6_meses":
+                score -= 10
+                risk_codes.append("complemento_continuidad_baja")
+                riesgos.append("El co-deudor tiene baja continuidad laboral.")
+                recomendaciones.append("El co-deudor deberia consolidar su estabilidad laboral.")
+            elif comp_continuidad == "entre_6_y_12_meses":
+                score -= 5
+                risk_codes.append("complemento_continuidad_media")
+                riesgos.append("El co-deudor tiene continuidad laboral limitada.")
+
+            if comp_tarjetas >= 5:
+                score -= 15
+                risk_codes.append("complemento_tarjetas_excesivas")
+                riesgos.append("El co-deudor tiene muchas tarjetas de credito activas, lo que puede indicar sobreendeudamiento.")
+                recomendaciones.append("El co-deudor deberia reducir su cantidad de tarjetas activas.")
+            elif comp_tarjetas >= 3:
+                score -= 8
+                risk_codes.append("complemento_tarjetas_excesivas")
+                riesgos.append("El co-deudor tiene varias tarjetas de credito activas.")
+
+            perfil_limpio = (
+                comp_morosidad == "no"
+                and (comp_ingreso <= 0 or comp_deuda <= 0.4 * comp_ingreso)
+                and comp_contrato == "indefinido"
+                and comp_continuidad in ("entre_1_y_3_anios", "mas_3_anios")
+                and comp_tarjetas < 3
+            )
+
+            if perfil_limpio:
+                score += 10
+                positivos.append("El co-deudor presenta un perfil financiero solido")
+            else:
+                score += 3
+                positivos.append("Posibilidad de complementar renta")
 
     # Normalización y límites
     score = clamp(score)
