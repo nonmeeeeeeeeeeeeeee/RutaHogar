@@ -1,7 +1,10 @@
 frontend/.env.local
+
+.obsidian/
 node_modules/
 frontend/node_modules/
 backend/.venv/
+frontend/.env
 node_modules/
 **/node_modules/
 frontend/node_modules/
