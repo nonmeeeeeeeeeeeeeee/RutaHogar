@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getEvaluations } from "../services/evaluationService";
-import { supabase } from "../services/supabaseClient";
+import { supabase } from "../utils/supabase";
 import { roles } from "../services/auth";
 
 const LAST_LEAD_CHECK_KEY = "scoreleads_last_lead_check";
