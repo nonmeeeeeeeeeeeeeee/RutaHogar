@@ -57,7 +57,7 @@ add column if not exists plan_accepted_at timestamptz;
 
 create table if not exists public.improvement_goals (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
   evaluation_id uuid references public.evaluations(id) on delete cascade,
   title text not null,
   description text,
@@ -110,16 +110,20 @@ for update
 using (auth.uid() = id)
 with check (auth.uid() = id);
 
+alter table public.evaluations 
+add column if not exists email text;
+
+-- 2. Eliminar la política que falla
 drop policy if exists "Evaluations select own" on public.evaluations;
 create policy "Evaluations select own"
   on public.evaluations
   for select
   using (
-    auth.uid() = user_id OR
-    EXISTS
-    (SELECT 1 role FROM public.profiles 
-    WHERE id = auth.uid()
-    AND profiles.role IN ('ejecutivo', 'admin')
+    (auth.uid() = user_id) OR
+    EXISTS (
+      SELECT 1 FROM public.profiles 
+      WHERE profiles.id = auth.uid() 
+      AND profiles.role IN ('ejecutivo', 'admin')
     )
   );
 
