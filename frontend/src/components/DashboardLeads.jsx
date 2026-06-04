@@ -7,6 +7,14 @@ export default function DashboardLeads({ evaluations }) {
     return evaluations.filter((item) => item.result.classification === filter);
   }, [evaluations, filter]);
 
+  const counts = useMemo(() => {
+    const c = { Alto: 0, Medio: 0, Bajo: 0 };
+    evaluations.forEach((item) => {
+      if (c[item.result.classification] !== undefined) c[item.result.classification]++;
+    });
+    return c;
+  }, [evaluations]);
+
   return (
     <section className="section-block">
       <div className="section-heading">
@@ -19,10 +27,10 @@ export default function DashboardLeads({ evaluations }) {
         <label>
           Filtrar por clasificacion
           <select value={filter} onChange={(event) => setFilter(event.target.value)}>
-            <option value="todos">Todos</option>
-            <option value="Alto">Alto</option>
-            <option value="Medio">Medio</option>
-            <option value="Bajo">Bajo</option>
+            <option value="todos">Todos ({evaluations.length})</option>
+            <option value="Alto">Alto ({counts.Alto})</option>
+            <option value="Medio">Medio ({counts.Medio})</option>
+            <option value="Bajo">Bajo ({counts.Bajo})</option>
           </select>
         </label>
       </div>
