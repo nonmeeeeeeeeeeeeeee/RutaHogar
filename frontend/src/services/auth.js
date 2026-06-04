@@ -69,7 +69,7 @@ async function getOrCreateProfile(user, preferredRole) {
     const createdProfile = await ensureUserProfile(user);
     return buildProfile(user, preferredRole, createdProfile);
   } catch (err) {
-    console.warn("No se pudo sincronizar el perfil en Supabase. Usando perfil de Auth como fallback.", err);
+    console.error("CRÍTICO: Error al crear perfil en Supabase:", err);
     return fallbackProfile;
   }
 }
