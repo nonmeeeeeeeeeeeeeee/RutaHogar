@@ -12,14 +12,14 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { useLeads } from "./hooks/useLeads";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation } from "./services/evaluationService";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
 import { updateProfileOnboarding, isSupabaseDataConfigured } from "./services/profileService";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
-const LAST_LEAD_CHECK_KEY = "scoreleads_last_lead_check";
 
 const plazoLabels = {
   "0_3_meses": "0 a 3 meses",
@@ -79,8 +79,6 @@ export default function App() {
       return {};
     }
   });
-  const [evaluations, setEvaluations] = useState([]);
-  const [newHighLeadsCount, setNewHighLeadsCount] = useState(0);
 
   const profile = auth.profile;
   const isUUID = (id) => {
@@ -88,6 +86,17 @@ export default function App() {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
   };
   const userId = isUUID(profile?.id) ? profile.id : isUUID(profile?.user_id) ? profile.user_id : null;
+  const {
+    evaluations,
+    setEvaluations,
+    newHighLeadsCount,
+    counts,
+    error: leadsError,
+    dismissNotification,
+    removeEvaluation,
+    prependEvaluation,
+  } = useLeads({ userId, profile });
+  const visibleError = dataError || leadsError;
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
@@ -97,70 +106,6 @@ export default function App() {
     currentEvaluation && currentScoreNumber !== null
       ? { score: currentScoreNumber, classification: currentEvaluation.result.classification }
       : null;
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadEvaluations() {
-      if (!userId) {
-        setEvaluations([]);
-        return;
-      }
-
-      try {
-        setDataError("");
-
-        // Normalizamos el chequeo de staff para ser más robustos
-        const userRole = profile?.role;
-        const isStaff = userRole === roles.sales || userRole === roles.admin;
-        
-        // Pasamos null SOLO si confirmamos que es staff, de lo contrario userId
-        const filterId = isStaff ? null : (userId || "loading");
-        
-        if (filterId === "loading") return; 
-
-        let storedEvaluations = await getEvaluations(filterId);
-
-        // Priorizar leads con score Alto, luego Medio, luego Bajo
-        const classificationOrder = {
-          "Alto": 1,
-          "Medio": 2,
-          "Bajo": 3,
-        };
-        storedEvaluations.sort((a, b) => {
-          const orderA = classificationOrder[a.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
-          const orderB = classificationOrder[b.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
-          if (orderA !== orderB) {
-            return orderA - orderB; // Ordena por clasificación (Alto primero)
-          }
-          // Orden secundario: más reciente primero si las clasificaciones son iguales
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-
-        // Lógica de notificación para ejecutivos
-        if (isStaff) {
-          const lastCheck = localStorage.getItem(LAST_LEAD_CHECK_KEY) || new Date(0).toISOString();
-          const freshHighLeads = storedEvaluations.filter(
-            ev => 
-              ev.result.classification === "Alto" && 
-              ev.created_at > lastCheck &&
-              ev.user_id !== userId // No notificarse a sí mismo si está probando
-          );
-          setNewHighLeadsCount(freshHighLeads.length);
-        }
-
-        if (active) setEvaluations(storedEvaluations);
-      } catch (err) {
-        console.error("Error al cargar evaluaciones:", err);
-        if (active) setDataError("No pudimos cargar tu historial. Revisa que las tablas de Supabase esten creadas y vuelve a intentar.");
-      }
-    }
-
-    loadEvaluations();
-    return () => {
-      active = false;
-    };
-  }, [userId]);
 
   useEffect(() => {
     let active = true;
@@ -287,7 +232,7 @@ export default function App() {
       
       // Si el score es Bajo, redirigir a educación financiera (recommendations)
       // De lo contrario, ir al home para ver el resultado detallado
-      setPage(resultSnapshot.classification === "Bajo" ? "recommendations" : "home");
+      setPage(resultSnapshot.classification === "Alto" ? "home" : "recommendations");
 
       setDataError("");
       // Corrección: se usaban variables 'rt' y 't' no definidas.
@@ -304,7 +249,7 @@ export default function App() {
       });
 
       setResultSaved(true);
-      setEvaluations((prev) => [savedEvaluation, ...prev.filter((item) => item.id !== savedEvaluation.id)].slice(0, 25));
+      prependEvaluation(savedEvaluation);
     } catch (err) {
       console.error(err);
       setResultSaved(false);
@@ -316,7 +261,7 @@ export default function App() {
     try {
       setDataError("");
       await deleteStoredEvaluation(evaluationId, userId || profile?.email || "local-user");
-      setEvaluations((prev) => prev.filter((item) => item.id !== evaluationId));
+      removeEvaluation(evaluationId);
       setTrackingGoals([]);
     } catch (err) {
       console.error(err);
@@ -383,14 +328,12 @@ export default function App() {
   };
 
   const handleNotificationClick = () => {
-    setNewHighLeadsCount(0);
-    localStorage.setItem(LAST_LEAD_CHECK_KEY, new Date().toISOString());
+    dismissNotification();
     setPage("leads");
   };
 
   const handleDismissNotification = () => {
-    setNewHighLeadsCount(0);
-    localStorage.setItem(LAST_LEAD_CHECK_KEY, new Date().toISOString());
+    dismissNotification();
   };
 
   if (!profile) {
@@ -410,7 +353,7 @@ export default function App() {
         onNavigate={(nextPage) => (nextPage === "evaluate" ? startEvaluation() : setPage(nextPage))}
         onLogout={handleLogout}
       />
-      {dataError && <div className="error-message">{dataError}</div>}
+      {visibleError && <div className="error-message">{visibleError}</div>}
 
       {/* Notificación para ejecutivos */}
       <NotificationToast 
