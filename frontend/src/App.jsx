@@ -101,7 +101,7 @@ export default function App() {
 
       try {
         setDataError("");
-        const storedEvaluations = await getEvaluations(userId);
+        const storedEvaluations = await getEvaluations(userId, profile?.role);
         if (active) setEvaluations(storedEvaluations);
       } catch (err) {
         console.error(err);
@@ -214,13 +214,16 @@ export default function App() {
 
   const handleResult = async (scoreResult, input) => {
     const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: [...(scoreResult.risks || [])],
-      recommendations: [...(scoreResult.recommendations || [])],
-      ai_explanation: scoreResult.ai_explanation,
-      improvement_plan: [...(scoreResult.improvement_plan || [])],
-    };
+       score: scoreResult.score,
+       classification: scoreResult.classification,
+       risks: [...(scoreResult.risks || [])],
+       recommendations: [...(scoreResult.recommendations || [])],
+       ai_explanation: scoreResult.ai_explanation,
+       improvement_plan: [...(scoreResult.improvement_plan || [])],
+       positive_indicators: [...(scoreResult.positive_indicators || [])],
+       executive_summary: scoreResult.executive_summary || "",
+       commercial_guidance: scoreResult.commercial_guidance || "",
+     };
 
     const financialInput = {
       ingreso_mensual: input.ingreso_mensual,

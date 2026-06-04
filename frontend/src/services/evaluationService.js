@@ -22,6 +22,7 @@ function normalizeEvaluation(row) {
   const recommendations = Array.isArray(recommendationData)
     ? recommendationData
     : recommendationData.items || [];
+
   const onboarding = {
     objetivo_principal: row.objective || "",
     tipo_propiedad: row.property_type || "",
@@ -44,6 +45,11 @@ function normalizeEvaluation(row) {
       recommendations,
       ai_explanation: row.explanation || "",
       improvement_plan: Array.isArray(recommendationData.improvement_plan) ? recommendationData.improvement_plan : [],
+      // FIX: positive_indicators ahora se lee desde recommendations jsonb
+      positive_indicators: Array.isArray(recommendationData.positive_indicators) ? recommendationData.positive_indicators : [],
+      // FIX: executive_summary y commercial_guidance desde columnas propias
+      executive_summary: row.executive_summary || "",
+      commercial_guidance: row.commercial_guidance || "",
     },
   };
 }
@@ -54,6 +60,8 @@ function buildRow(userId, evaluationPayload) {
 
   return {
     user_id: userId,
+    // FIX: guardar email
+    email: evaluationPayload.email || null,
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
     objective: onboarding.objetivo_principal || null,
@@ -67,13 +75,19 @@ function buildRow(userId, evaluationPayload) {
       items: result.recommendations || [],
       risks: result.risks || [],
       improvement_plan: result.improvement_plan || [],
+      // FIX: guardar positive_indicators dentro del jsonb recommendations
+      positive_indicators: result.positive_indicators || [],
     },
+    // FIX: guardar resúmenes IA para el ejecutivo
+    executive_summary: result.executive_summary || null,
+    commercial_guidance: result.commercial_guidance || null,
   };
 }
 
 const evaluationSelectColumns = [
   "id",
   "user_id",
+  "email",
   "score",
   "classification",
   "objective",
@@ -84,6 +98,8 @@ const evaluationSelectColumns = [
   "financial_data",
   "explanation",
   "recommendations",
+  "executive_summary",
+  "commercial_guidance",
   "created_at",
 ].join(", ");
 
@@ -122,8 +138,10 @@ export async function createEvaluation(userId, evaluationPayload) {
   return normalizeEvaluation(data);
 }
 
-export async function getEvaluations(userId) {
+export async function getEvaluations(userId, role) {
   if (!isSupabaseDataConfigured) {
+    const isSales = role === "ejecutivo" || role === "admin";
+    if (isSales) return readLocalEvaluations();
     return readLocalEvaluations().filter((item) => item.user_id === userId || item.email === userId);
   }
 
@@ -133,11 +151,18 @@ export async function getEvaluations(userId) {
   }
   await ensureUserProfile(user);
 
-  const { data, error } = await supabase
+  const isSales = role === "ejecutivo" || role === "admin";
+
+  let query = supabase
     .from("evaluations")
     .select(evaluationSelectColumns)
-    .eq("user_id", user.id)
     .order("created_at", { ascending: false });
+
+  if (!isSales) {
+    query = query.eq("user_id", user.id);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     logSupabaseError(error);

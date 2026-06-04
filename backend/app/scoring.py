@@ -1,4 +1,8 @@
 from typing import Dict, List
+from .ai import (
+    generate_executive_summary,
+    generate_commercial_guidance
+)
 
 
 # Valor configurable usado para convertir los precios referenciales desde UF a CLP.
@@ -277,15 +281,37 @@ def calculate_score(data: Dict) -> Dict:
         recomendaciones.append("Ajustar el dividendo objetivo para mantener una carga mensual mas sostenible.")
 
     result = {
-        "score": round(score, 1),
-        "classification": clasificacion,
-        "risks": _unique(riesgos),
-        "recommendations": _unique(recomendaciones),
+    "score": round(score, 1),
+    "classification": clasificacion,
+    "positive_indicators": _unique(positivos),
+    "risks": _unique(riesgos),
+    "recommendations": _unique(recomendaciones),
         "risk_codes": _unique(risk_codes),
     }
 
-    result["ai_explanation"] = generate_ai_explanation(result, data)
-    result["improvement_plan"] = generate_improvement_plan(result, data)
+    result["ai_explanation"] = generate_ai_explanation(
+        result,
+        data
+    )
+
+    result["improvement_plan"] = generate_improvement_plan(
+        result,
+        data
+    )
+
+    result["executive_summary"] = generate_executive_summary(
+        classification=clasificacion,
+        score=round(score, 1),
+        positive_indicators=_unique(positivos),
+        risks=_unique(riesgos)
+    )
+
+    result["commercial_guidance"] = generate_commercial_guidance(
+        classification=clasificacion,
+        risks=_unique(riesgos),
+        recommendations=_unique(recomendaciones)
+    )
+
     result.pop("risk_codes", None)
 
     return result
