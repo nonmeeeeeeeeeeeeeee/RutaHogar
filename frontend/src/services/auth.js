@@ -52,6 +52,7 @@ function buildProfile(user, preferredRole = roles.user, persistedProfile = null)
     full_name: fullName,
     role,
     onboarding_data: persistedProfile?.onboarding_data || null,
+    last_lead_seen_at: persistedProfile?.last_lead_seen_at || null,
     created_at: persistedProfile?.created_at || user.created_at || new Date().toISOString(),
     updated_at: persistedProfile?.updated_at,
   };

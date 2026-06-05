@@ -25,7 +25,8 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles
-add column if not exists onboarding_data jsonb;
+add column if not exists onboarding_data jsonb,
+add column if not exists last_lead_seen_at timestamptz;
 
 create table if not exists public.evaluations (
   id uuid primary key default gen_random_uuid(),
@@ -45,6 +46,9 @@ create table if not exists public.evaluations (
   constraint evaluations_score_check check (score between 0 and 100),
   constraint evaluations_classification_check check (classification in ('Alto', 'Medio', 'Bajo'))
 );
+
+alter table public.evaluations replica identity full;
+alter publication supabase_realtime add table public.evaluations;
 
 alter table public.evaluations
 add column if not exists objective text,
@@ -91,6 +95,17 @@ alter table public.profiles enable row level security;
 alter table public.evaluations enable row level security;
 alter table public.improvement_goals enable row level security;
 
+-- Helper SECURITY DEFINER: lee el rol del usuario sin disparar RLS
+create or replace function public.get_my_role()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
 drop policy if exists "Profiles select own" on public.profiles;
 create policy "Profiles select own"
 on public.profiles
@@ -113,18 +128,14 @@ with check (auth.uid() = id);
 alter table public.evaluations 
 add column if not exists email text;
 
--- 2. Eliminar la política que falla
 drop policy if exists "Evaluations select own" on public.evaluations;
 create policy "Evaluations select own"
   on public.evaluations
   for select
   using (
-    (auth.uid() = user_id) OR
-    EXISTS (
-      SELECT 1 FROM public.profiles 
-      WHERE profiles.id = auth.uid() 
-      AND profiles.role IN ('ejecutivo', 'admin')
-    )
+    (auth.uid() = user_id)
+    or
+    (public.get_my_role() = any (array['ejecutivo'::text, 'admin'::text]))
   );
 
 drop policy if exists "Evaluations insert own" on public.evaluations;

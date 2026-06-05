@@ -92,7 +92,8 @@ export default function App() {
     newHighLeadsCount,
     counts,
     error: leadsError,
-    dismissNotification,
+    markLeadsSeen,
+    dismissToastLocally,
     removeEvaluation,
     prependEvaluation,
   } = useLeads({ userId, profile });
@@ -145,6 +146,10 @@ export default function App() {
       active = false;
     };
   }, [userId, currentEvaluation?.id, page]);
+
+  useEffect(() => {
+    if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
+  }, [page]);
 
   const startEvaluation = () => {
     setResult(null);
@@ -327,14 +332,9 @@ export default function App() {
     setResultSaved(null);
   };
 
-  const handleNotificationClick = () => {
-    dismissNotification();
-    setPage("leads");
-  };
+  const handleNotificationClick = () => setPage("leads");
 
-  const handleDismissNotification = () => {
-    dismissNotification();
-  };
+  const handleDismissNotification = () => markLeadsSeen();
 
   if (!profile) {
     return (

@@ -30,6 +30,7 @@ function normalizeProfile(row) {
     full_name: row.full_name || "",
     role: normalizeRole(row.role),
     onboarding_data: row.onboarding_data || null,
+    last_lead_seen_at: row.last_lead_seen_at || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -67,7 +68,7 @@ export async function getCurrentProfile(userId) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, onboarding_data, created_at, updated_at")
+    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -98,7 +99,7 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
   const { data, error } = await supabase
     .from("profiles")
     .upsert({ ...profile, updated_at: new Date().toISOString() })
-    .select("id, full_name, role, onboarding_data, created_at, updated_at")
+    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .maybeSingle();
 
   if (error) {
@@ -119,6 +120,18 @@ export async function ensureUserProfile(user) {
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
   const role = normalizeRole(user.user_metadata?.role || "usuario");
   return upsertProfile(user.id, fullName, role);
+}
+
+export async function updateLastLeadSeenAt(userId) {
+  if (!isSupabaseDataConfigured || !isUUID(userId)) return;
+  const { error } = await supabase
+    .from("profiles")
+    .update({ last_lead_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
 }
 
 export async function updateProfileOnboarding(userId, onboardingData) {

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { getEvaluations } from "../services/evaluationService";
+import { useEffect, useMemo, useState } from "react";
+import { getEvaluations, normalizeEvaluation } from "../services/evaluationService";
+import { updateLastLeadSeenAt } from "../services/profileService";
+import { updateStoredProfile, roles } from "../services/auth";
 import { supabase } from "../utils/supabase";
-import { roles } from "../services/auth";
 
-const LAST_LEAD_CHECK_KEY = "scoreleads_last_lead_check";
 const CLASSIFICATION_ORDER = { Alto: 1, Medio: 2, Bajo: 3 };
 
 function sortEvaluations(list) {
@@ -39,10 +39,12 @@ export function useLeads({ userId, profile }) {
         const sorted = sortEvaluations(list);
 
         if (isStaff) {
-          const lastCheck = localStorage.getItem(LAST_LEAD_CHECK_KEY) || new Date(0).toISOString();
-          const fresh = sorted.filter(
-            (ev) => ev.result.classification === "Alto" && ev.created_at > lastCheck && ev.user_id !== userId
-          );
+          const lastSeenAt = profile?.last_lead_seen_at || null;
+          const fresh = sorted.filter((ev) => {
+            if (ev.result.classification !== "Alto" || ev.user_id === userId) return false;
+            if (!lastSeenAt) return true;
+            return ev.created_at && ev.created_at > lastSeenAt;
+          });
           if (active) setNewHighLeadsCount(fresh.length);
         }
 
@@ -66,12 +68,13 @@ export function useLeads({ userId, profile }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "evaluations" },
         (payload) => {
-          const ev = payload.new;
-          if (!ev?.result?.classification) return;
+          const raw = payload.new;
+          if (!raw?.classification) return;
 
+          const ev = normalizeEvaluation(raw);
           setEvaluations((prev) => sortEvaluations([ev, ...prev.filter((item) => item.id !== ev.id)]).slice(0, 25));
 
-          if (ev.result.classification === "Alto") {
+          if (raw.classification === "Alto") {
             setNewHighLeadsCount((n) => n + 1);
           }
         }
@@ -89,10 +92,18 @@ export function useLeads({ userId, profile }) {
     return c;
   }, [evaluations]);
 
-  const dismissNotification = () => {
+  const markLeadsSeen = async () => {
+    if (!isStaff || !userId) return;
     setNewHighLeadsCount(0);
-    localStorage.setItem(LAST_LEAD_CHECK_KEY, new Date().toISOString());
+    try {
+      await updateLastLeadSeenAt(userId);
+      updateStoredProfile({ ...profile, last_lead_seen_at: new Date().toISOString() });
+    } catch (err) {
+      console.error("Error al marcar leads como vistos:", err);
+    }
   };
+
+  const dismissToastLocally = () => setNewHighLeadsCount(0);
 
   const removeEvaluation = (id) => {
     setEvaluations((prev) => prev.filter((item) => item.id !== id));
@@ -108,7 +119,8 @@ export function useLeads({ userId, profile }) {
     newHighLeadsCount,
     counts,
     error,
-    dismissNotification,
+    markLeadsSeen,
+    dismissToastLocally,
     removeEvaluation,
     prependEvaluation,
   };

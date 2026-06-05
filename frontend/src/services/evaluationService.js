@@ -15,7 +15,7 @@ function writeLocalEvaluations(evaluations) {
   localStorage.setItem(EVALUATIONS_KEY, JSON.stringify(evaluations));
 }
 
-function normalizeEvaluation(row) {
+export function normalizeEvaluation(row) {
   if (!row) return null;
 
   const recommendationData = row.recommendations || {};
@@ -55,6 +55,7 @@ function buildRow(userId, evaluationPayload) {
   return {
     user_id: userId,
     email: evaluationPayload.email || null,
+    created_at: new Date().toISOString(),
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
     objective: onboarding.objetivo_principal || null,
