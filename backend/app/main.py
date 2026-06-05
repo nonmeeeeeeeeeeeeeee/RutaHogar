@@ -18,6 +18,8 @@ app.add_middleware(
 class ScoreRequest(BaseModel):
     ingreso_mensual: float
     deuda_mensual: float
+    edad: int
+    numero_cargas: int
     ahorro_disponible: float
     tipo_contrato: str  # 'indefinido', 'plazo_fijo', 'independiente'
     continuidad_laboral: str
@@ -36,11 +38,32 @@ class ScoreRequest(BaseModel):
     complemento_tarjetas_activas: Optional[int] = None
     consentimiento: bool
 
-    @field_validator("ingreso_mensual", "deuda_mensual", "ahorro_disponible", "dividendo_estimado")
+    @field_validator("ingreso_mensual")
+    @classmethod
+    def validate_income(cls, value):
+        if value <= 0:
+            raise ValueError("El ingreso mensual debe ser mayor que 0")
+        return value
+
+    @field_validator("deuda_mensual", "ahorro_disponible", "dividendo_estimado")
     @classmethod
     def validate_non_negative(cls, value):
         if value < 0:
             raise ValueError("El valor no puede ser negativo")
+        return value
+
+    @field_validator("edad")
+    @classmethod
+    def validate_age(cls, value):
+        if value < 18 or value > 100:
+            raise ValueError("La edad debe estar entre 18 y 100")
+        return value
+
+    @field_validator("numero_cargas")
+    @classmethod
+    def validate_dependents(cls, value):
+        if value < 0 or value > 10:
+            raise ValueError("El numero de cargas debe estar entre 0 y 10")
         return value
 
     @field_validator("tipo_contrato")

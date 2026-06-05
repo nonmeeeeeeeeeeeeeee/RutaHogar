@@ -242,6 +242,8 @@ export default function App() {
     const financialInput = {
       ingreso_mensual: input.ingreso_mensual,
       deuda_mensual: input.deuda_mensual,
+      edad: input.edad,
+      numero_cargas: input.numero_cargas,
       ahorro_disponible: input.ahorro_disponible,
       dividendo_estimado: input.dividendo_estimado,
       comuna_objetivo: input.comuna_objetivo,

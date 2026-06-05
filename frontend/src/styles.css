@@ -459,6 +459,25 @@ li {
   gap: 16px;
 }
 
+.field-with-warning input {
+  border-color: #b42318;
+  background: #fff8f8;
+}
+
+.field-with-warning input:focus {
+  border-color: #b42318;
+  outline-color: rgba(180, 35, 24, 0.18);
+}
+
+.field-warning {
+  display: block;
+  margin-top: 7px;
+  color: #b42318;
+  font-size: 0.86rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .check-row {
   display: flex;
   gap: 10px;
