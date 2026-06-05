@@ -1203,6 +1203,46 @@ th {
   color: #1a4f42;
 }
 
+.notification-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: white;
+  border-left: 4px solid #0078d4; /* Color estilo Windows */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  padding: 16px;
+  border-radius: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  z-index: 1000;
+  max-width: 320px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.notification-content {
+  cursor: pointer;
+}
+
+.notification-icon { font-size: 24px; }
+.notification-text strong { display: block; color: #333; }
+.notification-text p { margin: 4px 0 0; font-size: 13px; color: #666; }
+
+.notification-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  padding: 0;
+  line-height: 1;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
 @media (max-width: 820px) {
   .hero,
   .auth-panel,

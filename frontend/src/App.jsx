@@ -6,17 +6,19 @@ import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
+import NotificationToast from "./components/NotificationToast";
 import ObjectiveReview from "./components/ObjectiveReview";
 import Onboarding from "./components/Onboarding";
 import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { useLeads } from "./hooks/useLeads";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation } from "./services/evaluationService";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
-import { getConsent, saveConsent, updateProfileOnboarding } from "./services/profileService";
+import { getConsent, saveConsent, updateProfileOnboarding, isSupabaseDataConfigured } from "./services/profileService";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
 
@@ -78,47 +80,38 @@ export default function App() {
       return {};
     }
   });
-  const [evaluations, setEvaluations] = useState([]);
   const [consentGranted, setConsentGranted] = useState(() => {
     const local = getConsent(null);
     return local?.granted === true;
   });
 
   const profile = auth.profile;
-  const userId = profile?.user_id || profile?.id || null;
+  const isUUID = (id) => {
+    if (!id || typeof id !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+  const userId = isUUID(profile?.id) ? profile.id : isUUID(profile?.user_id) ? profile.user_id : null;
+  const {
+    evaluations,
+    setEvaluations,
+    newHighLeadsCount,
+    counts,
+    error: leadsError,
+    markLeadsSeen,
+    dismissToastLocally,
+    removeEvaluation,
+    prependEvaluation,
+  } = useLeads({ userId, profile });
+  const visibleError = dataError || leadsError;
+
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
-  const userOnboarding = userId ? profile?.onboarding_data || onboarding[userId] || currentEvaluation?.onboarding || null : null;
+  const userOnboarding = userId ? profile?.onboarding_data || onboarding[userId] || onboarding[profile?.email] || currentEvaluation?.onboarding || null : null;
   const currentScoreNumber = currentEvaluation ? formatScore(currentEvaluation.result?.score) : null;
   const currentScore =
     currentEvaluation && currentScoreNumber !== null
       ? { score: currentScoreNumber, classification: currentEvaluation.result.classification }
       : null;
-
-  useEffect(() => {
-    let active = true;
-
-    async function loadEvaluations() {
-      if (!userId) {
-        setEvaluations([]);
-        return;
-      }
-
-      try {
-        setDataError("");
-        const storedEvaluations = await getEvaluations(userId);
-        if (active) setEvaluations(storedEvaluations);
-      } catch (err) {
-        console.error(err);
-        if (active) setDataError("No pudimos cargar tu historial. Revisa que las tablas de Supabase esten creadas y vuelve a intentar.");
-      }
-    }
-
-    loadEvaluations();
-    return () => {
-      active = false;
-    };
-  }, [userId]);
 
   useEffect(() => {
     let active = true;
@@ -158,6 +151,10 @@ export default function App() {
       active = false;
     };
   }, [userId, currentEvaluation?.id, page]);
+
+  useEffect(() => {
+    if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
+  }, [page]);
 
   const startEvaluation = () => {
     setResult(null);
@@ -262,13 +259,22 @@ export default function App() {
       complemento_tarjetas_activas: input.complemento_tarjetas_activas,
     };
 
-    setResult(resultSnapshot);
-    setResultSaved(null);
-    setPage("home");
-
     try {
+      setResult(resultSnapshot);
+      setResultSaved(null);
+      
+      // Si el score es Bajo, redirigir a educación financiera (recommendations)
+      // De lo contrario, ir al home para ver el resultado detallado
+      setPage(resultSnapshot.classification === "Alto" ? "home" : "recommendations");
+
       setDataError("");
-      const savedEvaluation = await createEvaluation(userId || profile?.email || "local-user", {
+      // Corrección: se usaban variables 'rt' y 't' no definidas.
+      if (isSupabaseDataConfigured && !auth.session) {
+        throw new Error("No hay una sesión activa. Por favor, inicia sesión nuevamente.");
+      }
+
+      // Solo enviamos el userId si es un UUID válido, de lo contrario pasamos null para que el servicio use el usuario autenticado
+      const savedEvaluation = await createEvaluation(isUUID(userId) ? userId : null, {
         email: profile?.email || "sin-email",
         onboarding: userOnboarding ? { ...userOnboarding } : null,
         input: financialInput,
@@ -276,7 +282,7 @@ export default function App() {
       });
 
       setResultSaved(true);
-      setEvaluations((prev) => [savedEvaluation, ...prev.filter((item) => item.id !== savedEvaluation.id)].slice(0, 25));
+      prependEvaluation(savedEvaluation);
     } catch (err) {
       console.error(err);
       setResultSaved(false);
@@ -288,7 +294,7 @@ export default function App() {
     try {
       setDataError("");
       await deleteStoredEvaluation(evaluationId, userId || profile?.email || "local-user");
-      setEvaluations((prev) => prev.filter((item) => item.id !== evaluationId));
+      removeEvaluation(evaluationId);
       setTrackingGoals([]);
     } catch (err) {
       console.error(err);
@@ -354,6 +360,10 @@ export default function App() {
     setResultSaved(null);
   };
 
+  const handleNotificationClick = () => setPage("leads");
+
+  const handleDismissNotification = () => markLeadsSeen();
+
   if (!profile) {
     return (
       <div className="app-shell auth-shell">
@@ -371,7 +381,14 @@ export default function App() {
         onNavigate={(nextPage) => (nextPage === "evaluate" ? startEvaluation() : setPage(nextPage))}
         onLogout={handleLogout}
       />
-      {dataError && <div className="error-message">{dataError}</div>}
+      {visibleError && <div className="error-message">{visibleError}</div>}
+
+      {/* Notificación para ejecutivos */}
+      <NotificationToast 
+        count={newHighLeadsCount} 
+        onClick={handleNotificationClick}
+        onClose={handleDismissNotification}
+      />
 
       {page === "onboarding" && profile.role === roles.user ? (
         <Onboarding initialData={userOnboarding} onComplete={handleOnboardingComplete} />
