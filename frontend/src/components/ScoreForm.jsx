@@ -2,9 +2,6 @@ import React, { useState } from "react";
 import axios from "axios";
 import { getLocalConsent } from "../services/profileService";
 
-export default function ScoreForm({ targetCommune, onResult }) {
-  const debtIncomeMessage =
-    "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
 const consent = getLocalConsent();
 const consentDate = consent?.timestamp
   ? new Date(consent.timestamp).toLocaleDateString("es-CL", {
@@ -15,6 +12,8 @@ const consentDate = consent?.timestamp
   : null;
 
 export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
+  const debtIncomeMessage =
+    "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
   const [form, setForm] = useState({
     ingreso_mensual: "",
     deuda_mensual: "",
@@ -96,11 +95,6 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
         (value) => value >= 0,
         "no puede ser negativo.",
       ]);
-      numericFields.push(["Monto de complemento de renta", form.complemento_monto]);
-      numericFields.push(["Ingreso mensual del co-deudor", form.complemento_ingreso_mensual]);
-      numericFields.push(["Deuda mensual del co-deudor", form.complemento_deuda_mensual]);
-      numericFields.push(["Tarjetas de crédito activas", form.complemento_tarjetas_activas]);
-
     }
 
     const invalidNumber = numericRules.find(([, value, isValid]) => {
