@@ -35,6 +35,8 @@ function normalizeEvaluation(row) {
     id: row.id,
     created_at: row.created_at,
     email: row.email,
+    // full_name viene del join con profiles (solo ejecutivos/admins)
+    full_name: row.profiles?.full_name || null,
     user_id: row.user_id,
     onboarding,
     input: row.financial_data || {},
@@ -45,9 +47,7 @@ function normalizeEvaluation(row) {
       recommendations,
       ai_explanation: row.explanation || "",
       improvement_plan: Array.isArray(recommendationData.improvement_plan) ? recommendationData.improvement_plan : [],
-      // FIX: positive_indicators ahora se lee desde recommendations jsonb
       positive_indicators: Array.isArray(recommendationData.positive_indicators) ? recommendationData.positive_indicators : [],
-      // FIX: executive_summary y commercial_guidance desde columnas propias
       executive_summary: row.executive_summary || "",
       commercial_guidance: row.commercial_guidance || "",
     },
@@ -60,7 +60,6 @@ function buildRow(userId, evaluationPayload) {
 
   return {
     user_id: userId,
-    // FIX: guardar email
     email: evaluationPayload.email || null,
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
@@ -75,33 +74,31 @@ function buildRow(userId, evaluationPayload) {
       items: result.recommendations || [],
       risks: result.risks || [],
       improvement_plan: result.improvement_plan || [],
-      // FIX: guardar positive_indicators dentro del jsonb recommendations
       positive_indicators: result.positive_indicators || [],
     },
-    // FIX: guardar resúmenes IA para el ejecutivo
     executive_summary: result.executive_summary || null,
     commercial_guidance: result.commercial_guidance || null,
   };
 }
 
-const evaluationSelectColumns = [
-  "id",
-  "user_id",
-  "email",
-  "score",
-  "classification",
-  "objective",
-  "property_type",
-  "target_commune",
-  "alternative_commune",
-  "purchase_timeline",
-  "financial_data",
-  "explanation",
-  "recommendations",
-  "executive_summary",
-  "commercial_guidance",
-  "created_at",
+// Para usuarios normales — sin join
+const userSelectColumns = [
+  "id", "user_id", "email", "score", "classification",
+  "objective", "property_type", "target_commune", "alternative_commune",
+  "purchase_timeline", "financial_data", "explanation", "recommendations",
+  "executive_summary", "commercial_guidance", "created_at",
 ].join(", ");
+
+// Para ejecutivos/admins — incluye join con profiles para obtener full_name
+const salesSelectColumns = `
+  id, user_id, email, score, classification,
+  objective, property_type, target_commune, alternative_commune,
+  purchase_timeline, financial_data, explanation, recommendations,
+  executive_summary, commercial_guidance, created_at,
+  profiles!evaluations_user_id_fkey (
+    full_name
+  )
+`.trim();
 
 export async function createEvaluation(userId, evaluationPayload) {
   if (!isSupabaseDataConfigured) {
@@ -109,6 +106,7 @@ export async function createEvaluation(userId, evaluationPayload) {
       id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
       created_at: new Date().toISOString(),
       email: evaluationPayload.email,
+      full_name: evaluationPayload.full_name || null,
       user_id: userId,
       onboarding: evaluationPayload.onboarding || null,
       input: evaluationPayload.input || {},
@@ -128,7 +126,7 @@ export async function createEvaluation(userId, evaluationPayload) {
   const { data, error } = await supabase
     .from("evaluations")
     .insert(buildRow(user.id, evaluationPayload))
-    .select(evaluationSelectColumns)
+    .select(userSelectColumns)
     .single();
 
   if (error) {
@@ -155,7 +153,7 @@ export async function getEvaluations(userId, role) {
 
   let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
+    .select(isSales ? salesSelectColumns : userSelectColumns)
     .order("created_at", { ascending: false });
 
   if (!isSales) {
@@ -163,11 +161,14 @@ export async function getEvaluations(userId, role) {
   }
 
   const { data, error } = await query;
+console.log("RAW DATA[0]:", data?.[0]);
+console.log("RAW PROFILES:", data?.[0]?.profiles);
 
   if (error) {
     logSupabaseError(error);
     throw error;
   }
+  
   return (data || []).map(normalizeEvaluation);
 }
 
@@ -183,7 +184,7 @@ export async function getLatestEvaluation(userId) {
 
   const { data, error } = await supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
+    .select(userSelectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)

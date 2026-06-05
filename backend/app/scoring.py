@@ -308,8 +308,10 @@ def calculate_score(data: Dict) -> Dict:
 
     result["commercial_guidance"] = generate_commercial_guidance(
         classification=clasificacion,
+        score=round(score, 1),
+        positive_indicators=_unique(positivos),
         risks=_unique(riesgos),
-        recommendations=_unique(recomendaciones)
+        recommendations=_unique(recomendaciones) 
     )
 
     result.pop("risk_codes", None)

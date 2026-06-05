@@ -1,5 +1,16 @@
 import React, { useMemo, useState } from "react";
 
+function formatFecha(created_at) {
+  if (!created_at) return "-";
+  const d = new Date(created_at);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 export default function DashboardLeads({ evaluations }) {
   const [filter, setFilter] = useState("todos");
   const [selectedLead, setSelectedLead] = useState(null);
@@ -8,6 +19,8 @@ export default function DashboardLeads({ evaluations }) {
     if (filter === "todos") return evaluations;
     return evaluations.filter((item) => item.result.classification === filter);
   }, [evaluations, filter]);
+
+  console.log("Evaluations:", evaluations);
 
   return (
     <section className="section-block">
@@ -35,45 +48,28 @@ export default function DashboardLeads({ evaluations }) {
             <tr>
               <th>Fecha</th>
               <th>Nombre</th>
-              <th>Email</th>
               <th>Comuna</th>
               <th>Clasificación</th>
               <th>Riesgos</th>
               <th></th>
             </tr>
           </thead>
-
           <tbody>
             {filtered.map((item) => (
               <tr key={item.id}>
-                <td>
-                  {item.created_at
-                    ? new Date(item.created_at).toLocaleDateString("es-CL", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                      })
-                    : "-"}
-                </td>
-
-                <td>{item.onboarding?.nombre || item.input?.nombre || "-"}</td>
-
-                <td>{item.email || "-"}</td>
-
+                <td>{formatFecha(item.created_at)}</td>
+                <td>{item.full_name}</td>
                 <td>{item.input?.comuna_objetivo || "-"}</td>
-
                 <td>
                   <span className={`status-pill ${item.result.classification?.toLowerCase()}`}>
                     {item.result.classification}
                   </span>
                 </td>
-
                 <td>
                   {item.result.risks?.length
                     ? item.result.risks.slice(0, 2).join(", ")
                     : "Sin riesgos relevantes"}
                 </td>
-
                 <td>
                   <button
                     className="secondary-button compact-button"
@@ -84,10 +80,9 @@ export default function DashboardLeads({ evaluations }) {
                 </td>
               </tr>
             ))}
-
             {!filtered.length && (
               <tr>
-                <td colSpan="7">Aún no existen leads para esta clasificación.</td>
+                <td colSpan="6">Aún no existen leads para esta clasificación.</td>
               </tr>
             )}
           </tbody>
@@ -114,9 +109,9 @@ export default function DashboardLeads({ evaluations }) {
               background: "var(--color-surface, #fff)",
               borderRadius: "14px",
               padding: "2rem",
-              maxWidth: "900px",
+              maxWidth: "560px",
               width: "90%",
-              maxHeight: "90vh",
+              maxHeight: "80vh",
               overflowY: "auto",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             }}
@@ -124,26 +119,20 @@ export default function DashboardLeads({ evaluations }) {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
               <h2 style={{ margin: 0 }}>Perfil del Lead</h2>
-              <button
-                className="secondary-button compact-button"
-                onClick={() => setSelectedLead(null)}
-              >
+              <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
                 Cerrar
               </button>
             </div>
 
             <div style={{ display: "grid", gap: "0.4rem", marginBottom: "1.25rem" }}>
               <p style={{ margin: 0 }}>
+                <strong>Nombre:</strong> {selectedLead.full_name || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
                 <strong>Email:</strong> {selectedLead.email || "-"}
               </p>
               <p style={{ margin: 0 }}>
-                <strong>Fecha evaluación:</strong>{" "}
-                {selectedLead.created_at
-                  ? new Date(selectedLead.created_at).toLocaleDateString("es-CL", {
-                      day: "2-digit", month: "2-digit", year: "numeric",
-                      hour: "2-digit", minute: "2-digit",
-                    })
-                  : "-"}
+                <strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}
               </p>
               <p style={{ margin: 0 }}>
                 <strong>Comuna objetivo:</strong> {selectedLead.input?.comuna_objetivo || "-"}
@@ -163,8 +152,8 @@ export default function DashboardLeads({ evaluations }) {
               <>
                 <h3 style={{ marginBottom: "0.5rem" }}>Indicadores positivos</h3>
                 <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
-                  {selectedLead.result.positive_indicators.map((indicator, i) => (
-                    <li key={i}>{indicator}</li>
+                  {selectedLead.result.positive_indicators.map((ind, i) => (
+                    <li key={i}>{ind}</li>
                   ))}
                 </ul>
               </>
@@ -174,8 +163,8 @@ export default function DashboardLeads({ evaluations }) {
               <>
                 <h3 style={{ marginBottom: "0.5rem" }}>Riesgos detectados</h3>
                 <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
-                  {selectedLead.result.risks.map((risk, i) => (
-                    <li key={i}>{risk}</li>
+                  {selectedLead.result.risks.map((r, i) => (
+                    <li key={i}>{r}</li>
                   ))}
                 </ul>
               </>
@@ -191,7 +180,7 @@ export default function DashboardLeads({ evaluations }) {
             {selectedLead.result.commercial_guidance && (
               <>
                 <h3 style={{ marginBottom: "0.5rem" }}>Orientación Comercial</h3>
-                <p style={{ marginBottom: "0" }}>{selectedLead.result.commercial_guidance}</p>
+                <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
               </>
             )}
           </div>
