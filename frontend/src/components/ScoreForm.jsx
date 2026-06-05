@@ -1,9 +1,20 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { getLocalConsent } from "../services/profileService";
 
 export default function ScoreForm({ targetCommune, onResult }) {
   const debtIncomeMessage =
     "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
+const consent = getLocalConsent();
+const consentDate = consent?.timestamp
+  ? new Date(consent.timestamp).toLocaleDateString("es-CL", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
+  : null;
+
+export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
   const [form, setForm] = useState({
     ingreso_mensual: "",
     deuda_mensual: "",
@@ -18,7 +29,13 @@ export default function ScoreForm({ targetCommune, onResult }) {
     complemento_nombre: "",
     complemento_monto: "",
     complemento_relacion: "",
-    consentimiento: false,
+    complemento_ingreso_mensual: "",
+    complemento_deuda_mensual: "",
+    complemento_morosidad: "",
+    complemento_tipo_contrato: "",
+    complemento_continuidad_laboral: "",
+    complemento_tarjetas_activas: "",
+    consentimiento: true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -47,11 +64,16 @@ export default function ScoreForm({ targetCommune, onResult }) {
     if (!form.morosidad_actual) missing.push("Situacion de morosidad");
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
     if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
-    if (!form.consentimiento) missing.push("Consentimiento de pre-evaluación");
     if (form.complemento_renta) {
       if (!form.complemento_nombre) missing.push("Nombre de la persona complementaria");
       if (form.complemento_monto === "") missing.push("Monto de complemento de renta");
       if (!form.complemento_relacion) missing.push("Relación con la persona complementaria");
+      if (form.complemento_ingreso_mensual === "") missing.push("Ingreso mensual del co-deudor");
+      if (form.complemento_deuda_mensual === "") missing.push("Deuda mensual del co-deudor");
+      if (!form.complemento_morosidad) missing.push("Morosidad del co-deudor");
+      if (!form.complemento_tipo_contrato) missing.push("Tipo de contrato del co-deudor");
+      if (!form.complemento_continuidad_laboral) missing.push("Continuidad laboral del co-deudor");
+      if (form.complemento_tarjetas_activas === "") missing.push("Tarjetas de crédito activas del co-deudor");
     }
     if (missing.length) {
       setError(`Complete todos los campos: ${missing.join(", ")}`);
@@ -74,6 +96,11 @@ export default function ScoreForm({ targetCommune, onResult }) {
         (value) => value >= 0,
         "no puede ser negativo.",
       ]);
+      numericFields.push(["Monto de complemento de renta", form.complemento_monto]);
+      numericFields.push(["Ingreso mensual del co-deudor", form.complemento_ingreso_mensual]);
+      numericFields.push(["Deuda mensual del co-deudor", form.complemento_deuda_mensual]);
+      numericFields.push(["Tarjetas de crédito activas", form.complemento_tarjetas_activas]);
+
     }
 
     const invalidNumber = numericRules.find(([, value, isValid]) => {
@@ -115,15 +142,26 @@ export default function ScoreForm({ targetCommune, onResult }) {
         complemento_nombre: form.complemento_nombre || undefined,
         complemento_monto: form.complemento_renta ? parseFloat(form.complemento_monto) : undefined,
         complemento_relacion: form.complemento_relacion || undefined,
+        complemento_ingreso_mensual: form.complemento_renta ? parseFloat(form.complemento_ingreso_mensual) : undefined,
+        complemento_deuda_mensual: form.complemento_renta ? parseFloat(form.complemento_deuda_mensual) : undefined,
+        complemento_morosidad: form.complemento_morosidad || undefined,
+        complemento_tipo_contrato: form.complemento_tipo_contrato || undefined,
+        complemento_continuidad_laboral: form.complemento_continuidad_laboral || undefined,
+        complemento_tarjetas_activas: form.complemento_renta ? parseInt(form.complemento_tarjetas_activas, 10) : undefined,
         consentimiento: form.consentimiento,
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
-      const res = await axios.post(`${apiBase}/score`, payload);
+      const res = await axios.post(`${apiBase}/score`, payload, { timeout: 60000 });
+      
       onResult(res.data, payload);
     } catch (err) {
       console.error(err);
-      setError("Error comunicando con el backend. Verifica la variable VITE_API_URL o que el servidor esté corriendo en http://127.0.0.1:8000");
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        setError("La petición tardó demasiado, por favor intenta nuevamente.");
+      } else {
+        setError("Hubo un problema con la petición, por favor intenta nuevamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -313,19 +351,89 @@ export default function ScoreForm({ targetCommune, onResult }) {
                 <option value="otro">Otro</option>
               </select>
             </label>
+            <label>
+              Ingreso mensual del co-deudor
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_ingreso_mensual"
+                value={form.complemento_ingreso_mensual}
+                onChange={handleChange}
+                placeholder="Ej: 800000"
+              />
+            </label>
+            <label>
+              Deuda mensual del co-deudor
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_deuda_mensual"
+                value={form.complemento_deuda_mensual}
+                onChange={handleChange}
+                placeholder="Ej: 100000"
+              />
+            </label>
+            <label>
+              Morosidad del co-deudor
+              <select name="complemento_morosidad" value={form.complemento_morosidad} onChange={handleChange}>
+                <option value="">Selecciona una opcion</option>
+                <option value="no">No</option>
+                <option value="si">Si</option>
+                <option value="no_lo_se">No lo se</option>
+              </select>
+            </label>
+            <label>
+              Tipo de contrato del co-deudor
+              <select name="complemento_tipo_contrato" value={form.complemento_tipo_contrato} onChange={handleChange}>
+                <option value="">Selecciona un tipo</option>
+                <option value="indefinido">Indefinido</option>
+                <option value="plazo_fijo">Plazo fijo</option>
+                <option value="independiente">Independiente</option>
+              </select>
+            </label>
+            <label>
+              Continuidad laboral del co-deudor
+              <select name="complemento_continuidad_laboral" value={form.complemento_continuidad_laboral} onChange={handleChange}>
+                <option value="">Selecciona una opcion</option>
+                <option value="menos_6_meses">Menos de 6 meses</option>
+                <option value="entre_6_y_12_meses">Entre 6 y 12 meses</option>
+                <option value="entre_1_y_3_anios">Entre 1 y 3 anos</option>
+                <option value="mas_3_anios">Mas de 3 anos</option>
+              </select>
+            </label>
+            <label>
+              Tarjetas de crédito activas
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                name="complemento_tarjetas_activas"
+                value={form.complemento_tarjetas_activas}
+                onChange={handleChange}
+                placeholder="Ej: 2"
+              />
+            </label>
           </div>
         </div>
       )}
 
-      <label className="check-row consent-row">
-        <input
-          type="checkbox"
-          name="consentimiento"
-          checked={form.consentimiento}
-          onChange={handleChange}
-        />
-        Acepto que estos datos sean usados solo para calcular una pre-evaluacion orientativa.
-      </label>
+      <div className="consent-info">
+        <span className="consent-info-icon">✓</span>
+        <span>
+          Autorización de tratamiento de datos personales otorgada el{" "}
+          <strong>{consentDate || "fecha registrada"}</strong>.
+          {onViewConsent && (
+            <>
+              {" "}
+              <button type="button" className="consent-ref-link" onClick={onViewConsent}>
+                Ver detalle
+              </button>
+            </>
+          )}
+        </span>
+      </div>
 
       <div className="form-actions">
         <button type="submit" disabled={loading || debtExceedsIncome}>Calcular score</button>

@@ -115,6 +115,68 @@ export async function ensureUserProfile(user) {
   return upsertProfile(user.id, fullName, role);
 }
 
+const CONSENT_KEY = "scoreleads_dataconsent";
+
+export function getLocalConsent() {
+  try {
+    return JSON.parse(localStorage.getItem(CONSENT_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLocalConsent(consentData) {
+  localStorage.setItem(CONSENT_KEY, JSON.stringify(consentData));
+}
+
+export async function saveConsent(userId, consentData) {
+  saveLocalConsent(consentData);
+
+  if (!isSupabaseDataConfigured || !userId) return consentData;
+
+  const user = await getAuthenticatedUser();
+  if (!user?.id || user.id !== userId) return consentData;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ consent_data: consentData, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) {
+    logSupabaseError(error);
+  }
+
+  return consentData;
+}
+
+export async function getConsent(userId) {
+  const local = getLocalConsent();
+  if (!isSupabaseDataConfigured || !userId) return local;
+
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user?.id) return local;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("consent_data")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !data?.consent_data) return local;
+
+    const remote = data.consent_data;
+    if (!local || new Date(remote.timestamp) > new Date(local.timestamp)) {
+      saveLocalConsent(remote);
+      return remote;
+    }
+
+    return local;
+  } catch {
+    return local;
+  }
+}
+
 export async function updateProfileOnboarding(userId, onboardingData) {
   if (!isSupabaseDataConfigured) {
     return normalizeProfile({
