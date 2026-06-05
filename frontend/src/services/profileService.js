@@ -17,6 +17,10 @@ export function normalizeRole(role) {
   return roleAliases[role] || "usuario";
 }
 
+function isUUID(id) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+}
+
 function normalizeProfile(row) {
   if (!row) return null;
 
@@ -26,6 +30,7 @@ function normalizeProfile(row) {
     full_name: row.full_name || "",
     role: normalizeRole(row.role),
     onboarding_data: row.onboarding_data || null,
+    last_lead_seen_at: row.last_lead_seen_at || null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -59,11 +64,11 @@ export async function getAuthenticatedUser() {
 }
 
 export async function getCurrentProfile(userId) {
-  if (!isSupabaseDataConfigured || !userId) return null;
+  if (!isSupabaseDataConfigured || !userId || !isUUID(userId)) return null;
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, created_at, updated_at")
+    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -75,15 +80,17 @@ export async function getCurrentProfile(userId) {
 }
 
 export async function upsertProfile(userId, fullName, role = "usuario", onboardingData) {
+  if (!isUUID(userId)) {
+    console.warn("Saltando upsert: ID no es un UUID válido.");
+    return normalizeProfile({ id: userId, full_name: fullName, role });
+  }
+
   const profile = {
     id: userId,
     full_name: fullName || "",
     role: normalizeRole(role),
+    onboarding_data: onboardingData || null,
   };
-
-  if (!isSupabaseDataConfigured && onboardingData !== undefined) {
-    profile.onboarding_data = onboardingData;
-  }
 
   if (!isSupabaseDataConfigured) {
     return normalizeProfile({ ...profile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
@@ -91,9 +98,9 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
 
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({ ...profile, updated_at: new Date().toISOString() }, { onConflict: "id" })
-    .select("id, full_name, role, created_at, updated_at")
-    .single();
+    .upsert({ ...profile, updated_at: new Date().toISOString() })
+    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
+    .maybeSingle();
 
   if (error) {
     logSupabaseError(error);
@@ -111,8 +118,82 @@ export async function ensureUserProfile(user) {
   if (existingProfile) return existingProfile;
 
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
-  const role = "usuario";
+  const role = normalizeRole(user.user_metadata?.role || "usuario");
   return upsertProfile(user.id, fullName, role);
+}
+
+export async function updateLastLeadSeenAt(userId) {
+  if (!isSupabaseDataConfigured || !isUUID(userId)) return;
+  const { error } = await supabase
+    .from("profiles")
+    .update({ last_lead_seen_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .eq("id", userId);
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
+}
+
+const CONSENT_KEY = "scoreleads_dataconsent";
+
+export function getLocalConsent() {
+  try {
+    return JSON.parse(localStorage.getItem(CONSENT_KEY)) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveLocalConsent(consentData) {
+  localStorage.setItem(CONSENT_KEY, JSON.stringify(consentData));
+}
+
+export async function saveConsent(userId, consentData) {
+  saveLocalConsent(consentData);
+
+  if (!isSupabaseDataConfigured || !userId) return consentData;
+
+  const user = await getAuthenticatedUser();
+  if (!user?.id || user.id !== userId) return consentData;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ consent_data: consentData, updated_at: new Date().toISOString() })
+    .eq("id", userId);
+
+  if (error) {
+    logSupabaseError(error);
+  }
+
+  return consentData;
+}
+
+export async function getConsent(userId) {
+  const local = getLocalConsent();
+  if (!isSupabaseDataConfigured || !userId) return local;
+
+  try {
+    const user = await getAuthenticatedUser();
+    if (!user?.id) return local;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("consent_data")
+      .eq("id", userId)
+      .maybeSingle();
+
+    if (error || !data?.consent_data) return local;
+
+    const remote = data.consent_data;
+    if (!local || new Date(remote.timestamp) > new Date(local.timestamp)) {
+      saveLocalConsent(remote);
+      return remote;
+    }
+
+    return local;
+  } catch {
+    return local;
+  }
 }
 
 export async function updateProfileOnboarding(userId, onboardingData) {
@@ -132,6 +213,23 @@ export async function updateProfileOnboarding(userId, onboardingData) {
   }
   await ensureUserProfile(user);
 
-  const profile = await getCurrentProfile(userId);
-  return normalizeProfile({ ...profile, onboarding_data: onboardingData });
+  if (!isUUID(userId)) {
+    return normalizeProfile({ id: userId, onboarding_data: onboardingData });
+  }
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .update({ 
+      onboarding_data: onboardingData,
+      updated_at: new Date().toISOString() 
+    })
+    .eq("id", userId)
+    .select()
+    .single();
+
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
+  return normalizeProfile(data);
 }

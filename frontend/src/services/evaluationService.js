@@ -15,7 +15,7 @@ function writeLocalEvaluations(evaluations) {
   localStorage.setItem(EVALUATIONS_KEY, JSON.stringify(evaluations));
 }
 
-function normalizeEvaluation(row) {
+export function normalizeEvaluation(row) {
   if (!row) return null;
 
   const recommendationData = row.recommendations || {};
@@ -54,6 +54,8 @@ function buildRow(userId, evaluationPayload) {
 
   return {
     user_id: userId,
+    email: evaluationPayload.email || null,
+    created_at: new Date().toISOString(),
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
     objective: onboarding.objetivo_principal || null,
@@ -74,6 +76,7 @@ function buildRow(userId, evaluationPayload) {
 const evaluationSelectColumns = [
   "id",
   "user_id",
+  "email",
   "score",
   "classification",
   "objective",
@@ -86,6 +89,11 @@ const evaluationSelectColumns = [
   "recommendations",
   "created_at",
 ].join(", ");
+
+const isUUID = (id) => {
+  if (!id || typeof id !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+};
 
 export async function createEvaluation(userId, evaluationPayload) {
   if (!isSupabaseDataConfigured) {
@@ -124,20 +132,28 @@ export async function createEvaluation(userId, evaluationPayload) {
 
 export async function getEvaluations(userId) {
   if (!isSupabaseDataConfigured) {
-    return readLocalEvaluations().filter((item) => item.user_id === userId || item.email === userId);
+    const local = readLocalEvaluations();
+    return userId ? local.filter((item) => item.user_id === userId || item.email === userId) : local;
   }
 
   const user = await getAuthenticatedUser();
   if (!user?.id) {
     throw new Error("No hay usuario autenticado para cargar evaluaciones.");
   }
-  await ensureUserProfile(user);
 
-  const { data, error } = await supabase
+  // Intentamos sincronizar el perfil pero no bloqueamos la carga si falla
+  ensureUserProfile(user).catch(err => console.warn("Error no crítico sincronizando perfil:", err));
+
+  let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+    .select(evaluationSelectColumns);
+
+  // Solo filtramos por user_id si se especificó un ID válido (no staff)
+  if (isUUID(userId)) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false });
 
   if (error) {
     logSupabaseError(error);
@@ -155,13 +171,20 @@ export async function getLatestEvaluation(userId) {
   if (!user?.id) {
     throw new Error("No hay usuario autenticado para cargar la evaluacion actual.");
   }
-
-  const { data, error } = await supabase
+  //const { data, error } = await supabase
+  let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns)
+    /*.select(evaluationSelectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(1)
+    .limit(1)*/
+    .select(evaluationSelectColumns);
+
+  if (userId && isUUID(userId)) {
+    query = query.eq("user_id", userId);
+  }
+
+  const { data, error } = await query.order("created_at", { ascending: false }).limit(1)
     .maybeSingle();
 
   if (error) {

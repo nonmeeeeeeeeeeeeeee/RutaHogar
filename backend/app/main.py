@@ -18,6 +18,8 @@ app.add_middleware(
 class ScoreRequest(BaseModel):
     ingreso_mensual: float
     deuda_mensual: float
+    edad: int
+    numero_cargas: int
     ahorro_disponible: float
     tipo_contrato: str  # 'indefinido', 'plazo_fijo', 'independiente'
     continuidad_laboral: str
@@ -28,13 +30,40 @@ class ScoreRequest(BaseModel):
     complemento_nombre: Optional[str] = None
     complemento_monto: Optional[float] = None
     complemento_relacion: Optional[str] = None
+    complemento_ingreso_mensual: Optional[float] = None
+    complemento_deuda_mensual: Optional[float] = None
+    complemento_morosidad: Optional[str] = None
+    complemento_tipo_contrato: Optional[str] = None
+    complemento_continuidad_laboral: Optional[str] = None
+    complemento_tarjetas_activas: Optional[int] = None
     consentimiento: bool
 
-    @field_validator("ingreso_mensual", "deuda_mensual", "ahorro_disponible", "dividendo_estimado")
+    @field_validator("ingreso_mensual")
+    @classmethod
+    def validate_income(cls, value):
+        if value <= 0:
+            raise ValueError("El ingreso mensual debe ser mayor que 0")
+        return value
+
+    @field_validator("deuda_mensual", "ahorro_disponible", "dividendo_estimado")
     @classmethod
     def validate_non_negative(cls, value):
         if value < 0:
             raise ValueError("El valor no puede ser negativo")
+        return value
+
+    @field_validator("edad")
+    @classmethod
+    def validate_age(cls, value):
+        if value < 18 or value > 100:
+            raise ValueError("La edad debe estar entre 18 y 100")
+        return value
+
+    @field_validator("numero_cargas")
+    @classmethod
+    def validate_dependents(cls, value):
+        if value < 0 or value > 10:
+            raise ValueError("El numero de cargas debe estar entre 0 y 10")
         return value
 
     @field_validator("tipo_contrato")
@@ -75,6 +104,47 @@ class ScoreRequest(BaseModel):
             raise ValueError("El complemento de renta no puede ser negativo")
         return value
 
+    @field_validator("complemento_ingreso_mensual", "complemento_deuda_mensual")
+    @classmethod
+    def validate_complement_non_negative(cls, value):
+        if value is not None and value < 0:
+            raise ValueError("Los valores del co-deudor no pueden ser negativos")
+        return value
+
+    @field_validator("complemento_tarjetas_activas")
+    @classmethod
+    def validate_complement_cards(cls, value):
+        if value is not None and value < 0:
+            raise ValueError("Las tarjetas activas no pueden ser negativas")
+        return value
+
+    @field_validator("complemento_morosidad")
+    @classmethod
+    def validate_complement_delinquency(cls, value):
+        if value is not None:
+            allowed = {"si", "no", "no_lo_se"}
+            if value not in allowed:
+                raise ValueError("Morosidad del co-deudor invalida")
+        return value
+
+    @field_validator("complemento_tipo_contrato")
+    @classmethod
+    def validate_complement_contract(cls, value):
+        if value is not None:
+            allowed = {"indefinido", "plazo_fijo", "independiente"}
+            if value not in allowed:
+                raise ValueError("Tipo de contrato del co-deudor invalido")
+        return value
+
+    @field_validator("complemento_continuidad_laboral")
+    @classmethod
+    def validate_complement_continuity(cls, value):
+        if value is not None:
+            allowed = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
+            if value not in allowed:
+                raise ValueError("Continuidad laboral del co-deudor invalida")
+        return value
+
     @model_validator(mode="after")
     def validate_complement_details(self):
         if self.complemento_renta:
@@ -84,10 +154,22 @@ class ScoreRequest(BaseModel):
                 raise ValueError("Debe indicar el monto del complemento de renta")
             if not self.complemento_relacion:
                 raise ValueError("Debe indicar la relacion del complemento de renta")
+            if self.complemento_ingreso_mensual is None:
+                raise ValueError("Debe indicar el ingreso mensual del co-deudor")
+            if self.complemento_deuda_mensual is None:
+                raise ValueError("Debe indicar la deuda mensual del co-deudor")
+            if not self.complemento_morosidad:
+                raise ValueError("Debe indicar la morosidad del co-deudor")
+            if not self.complemento_tipo_contrato:
+                raise ValueError("Debe indicar el tipo de contrato del co-deudor")
+            if not self.complemento_continuidad_laboral:
+                raise ValueError("Debe indicar la continuidad laboral del co-deudor")
+            if self.complemento_tarjetas_activas is None:
+                raise ValueError("Debe indicar las tarjetas de credito activas del co-deudor")
         return self
 
 
 @app.post("/score")
-def score_endpoint(payload: ScoreRequest):
+async def score_endpoint(payload: ScoreRequest):
     result = calculate_score(payload.model_dump())
     return result
