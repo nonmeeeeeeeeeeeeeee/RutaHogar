@@ -14,7 +14,7 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import { useLeads } from "./hooks/useLeads";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation } from "./services/evaluationService";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
@@ -112,6 +112,32 @@ export default function App() {
     currentEvaluation && currentScoreNumber !== null
       ? { score: currentScoreNumber, classification: currentEvaluation.result.classification }
       : null;
+
+  useEffect(() => {
+    let active = true;
+
+
+    async function loadEvaluations() {
+      if (!userId) {
+        setEvaluations([]);
+        return;
+      }
+
+      try {
+        setDataError("");
+        const storedEvaluations = await getEvaluations(userId, profile?.role);
+        if (active) setEvaluations(storedEvaluations);
+      } catch (err) {
+        console.error(err);
+        if (active) setDataError("No pudimos cargar tu historial. Revisa que las tablas de Supabase esten creadas y vuelve a intentar.");
+      }
+    }
+
+    loadEvaluations();
+    return () => {
+      active = false;
+    };
+  }, [userId]);
 
   useEffect(() => {
     let active = true;
@@ -228,13 +254,16 @@ export default function App() {
 
   const handleResult = async (scoreResult, input) => {
     const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: [...(scoreResult.risks || [])],
-      recommendations: [...(scoreResult.recommendations || [])],
-      ai_explanation: scoreResult.ai_explanation,
-      improvement_plan: [...(scoreResult.improvement_plan || [])],
-    };
+       score: scoreResult.score,
+       classification: scoreResult.classification,
+       risks: [...(scoreResult.risks || [])],
+       recommendations: [...(scoreResult.recommendations || [])],
+       ai_explanation: scoreResult.ai_explanation,
+       improvement_plan: [...(scoreResult.improvement_plan || [])],
+       positive_indicators: [...(scoreResult.positive_indicators || [])],
+       executive_summary: scoreResult.executive_summary || "",
+       commercial_guidance: scoreResult.commercial_guidance || "",
+     };
 
     const financialInput = {
       ingreso_mensual: input.ingreso_mensual,
