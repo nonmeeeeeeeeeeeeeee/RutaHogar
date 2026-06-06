@@ -109,9 +109,9 @@ export default function DashboardLeads({ evaluations }) {
               background: "var(--color-surface, #fff)",
               borderRadius: "14px",
               padding: "2rem",
-              maxWidth: "560px",
+              maxWidth: "80%",
               width: "90%",
-              maxHeight: "80vh",
+              maxHeight: "90vh",
               overflowY: "auto",
               boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
             }}
