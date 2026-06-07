@@ -25,7 +25,8 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles
-add column if not exists onboarding_data jsonb;
+add column if not exists onboarding_data jsonb,
+add column if not exists last_lead_seen_at timestamptz;
 
 alter table public.profiles
 add column if not exists consent_data jsonb;
@@ -49,6 +50,9 @@ create table if not exists public.evaluations (
   constraint evaluations_classification_check check (classification in ('Alto', 'Medio', 'Bajo'))
 );
 
+alter table public.evaluations replica identity full;
+alter publication supabase_realtime add table public.evaluations;
+
 alter table public.evaluations
 add column if not exists objective text,
 add column if not exists property_type text,
@@ -60,7 +64,7 @@ add column if not exists plan_accepted_at timestamptz;
 
 create table if not exists public.improvement_goals (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
+  user_id uuid not null references public.profiles(id) on delete cascade,
   evaluation_id uuid references public.evaluations(id) on delete cascade,
   title text not null,
   description text,
@@ -122,6 +126,17 @@ alter table public.evaluations enable row level security;
 alter table public.improvement_goals enable row level security;
 alter table public.scoring_history enable row level security;
 
+-- Helper SECURITY DEFINER: lee el rol del usuario sin disparar RLS
+create or replace function public.get_my_role()
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select role from public.profiles where id = auth.uid();
+$$;
+
 drop policy if exists "Profiles select own" on public.profiles;
 create policy "Profiles select own"
 on public.profiles
@@ -141,11 +156,18 @@ for update
 using (auth.uid() = id::uuid)
 with check (auth.uid() = id::uuid);
 
+alter table public.evaluations 
+add column if not exists email text;
+
 drop policy if exists "Evaluations select own" on public.evaluations;
 create policy "Evaluations select own"
-on public.evaluations
-for select
-using (auth.uid() = user_id::uuid);
+  on public.evaluations
+  for select
+  using (
+    (auth.uid() = user_id)
+    or
+    (public.get_my_role() = any (array['ejecutivo'::text, 'admin'::text]))
+  );
 
 drop policy if exists "Evaluations insert own" on public.evaluations;
 create policy "Evaluations insert own"

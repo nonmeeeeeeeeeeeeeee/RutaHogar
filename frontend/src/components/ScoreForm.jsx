@@ -12,9 +12,13 @@ const consentDate = consent?.timestamp
   : null;
 
 export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
+  const debtIncomeMessage =
+    "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
   const [form, setForm] = useState({
     ingreso_mensual: "",
     deuda_mensual: "",
+    edad: "",
+    numero_cargas: "",
     ahorro_disponible: "",
     tipo_contrato: "",
     continuidad_laboral: "",
@@ -34,6 +38,10 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const debtExceedsIncome =
+    form.ingreso_mensual !== "" &&
+    form.deuda_mensual !== "" &&
+    Number(form.deuda_mensual) > Number(form.ingreso_mensual);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -47,6 +55,8 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
     const missing = [];
     if (form.ingreso_mensual === "") missing.push("Ingreso mensual");
     if (form.deuda_mensual === "") missing.push("Deuda mensual");
+    if (form.edad === "") missing.push("Edad");
+    if (form.numero_cargas === "") missing.push("Numero de cargas");
     if (form.ahorro_disponible === "") missing.push("Ahorro disponible");
     if (!form.tipo_contrato) missing.push("Tipo de contrato");
     if (!form.continuidad_laboral) missing.push("Continuidad laboral");
@@ -69,23 +79,35 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       return false;
     }
 
-    const numericFields = [
-      ["Ingreso mensual", form.ingreso_mensual],
-      ["Deuda mensual", form.deuda_mensual],
-      ["Ahorro disponible", form.ahorro_disponible],
-      ["Dividendo estimado", form.dividendo_estimado],
+    const numericRules = [
+      ["Ingreso mensual", form.ingreso_mensual, (value) => value > 0, "debe ser mayor que 0."],
+      ["Deuda mensual", form.deuda_mensual, (value) => value >= 0, "debe ser mayor o igual a 0."],
+      ["Edad", form.edad, (value) => value >= 18 && value <= 100, "debe estar entre 18 y 100."],
+      ["Numero de cargas", form.numero_cargas, (value) => value >= 0 && value <= 10, "debe estar entre 0 y 10."],
+      ["Ahorro disponible", form.ahorro_disponible, (value) => value >= 0, "no puede ser negativo."],
+      ["Dividendo estimado", form.dividendo_estimado, (value) => value >= 0, "no puede ser negativo."],
     ];
 
     if (form.complemento_renta) {
-      numericFields.push(["Monto de complemento de renta", form.complemento_monto]);
-      numericFields.push(["Ingreso mensual del co-deudor", form.complemento_ingreso_mensual]);
-      numericFields.push(["Deuda mensual del co-deudor", form.complemento_deuda_mensual]);
-      numericFields.push(["Tarjetas de crédito activas", form.complemento_tarjetas_activas]);
+      numericRules.push([
+        "Monto de complemento de renta",
+        form.complemento_monto,
+        (value) => value >= 0,
+        "no puede ser negativo.",
+      ]);
     }
 
-    const invalidNumber = numericFields.find(([, value]) => Number(value) < 0);
+    const invalidNumber = numericRules.find(([, value, isValid]) => {
+      const parsedValue = Number(value);
+      return !Number.isFinite(parsedValue) || !isValid(parsedValue);
+    });
     if (invalidNumber) {
-      setError(`${invalidNumber[0]} no puede ser negativo.`);
+      setError(`${invalidNumber[0]} ${invalidNumber[3]}`);
+      return false;
+    }
+
+    if (debtExceedsIncome) {
+      setError(debtIncomeMessage);
       return false;
     }
 
@@ -102,6 +124,8 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       const payload = {
         ingreso_mensual: parseFloat(form.ingreso_mensual),
         deuda_mensual: parseFloat(form.deuda_mensual),
+        edad: parseInt(form.edad, 10),
+        numero_cargas: parseInt(form.numero_cargas, 10),
         ahorro_disponible: parseFloat(form.ahorro_disponible),
         tipo_contrato: form.tipo_contrato,
         continuidad_laboral: form.continuidad_laboral,
@@ -122,11 +146,16 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
-      const res = await axios.post(`${apiBase}/score`, payload);
+      const res = await axios.post(`${apiBase}/score`, payload, { timeout: 60000 });
+      
       onResult(res.data, payload);
     } catch (err) {
       console.error(err);
-      setError("Error comunicando con el backend. Verifica la variable VITE_API_URL o que el servidor esté corriendo en http://127.0.0.1:8000");
+      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
+        setError("La petición tardó demasiado, por favor intenta nuevamente.");
+      } else {
+        setError("Hubo un problema con la petición, por favor intenta nuevamente.");
+      }
     } finally {
       setLoading(false);
     }
@@ -145,7 +174,7 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
             <input
               type="number"
               inputMode="numeric"
-              min="0"
+              min="1"
               name="ingreso_mensual"
               value={form.ingreso_mensual}
               onChange={handleChange}
@@ -153,7 +182,7 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
             />
           </label>
 
-          <label>
+          <label className={debtExceedsIncome ? "field-with-warning" : undefined}>
             Deuda mensual
             <input
               type="number"
@@ -163,6 +192,43 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
               value={form.deuda_mensual}
               onChange={handleChange}
               placeholder="Ej: 150000"
+              aria-invalid={debtExceedsIncome}
+              aria-describedby={debtExceedsIncome ? "debt-income-warning" : undefined}
+            />
+            {debtExceedsIncome && (
+              <span id="debt-income-warning" className="field-warning">
+                {debtIncomeMessage}
+              </span>
+            )}
+          </label>
+
+          <label>
+            Edad
+            <input
+              type="number"
+              inputMode="numeric"
+              min="18"
+              max="100"
+              step="1"
+              name="edad"
+              value={form.edad}
+              onChange={handleChange}
+              placeholder="Ej: 35"
+            />
+          </label>
+
+          <label>
+            Numero de cargas
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="10"
+              step="1"
+              name="numero_cargas"
+              value={form.numero_cargas}
+              onChange={handleChange}
+              placeholder="Ej: 0"
             />
           </label>
 
@@ -364,7 +430,7 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
       </div>
 
       <div className="form-actions">
-        <button type="submit" disabled={loading}>Calcular score</button>
+        <button type="submit" disabled={loading || debtExceedsIncome}>Calcular score</button>
         {loading && <span>Calculando...</span>}
       </div>
 
