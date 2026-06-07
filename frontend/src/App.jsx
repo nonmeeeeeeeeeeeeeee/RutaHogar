@@ -15,6 +15,10 @@ import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, getScoringHistory } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
+<<<<<<< HEAD
+=======
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+>>>>>>> b746682e72b1df54369f908918a47c57ca69d24e
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
@@ -135,7 +139,7 @@ export default function App() {
 
       try {
         setDataError("");
-        const storedEvaluations = await getEvaluations(userId);
+        const storedEvaluations = await getEvaluations(userId, profile?.role);
         if (active) setEvaluations(storedEvaluations);
       } catch (err) {
         console.error(err);
@@ -285,6 +289,9 @@ export default function App() {
       recommendations: [...(scoreResult.recommendations || [])],
       ai_explanation: scoreResult.ai_explanation,
       improvement_plan: [...(scoreResult.improvement_plan || [])],
+      positive_indicators: [...(scoreResult.positive_indicators || [])],
+      executive_summary: scoreResult.executive_summary || "",
+      commercial_guidance: scoreResult.commercial_guidance || "",
       algorithm_version: scoreResult.algorithm_version,
       component_scores: scoreResult.component_scores,
     };
