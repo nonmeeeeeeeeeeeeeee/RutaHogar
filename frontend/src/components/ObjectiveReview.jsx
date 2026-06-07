@@ -10,6 +10,7 @@ const timelineLabels = {
 const propertyLabels = {
   departamento: "Departamento",
   casa: "Casa",
+  aun_no_lo_se: "Aun no lo se",
   indiferente: "Indiferente",
 };
 

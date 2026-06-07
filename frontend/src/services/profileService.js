@@ -28,6 +28,8 @@ function normalizeProfile(row) {
     id: row.id,
     user_id: row.id,
     full_name: row.full_name || "",
+    phone: row.phone || "",
+    birth_date: row.birth_date || "",
     role: normalizeRole(row.role),
     onboarding_data: row.onboarding_data || null,
     last_lead_seen_at: row.last_lead_seen_at || null,
@@ -39,12 +41,33 @@ function normalizeProfile(row) {
 export function logSupabaseError(error) {
   if (!error) return;
 
-  console.error("Supabase error:", {
-    message: error.message,
-    details: error.details,
-    hint: error.hint,
-    code: error.code,
+  console.error("Supabase Auth/Profile error:", {
+    message: error?.message,
+    details: error?.details,
+    hint: error?.hint,
+    code: error?.code,
   });
+}
+
+export function normalizePhoneForStorage(phone = "") {
+  const digits = String(phone).replace(/\D/g, "");
+  if (!digits) return "";
+  const withoutCountry = digits.startsWith("56") ? digits.slice(2) : digits;
+  const mobileDigits = withoutCountry.startsWith("9") ? withoutCountry : `9${withoutCountry}`;
+  return `+56${mobileDigits.slice(0, 9)}`;
+}
+
+export function normalizeBirthDateForStorage(birthDate = "") {
+  const value = String(birthDate).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+
+  return "";
 }
 
 export async function getAuthenticatedUser() {
@@ -68,7 +91,7 @@ export async function getCurrentProfile(userId) {
 
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
+    .select("id, full_name, phone, birth_date, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .eq("id", userId)
     .maybeSingle();
 
@@ -79,10 +102,13 @@ export async function getCurrentProfile(userId) {
   return normalizeProfile(data);
 }
 
-export async function upsertProfile(userId, fullName, role = "usuario", onboardingData) {
+export async function upsertProfile(userId, fullName, role = "usuario", onboardingData, contactData = {}) {
+  const phone = normalizePhoneForStorage(contactData.phone || "");
+  const birthDate = normalizeBirthDateForStorage(contactData.birth_date || "");
+
   if (!isUUID(userId)) {
     console.warn("Saltando upsert: ID no es un UUID válido.");
-    return normalizeProfile({ id: userId, full_name: fullName, role });
+    return normalizeProfile({ id: userId, full_name: fullName, role, phone, birth_date: birthDate });
   }
 
   const profile = {
@@ -91,6 +117,8 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
     role: normalizeRole(role),
     onboarding_data: onboardingData || null,
   };
+  if (phone) profile.phone = phone;
+  if (birthDate) profile.birth_date = birthDate;
 
   if (!isSupabaseDataConfigured) {
     return normalizeProfile({ ...profile, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
@@ -99,7 +127,7 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
   const { data, error } = await supabase
     .from("profiles")
     .upsert({ ...profile, updated_at: new Date().toISOString() })
-    .select("id, full_name, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
+    .select("id, full_name, phone, birth_date, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .maybeSingle();
 
   if (error) {
@@ -114,12 +142,34 @@ export async function ensureUserProfile(user) {
     throw new Error("No hay usuario autenticado para sincronizar perfil.");
   }
 
+  const metadataPhone = normalizePhoneForStorage(user.user_metadata?.phone || "");
+  const metadataBirthDate = normalizeBirthDateForStorage(user.user_metadata?.birth_date || "");
   const existingProfile = await getCurrentProfile(user.id);
-  if (existingProfile) return existingProfile;
+  if (existingProfile) {
+    const shouldCompleteContactData =
+      (!existingProfile.phone && metadataPhone) ||
+      (!existingProfile.birth_date && metadataBirthDate);
+
+    if (!shouldCompleteContactData) return existingProfile;
+
+    return upsertProfile(
+      user.id,
+      existingProfile.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "",
+      existingProfile.role || user.user_metadata?.role || "usuario",
+      existingProfile.onboarding_data || null,
+      {
+        phone: existingProfile.phone || metadataPhone,
+        birth_date: existingProfile.birth_date || metadataBirthDate,
+      },
+    );
+  }
 
   const fullName = user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
   const role = normalizeRole(user.user_metadata?.role || "usuario");
-  return upsertProfile(user.id, fullName, role);
+  return upsertProfile(user.id, fullName, role, null, {
+    phone: metadataPhone,
+    birth_date: metadataBirthDate,
+  });
 }
 
 export async function updateLastLeadSeenAt(userId) {

@@ -12,6 +12,7 @@ const objetivoLabels = {
 const propertyLabels = {
   departamento: "Departamento",
   casa: "Casa",
+  aun_no_lo_se: "Aun no lo se",
   indiferente: "Indiferente",
 };
 
@@ -26,7 +27,7 @@ const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Numb
 
 const normalizeOnboarding = (data) => ({
   objetivo_principal: data?.objetivo_principal || "",
-  tipo_propiedad: data?.tipo_propiedad || "",
+  tipo_propiedad: data?.tipo_propiedad === "indiferente" ? "aun_no_lo_se" : data?.tipo_propiedad || "",
   comuna_interes: data?.comuna_interes || "",
   plazo_compra: data?.plazo_compra || "",
   comuna_alternativa: data?.comuna_alternativa || "",
@@ -110,6 +111,14 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
               <dd>{profile?.email || "Sin correo"}</dd>
             </div>
             <div>
+              <dt>Telefono</dt>
+              <dd>{profile?.phone || "Sin telefono"}</dd>
+            </div>
+            <div>
+              <dt>Fecha nacimiento</dt>
+              <dd>{profile?.birth_date ? new Date(`${profile.birth_date}T00:00:00`).toLocaleDateString("es-CL") : "No declarada"}</dd>
+            </div>
+            <div>
               <dt>Rol</dt>
               <dd>{roleLabels[profile?.role] || profile?.role || "Usuario"}</dd>
             </div>
@@ -162,9 +171,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
               Tipo de propiedad
               <select name="tipo_propiedad" value={form.tipo_propiedad} onChange={handleChange}>
                 <option value="">Selecciona una opcion</option>
-                <option value="departamento">Departamento</option>
                 <option value="casa">Casa</option>
-                <option value="indiferente">Indiferente</option>
+                <option value="departamento">Departamento</option>
+                <option value="aun_no_lo_se">Aun no lo se</option>
               </select>
             </label>
 

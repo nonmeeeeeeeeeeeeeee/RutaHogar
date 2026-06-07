@@ -459,12 +459,14 @@ li {
   gap: 16px;
 }
 
-.field-with-warning input {
+.field-with-warning input,
+.field-with-warning select {
   border-color: #b42318;
   background: #fff8f8;
 }
 
-.field-with-warning input:focus {
+.field-with-warning input:focus,
+.field-with-warning select:focus {
   border-color: #b42318;
   outline-color: rgba(180, 35, 24, 0.18);
 }
@@ -476,6 +478,45 @@ li {
   font-size: 0.86rem;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.field-help {
+  display: block;
+  margin-top: 7px;
+  color: #526174;
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.unit-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 94px;
+  gap: 8px;
+  align-items: end;
+}
+
+.unit-input input {
+  margin-top: 7px;
+}
+
+.unit-toggle {
+  min-height: 44px;
+  margin-top: 7px;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+
+.warning-box {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid #f5c27a;
+  border-radius: 8px;
+  background: #fff8eb;
+  color: #8a4b00;
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .check-row {
@@ -879,10 +920,13 @@ li {
 .tracking-footnote {
   margin: 14px 0 0;
   padding: 12px 14px;
-  border: 1px solid #d7e0ea;
+  border: 1px solid #f4d38b;
   border-radius: 8px;
-  background: #fbfdff;
+  background: #fff8e6;
+  color: #7a4b00;
   font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .monthly-plan,
