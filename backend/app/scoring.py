@@ -1,6 +1,8 @@
 from typing import Dict, List
 
 
+SCORING_VERSION = "1.0.0"
+
 # Valor configurable usado para convertir los precios referenciales desde UF a CLP.
 VALOR_UF_CLP = 45408
 
@@ -190,6 +192,13 @@ def calculate_score(data: Dict) -> Dict:
 
     # Base score
     score = 50.0
+    components = {
+        "carga_financiera": 0.0,
+        "estabilidad_laboral": 0.0,
+        "historial_crediticio": 0.0,
+        "pie_disponible": 0.0,
+        "perfil_compra": 0.0,
+    }
     positivos: List[str] = []
     riesgos: List[str] = []
     recomendaciones: List[str] = []
@@ -202,9 +211,11 @@ def calculate_score(data: Dict) -> Dict:
     # Regla: ingreso >= 4x dividendo
     ingreso_cubre_dividendo = ingreso >= 4 * dividendo
     if ingreso >= 4 * dividendo:
+        components["carga_financiera"] += 25
         score += 25
         positivos.append("Ingreso consistente con el dividendo estimado")
     else:
+        components["carga_financiera"] -= 15
         score -= 15
         risk_codes.append("ingreso_dividendo")
         riesgos.append("El dividendo objetivo podria exigir mas holgura financiera.")
@@ -212,6 +223,7 @@ def calculate_score(data: Dict) -> Dict:
 
     # Regla: deuda > 40% ingreso penaliza
     if ingreso > 0 and deuda > 0.4 * ingreso:
+        components["carga_financiera"] -= 20
         score -= 20
         risk_codes.append("deuda_alta")
         riesgos.append("La carga mensual de deudas podria afectar la evaluacion.")
@@ -231,13 +243,16 @@ def calculate_score(data: Dict) -> Dict:
         pie_recomendado_clp = precio_objetivo_clp * 0.20
 
         if ahorro >= pie_recomendado_clp:
+            components["pie_disponible"] += 15
             score += 15
             positivos.append("Ahorro consistente con el objetivo declarado")
         elif ahorro >= pie_minimo_clp:
+            components["pie_disponible"] += 5
             score += 5
             positivos.append("Ahorro inicial disponible")
             recomendaciones.append("Aumentar ahorro para acercarse a una posicion mas solida.")
         else:
+            components["pie_disponible"] -= 20
             score -= 20
             risk_codes.append("ahorro_bajo")
             risk_codes.append("precio_objetivo")
@@ -246,6 +261,7 @@ def calculate_score(data: Dict) -> Dict:
     else:
         # Si no existe referencia de comuna, se conserva una regla simple de respaldo.
         if ahorro < dividendo:
+            components["pie_disponible"] -= 10
             score -= 10
             risk_codes.append("ahorro_bajo")
             riesgos.append("El ahorro disponible podria ser bajo para iniciar el proceso.")
@@ -255,34 +271,41 @@ def calculate_score(data: Dict) -> Dict:
 
     # Tipo de contrato
     if contrato == "indefinido":
+        components["estabilidad_laboral"] += 10
         score += 10
         positivos.append("Contrato indefinido (mayor estabilidad laboral)")
     elif contrato == "independiente":
+        components["estabilidad_laboral"] -= 5
         score -= 5
         risk_codes.append("contrato_independiente")
         riesgos.append("Los ingresos independientes pueden requerir mayor respaldo.")
         recomendaciones.append("Ordenar antecedentes que demuestren estabilidad de ingresos.")
 
     if continuidad == "menos_6_meses":
+        components["estabilidad_laboral"] -= 15
         score -= 15
         risk_codes.append("continuidad_baja")
         riesgos.append("La continuidad laboral declarada podria requerir mayor consolidacion.")
         recomendaciones.append("Mantener estabilidad laboral antes de solicitar una evaluacion formal.")
     elif continuidad == "entre_6_y_12_meses":
+        components["estabilidad_laboral"] -= 8
         score -= 8
         risk_codes.append("continuidad_media")
         riesgos.append("La continuidad laboral aun podria ser un punto a fortalecer.")
         recomendaciones.append("Seguir consolidando antiguedad y estabilidad de ingresos.")
     elif continuidad == "mas_3_anios":
+        components["estabilidad_laboral"] += 5
         score += 5
         positivos.append("Continuidad laboral estable")
 
     if morosidad == "si":
+        components["historial_crediticio"] -= 30
         score -= 30
         risk_codes.append("morosidad_alta")
         riesgos.append("La morosidad declarada es un riesgo relevante para avanzar.")
         recomendaciones.append("Regularizar o aclarar pagos pendientes antes de continuar.")
     elif morosidad == "no_lo_se":
+        components["historial_crediticio"] -= 12
         score -= 12
         risk_codes.append("morosidad_media")
         riesgos.append("Existe incertidumbre sobre la situacion de pagos actual.")
@@ -304,50 +327,59 @@ def calculate_score(data: Dict) -> Dict:
         )
 
         if not co_debtor_has_data:
+            components["perfil_compra"] -= 5
             score -= 5
             risk_codes.append("complemento_sin_datos")
             riesgos.append("Falta informacion detallada del co-deudor para evaluar el riesgo.")
             recomendaciones.append("Completa los datos del co-deudor para una evaluacion mas precisa.")
         else:
             if comp_morosidad == "si":
+                components["perfil_compra"] -= 20
                 score -= 20
                 risk_codes.append("complemento_morosidad_alta")
                 riesgos.append("El co-deudor declara morosidad, lo que representa un riesgo significativo.")
                 recomendaciones.append("Considera un co-deudor sin antecedentes de morosidad.")
             elif comp_morosidad == "no_lo_se":
+                components["perfil_compra"] -= 10
                 score -= 10
                 risk_codes.append("complemento_morosidad_media")
                 riesgos.append("Existe incertidumbre sobre la situacion de pagos del co-deudor.")
                 recomendaciones.append("Confirma la situacion financiera del co-deudor antes de avanzar.")
 
             if comp_ingreso > 0 and comp_deuda > 0.4 * comp_ingreso:
+                components["perfil_compra"] -= 15
                 score -= 15
                 risk_codes.append("complemento_deuda_alta")
                 riesgos.append("El co-deudor tiene una carga de deuda elevada en relacion a sus ingresos.")
                 recomendaciones.append("El co-deudor deberia reducir sus deudas antes de comprometerse.")
 
             if comp_contrato == "independiente":
+                components["perfil_compra"] -= 5
                 score -= 5
                 risk_codes.append("complemento_contrato_independiente")
                 riesgos.append("El co-deudor trabaja independiente, lo que puede sumar incertidumbre.")
                 recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
 
             if comp_continuidad == "menos_6_meses":
+                components["perfil_compra"] -= 10
                 score -= 10
                 risk_codes.append("complemento_continuidad_baja")
                 riesgos.append("El co-deudor tiene baja continuidad laboral.")
                 recomendaciones.append("El co-deudor deberia consolidar su estabilidad laboral.")
             elif comp_continuidad == "entre_6_y_12_meses":
+                components["perfil_compra"] -= 5
                 score -= 5
                 risk_codes.append("complemento_continuidad_media")
                 riesgos.append("El co-deudor tiene continuidad laboral limitada.")
 
             if comp_tarjetas >= 5:
+                components["perfil_compra"] -= 15
                 score -= 15
                 risk_codes.append("complemento_tarjetas_excesivas")
                 riesgos.append("El co-deudor tiene muchas tarjetas de credito activas, lo que puede indicar sobreendeudamiento.")
                 recomendaciones.append("El co-deudor deberia reducir su cantidad de tarjetas activas.")
             elif comp_tarjetas >= 3:
+                components["perfil_compra"] -= 8
                 score -= 8
                 risk_codes.append("complemento_tarjetas_excesivas")
                 riesgos.append("El co-deudor tiene varias tarjetas de credito activas.")
@@ -361,9 +393,11 @@ def calculate_score(data: Dict) -> Dict:
             )
 
             if perfil_limpio:
+                components["perfil_compra"] += 10
                 score += 10
                 positivos.append("El co-deudor presenta un perfil financiero solido")
             else:
+                components["perfil_compra"] += 3
                 score += 3
                 positivos.append("Posibilidad de complementar renta")
 
@@ -393,6 +427,8 @@ def calculate_score(data: Dict) -> Dict:
         "risks": _unique(riesgos),
         "recommendations": _unique(recomendaciones),
         "risk_codes": _unique(risk_codes),
+        "component_scores": {k: round(v, 1) for k, v in components.items()},
+        "algorithm_version": SCORING_VERSION,
     }
 
     result["ai_explanation"] = generate_ai_explanation(result, data)

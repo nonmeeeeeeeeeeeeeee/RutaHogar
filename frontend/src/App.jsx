@@ -12,7 +12,7 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, getScoringHistory } from "./services/evaluationService";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
@@ -28,6 +28,16 @@ const plazoLabels = {
 };
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
+
+function getChannel() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const validChannels = ['web', 'chatbot', 'whatsapp', 'vendedor'];
+    const channel = params.get('channel');
+    if (channel && validChannels.includes(channel)) return channel;
+  } catch {}
+  return 'web';
+}
 
 const futureModules = [
   {
@@ -79,6 +89,7 @@ export default function App() {
     }
   });
   const [evaluations, setEvaluations] = useState([]);
+  const [scoringHistory, setScoringHistory] = useState([]);
   const [consentGranted, setConsentGranted] = useState(() => {
     const local = getConsent(null);
     return local?.granted === true;
@@ -115,6 +126,21 @@ export default function App() {
     }
 
     loadEvaluations();
+
+    async function loadScoringHistory() {
+      if (!userId) {
+        setScoringHistory([]);
+        return;
+      }
+      try {
+        const storedHistory = await getScoringHistory(userId);
+        if (active) setScoringHistory(storedHistory);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadScoringHistory();
+
     return () => {
       active = false;
     };
@@ -237,6 +263,8 @@ export default function App() {
       recommendations: [...(scoreResult.recommendations || [])],
       ai_explanation: scoreResult.ai_explanation,
       improvement_plan: [...(scoreResult.improvement_plan || [])],
+      algorithm_version: scoreResult.algorithm_version,
+      component_scores: scoreResult.component_scores,
     };
 
     const financialInput = {
@@ -271,10 +299,14 @@ export default function App() {
         onboarding: userOnboarding ? { ...userOnboarding } : null,
         input: financialInput,
         result: resultSnapshot,
+        channel: getChannel(),
       });
 
       setResultSaved(true);
-      setEvaluations((prev) => [savedEvaluation, ...prev.filter((item) => item.id !== savedEvaluation.id)].slice(0, 25));
+      setEvaluations((prev) => {
+        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
+        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
+      });
     } catch (err) {
       console.error(err);
       setResultSaved(false);
@@ -462,6 +494,7 @@ export default function App() {
           profile={profile}
           onboarding={userOnboarding}
           evaluations={userEvaluations}
+          scoringHistory={scoringHistory}
           onSaveOnboarding={handleProfileOnboardingSave}
           onDeleteEvaluation={deleteEvaluation}
         />

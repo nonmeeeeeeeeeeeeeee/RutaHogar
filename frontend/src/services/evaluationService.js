@@ -2,6 +2,19 @@ import { supabase } from "../utils/supabase";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 
 const EVALUATIONS_KEY = "scoreleads_evaluations";
+const SCORING_HISTORY_KEY = "scoreleads_scoring_history";
+
+function readLocalScoringHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(SCORING_HISTORY_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalScoringHistory(history) {
+  localStorage.setItem(SCORING_HISTORY_KEY, JSON.stringify(history));
+}
 
 function readLocalEvaluations() {
   try {
@@ -32,7 +45,7 @@ function normalizeEvaluation(row) {
 
   return {
     id: row.id,
-    created_at: row.created_at,
+    created_at: row.created_at || new Date().toISOString(),
     email: row.email,
     user_id: row.user_id,
     onboarding,
@@ -56,6 +69,7 @@ function buildRow(userId, evaluationPayload) {
     user_id: userId,
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
+    created_at: new Date().toISOString(),
     objective: onboarding.objetivo_principal || null,
     property_type: onboarding.tipo_propiedad || null,
     target_commune: onboarding.comuna_interes || evaluationPayload.input?.comuna_objetivo || null,
@@ -68,6 +82,20 @@ function buildRow(userId, evaluationPayload) {
       risks: result.risks || [],
       improvement_plan: result.improvement_plan || [],
     },
+  };
+}
+
+function buildScoringHistoryRow(userId, evaluationId, evaluationPayload) {
+  const result = evaluationPayload.result || {};
+  return {
+    evaluation_id: evaluationId,
+    user_id: userId,
+    score: Math.round(Number(result.score) || 0),
+    classification: result.classification,
+    snapshot: JSON.parse(JSON.stringify(evaluationPayload.input || {})),
+    component_scores: result.component_scores || {},
+    algorithm_version: result.algorithm_version || "",
+    channel: evaluationPayload.channel || "web",
   };
 }
 
@@ -100,6 +128,15 @@ export async function createEvaluation(userId, evaluationPayload) {
     };
     const next = [entry, ...readLocalEvaluations()].slice(0, 25);
     writeLocalEvaluations(next);
+
+    const historyEntry = {
+      ...buildScoringHistoryRow(userId, entry.id, evaluationPayload),
+      id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
+      created_at: new Date().toISOString(),
+    };
+    const historyNext = [historyEntry, ...readLocalScoringHistory()].slice(0, 25);
+    writeLocalScoringHistory(historyNext);
+
     return entry;
   }
 
@@ -119,6 +156,16 @@ export async function createEvaluation(userId, evaluationPayload) {
     logSupabaseError(error);
     throw error;
   }
+
+  const historyRow = buildScoringHistoryRow(user.id, data.id, evaluationPayload);
+  const { error: historyError } = await supabase
+    .from("scoring_history")
+    .insert(historyRow);
+
+  if (historyError) {
+    logSupabaseError(historyError);
+  }
+
   return normalizeEvaluation(data);
 }
 
@@ -169,6 +216,43 @@ export async function getLatestEvaluation(userId) {
     throw error;
   }
   return normalizeEvaluation(data);
+}
+
+const scoringHistorySelectColumns = [
+  "id",
+  "evaluation_id",
+  "user_id",
+  "score",
+  "classification",
+  "snapshot",
+  "component_scores",
+  "algorithm_version",
+  "channel",
+  "created_at",
+].join(", ");
+
+export async function getScoringHistory(userId) {
+  if (!isSupabaseDataConfigured) {
+    return readLocalScoringHistory().filter((item) => item.user_id === userId || item.email === userId);
+  }
+
+  const user = await getAuthenticatedUser();
+  if (!user?.id) {
+    throw new Error("No hay usuario autenticado para cargar el historial.");
+  }
+  await ensureUserProfile(user);
+
+  const { data, error } = await supabase
+    .from("scoring_history")
+    .select(scoringHistorySelectColumns)
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
+  return data || [];
 }
 
 export async function deleteEvaluation(evaluationId, userId) {

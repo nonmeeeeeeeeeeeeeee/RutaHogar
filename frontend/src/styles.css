@@ -730,6 +730,51 @@ li {
   margin-top: 6px;
 }
 
+.component-scores ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.component-scores li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.component-label {
+  text-transform: capitalize;
+  color: #475569;
+}
+
+.component-scores .positive {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.component-scores .negative {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.score-badge-wrap.score-high {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.score-badge-wrap.score-medium {
+  background: #fff7e6;
+  color: #9a5b00;
+}
+
+.score-badge-wrap.score-low {
+  background: #fff1f1;
+  color: #b42318;
+}
+
 .tracking-panel {
   display: grid;
   gap: 4px;

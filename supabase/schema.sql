@@ -1,6 +1,6 @@
 -- ScoreLeads MVP schema.
 -- Ejecutar en Supabase SQL Editor o como migracion inicial.
--- Mantiene solo las tablas del MVP: profiles, evaluations, improvement_goals.
+-- Tablas del MVP: profiles, evaluations, improvement_goals, scoring_history.
 
 create extension if not exists pgcrypto;
 
@@ -74,6 +74,33 @@ create table if not exists public.improvement_goals (
 alter table public.improvement_goals
 add column if not exists progress_data jsonb;
 
+alter table public.scoring_history
+add column if not exists algorithm_version text,
+add column if not exists channel text;
+
+alter table public.scoring_history
+alter column algorithm_version set not null,
+alter column channel set not null;
+
+create table if not exists public.scoring_history (
+  id uuid primary key default gen_random_uuid(),
+  evaluation_id uuid not null references public.evaluations(id) on delete restrict,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  score integer not null,
+  classification text not null,
+  snapshot jsonb not null,
+  component_scores jsonb not null,
+  algorithm_version text not null,
+  channel text not null,
+  created_at timestamptz not null default now(),
+  constraint scoring_history_score_check check (score between 0 and 100),
+  constraint scoring_history_classification_check check (classification in ('Alto', 'Medio', 'Bajo')),
+  constraint scoring_history_channel_check check (channel in ('web', 'chatbot', 'whatsapp', 'vendedor'))
+);
+
+create index if not exists scoring_history_user_created_idx
+  on public.scoring_history (user_id, created_at desc);
+
 create index if not exists evaluations_user_created_idx
   on public.evaluations (user_id, created_at desc);
 
@@ -93,6 +120,7 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 alter table public.evaluations enable row level security;
 alter table public.improvement_goals enable row level security;
+alter table public.scoring_history enable row level security;
 
 drop policy if exists "Profiles select own" on public.profiles;
 create policy "Profiles select own"
@@ -155,3 +183,21 @@ create policy "Improvement goals delete own"
 on public.improvement_goals
 for delete
 using (auth.uid() = user_id::uuid);
+
+drop policy if exists "Scoring history insert own" on public.scoring_history;
+create policy "Scoring history insert own"
+on public.scoring_history
+for insert
+with check (auth.uid() = user_id::uuid);
+
+drop policy if exists "Scoring history select own" on public.scoring_history;
+create policy "Scoring history select own"
+on public.scoring_history
+for select
+using (auth.uid() = user_id::uuid);
+
+-- Migracion: endurecer FK para evitar borrado en cascada del historial inmutable.
+alter table public.scoring_history
+  drop constraint if exists scoring_history_evaluation_id_fkey,
+  add constraint scoring_history_evaluation_id_fkey
+    foreign key (evaluation_id) references public.evaluations(id) on delete restrict;

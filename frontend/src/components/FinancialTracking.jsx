@@ -3,6 +3,14 @@ import { buildFinancialTracking, goalStatuses } from "../services/financialTrack
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : "Sin score");
 
+const scoreColorClass = (score) => {
+  const n = Number(score);
+  if (!Number.isFinite(n)) return "";
+  if (n >= 60) return "score-high";
+  if (n <= 40) return "score-low";
+  return "score-medium";
+};
+
 export default function FinancialTracking({
   evaluation,
   goals = [],
@@ -45,7 +53,7 @@ export default function FinancialTracking({
       </div>
 
       <div className="tracking-summary">
-        <div className="score-badge-wrap">
+        <div className={`score-badge-wrap ${scoreColorClass(tracking.score)}`}>
           <span>Score actual</span>
           <strong>{formatScore(tracking.score)}</strong>
           <small>{tracking.classification}</small>
