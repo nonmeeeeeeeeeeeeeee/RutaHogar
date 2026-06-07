@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
-from groq import Groq
+
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
  
 
 _env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -12,11 +16,14 @@ if _env_path.exists():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
  
-_client = Groq()
+_client = Groq() if Groq else None
 
 
 def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
     """Wrapper interno que llama a llama-3.1-8b-instant vía Groq."""
+    if _client is None:
+        return "Resumen IA no disponible en entorno local."
+
     try:
         completion = _client.chat.completions.create(
             model="llama-3.1-8b-instant",

@@ -19,23 +19,26 @@ class ScoreRequest(BaseModel):
     ingreso_mensual: float
     deuda_mensual: float
     edad: int
-    numero_cargas: int
     ahorro_disponible: float
+    property_value: Optional[float] = None
+    property_value_unit: Optional[str] = None
+    property_value_uf: Optional[float] = None
+    property_value_clp: Optional[float] = None
+    plazo_credito_hipotecario: int
     tipo_contrato: str  # 'indefinido', 'plazo_fijo', 'independiente'
     continuidad_laboral: str
     morosidad_actual: str
+    monto_morosidad: Optional[float] = None
+    antiguedad_morosidad: Optional[str] = None
     comuna_objetivo: Optional[str] = None
     dividendo_estimado: float
     complemento_renta: bool = False
-    complemento_nombre: Optional[str] = None
-    complemento_monto: Optional[float] = None
-    complemento_relacion: Optional[str] = None
-    complemento_ingreso_mensual: Optional[float] = None
-    complemento_deuda_mensual: Optional[float] = None
-    complemento_morosidad: Optional[str] = None
-    complemento_tipo_contrato: Optional[str] = None
-    complemento_continuidad_laboral: Optional[str] = None
-    complemento_tarjetas_activas: Optional[int] = None
+    ingreso_mensual_complementario: Optional[float] = None
+    deuda_mensual_complementario: Optional[float] = None
+    tipo_contrato_complementario: Optional[str] = None
+    continuidad_laboral_complementario: Optional[str] = None
+    morosidad_complementario: Optional[str] = None
+    relacion_complementario: Optional[str] = None
     consentimiento: bool
 
     @field_validator("ingreso_mensual")
@@ -52,6 +55,13 @@ class ScoreRequest(BaseModel):
             raise ValueError("El valor no puede ser negativo")
         return value
 
+    @field_validator("property_value", "property_value_uf", "property_value_clp", "monto_morosidad")
+    @classmethod
+    def validate_optional_non_negative(cls, value):
+        if value is not None and value < 0:
+            raise ValueError("El valor no puede ser negativo")
+        return value
+
     @field_validator("edad")
     @classmethod
     def validate_age(cls, value):
@@ -59,17 +69,17 @@ class ScoreRequest(BaseModel):
             raise ValueError("La edad debe estar entre 18 y 100")
         return value
 
-    @field_validator("numero_cargas")
+    @field_validator("plazo_credito_hipotecario")
     @classmethod
-    def validate_dependents(cls, value):
-        if value < 0 or value > 10:
-            raise ValueError("El numero de cargas debe estar entre 0 y 10")
+    def validate_mortgage_term(cls, value):
+        if value not in {10, 15, 20, 25, 30}:
+            raise ValueError("Plazo de credito hipotecario invalido")
         return value
 
     @field_validator("tipo_contrato")
     @classmethod
     def validate_contract_type(cls, value):
-        allowed = {"indefinido", "plazo_fijo", "independiente"}
+        allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
         if value not in allowed:
             raise ValueError("Tipo de contrato invalido")
         return value
@@ -85,9 +95,25 @@ class ScoreRequest(BaseModel):
     @field_validator("morosidad_actual")
     @classmethod
     def validate_current_delinquency(cls, value):
-        allowed = {"si", "no", "no_lo_se"}
+        allowed = {"si", "no"}
         if value not in allowed:
             raise ValueError("Morosidad actual invalida")
+        return value
+
+    @field_validator("antiguedad_morosidad")
+    @classmethod
+    def validate_delinquency_age(cls, value):
+        if value is not None:
+            allowed = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
+            if value not in allowed:
+                raise ValueError("Antiguedad de morosidad invalida")
+        return value
+
+    @field_validator("property_value_unit")
+    @classmethod
+    def validate_property_value_unit(cls, value):
+        if value is not None and value not in {"uf", "clp"}:
+            raise ValueError("Unidad de monto de vivienda invalida")
         return value
 
     @field_validator("consentimiento")
@@ -97,46 +123,32 @@ class ScoreRequest(BaseModel):
             raise ValueError("El consentimiento es obligatorio")
         return value
 
-    @field_validator("complemento_monto")
-    @classmethod
-    def validate_complement_amount(cls, value):
-        if value is not None and value < 0:
-            raise ValueError("El complemento de renta no puede ser negativo")
-        return value
-
-    @field_validator("complemento_ingreso_mensual", "complemento_deuda_mensual")
+    @field_validator("ingreso_mensual_complementario", "deuda_mensual_complementario")
     @classmethod
     def validate_complement_non_negative(cls, value):
         if value is not None and value < 0:
             raise ValueError("Los valores del co-deudor no pueden ser negativos")
         return value
 
-    @field_validator("complemento_tarjetas_activas")
-    @classmethod
-    def validate_complement_cards(cls, value):
-        if value is not None and value < 0:
-            raise ValueError("Las tarjetas activas no pueden ser negativas")
-        return value
-
-    @field_validator("complemento_morosidad")
+    @field_validator("morosidad_complementario")
     @classmethod
     def validate_complement_delinquency(cls, value):
         if value is not None:
-            allowed = {"si", "no", "no_lo_se"}
+            allowed = {"si", "no"}
             if value not in allowed:
                 raise ValueError("Morosidad del co-deudor invalida")
         return value
 
-    @field_validator("complemento_tipo_contrato")
+    @field_validator("tipo_contrato_complementario")
     @classmethod
     def validate_complement_contract(cls, value):
         if value is not None:
-            allowed = {"indefinido", "plazo_fijo", "independiente"}
+            allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
             if value not in allowed:
                 raise ValueError("Tipo de contrato del co-deudor invalido")
         return value
 
-    @field_validator("complemento_continuidad_laboral")
+    @field_validator("continuidad_laboral_complementario")
     @classmethod
     def validate_complement_continuity(cls, value):
         if value is not None:
@@ -145,27 +157,25 @@ class ScoreRequest(BaseModel):
                 raise ValueError("Continuidad laboral del co-deudor invalida")
         return value
 
+    @field_validator("relacion_complementario")
+    @classmethod
+    def validate_complement_relation(cls, value):
+        if value is not None:
+            allowed = {
+                "conyuge", "pareja_conviviente", "pareja_hijos_comun", "padre_madre",
+                "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
+            }
+            if value not in allowed:
+                raise ValueError("Relacion del complemento de renta invalida")
+        return value
+
     @model_validator(mode="after")
-    def validate_complement_details(self):
-        if self.complemento_renta:
-            if not self.complemento_nombre:
-                raise ValueError("Debe indicar el nombre del complemento de renta")
-            if self.complemento_monto is None:
-                raise ValueError("Debe indicar el monto del complemento de renta")
-            if not self.complemento_relacion:
-                raise ValueError("Debe indicar la relacion del complemento de renta")
-            if self.complemento_ingreso_mensual is None:
-                raise ValueError("Debe indicar el ingreso mensual del co-deudor")
-            if self.complemento_deuda_mensual is None:
-                raise ValueError("Debe indicar la deuda mensual del co-deudor")
-            if not self.complemento_morosidad:
-                raise ValueError("Debe indicar la morosidad del co-deudor")
-            if not self.complemento_tipo_contrato:
-                raise ValueError("Debe indicar el tipo de contrato del co-deudor")
-            if not self.complemento_continuidad_laboral:
-                raise ValueError("Debe indicar la continuidad laboral del co-deudor")
-            if self.complemento_tarjetas_activas is None:
-                raise ValueError("Debe indicar las tarjetas de credito activas del co-deudor")
+    def validate_conditional_fields(self):
+        if self.morosidad_actual == "si":
+            if self.monto_morosidad is None or self.monto_morosidad <= 0:
+                raise ValueError("Debe indicar el monto de morosidad")
+            if not self.antiguedad_morosidad:
+                raise ValueError("Debe indicar la antiguedad de morosidad")
         return self
 
 

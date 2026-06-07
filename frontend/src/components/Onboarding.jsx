@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { comunasMvp } from "../constants/comunas";
 
+const normalizePropertyType = (value) => (value === "indiferente" ? "aun_no_lo_se" : value || "");
+
 export default function Onboarding({ initialData, onComplete }) {
   const [form, setForm] = useState({
     objetivo_principal: initialData?.objetivo_principal || "",
-    tipo_propiedad: initialData?.tipo_propiedad || "",
+    tipo_propiedad: normalizePropertyType(initialData?.tipo_propiedad),
     comuna_interes: initialData?.comuna_interes || "",
     plazo_compra: initialData?.plazo_compra || "",
     comuna_alternativa: initialData?.comuna_alternativa || "",
@@ -74,9 +76,9 @@ export default function Onboarding({ initialData, onComplete }) {
             Que tipo de propiedad te interesa?
             <select name="tipo_propiedad" value={form.tipo_propiedad} onChange={handleChange}>
               <option value="">Selecciona una opcion</option>
-              <option value="departamento">Departamento</option>
               <option value="casa">Casa</option>
-              <option value="indiferente">Indiferente</option>
+              <option value="departamento">Departamento</option>
+              <option value="aun_no_lo_se">Aun no lo se</option>
             </select>
           </label>
 

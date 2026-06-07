@@ -6,7 +6,7 @@ from .ai import (
 
 
 # Valor configurable usado para convertir los precios referenciales desde UF a CLP.
-VALOR_UF_CLP = 45408
+VALOR_UF_CLP = 40695
 
 # Tabla simple para el MVP. Representa precios promedio referenciales de propiedades
 # objetivo por comuna, no tasaciones reales ni valores comerciales garantizados.
@@ -93,7 +93,11 @@ def generate_ai_explanation(score_result: Dict, user_data: Dict) -> str:
         messages.append("consolidar mayor continuidad laboral")
     if "ingreso_dividendo" in risks or "precio_objetivo" in risks:
         messages.append("ajustar tus expectativas de compra o dividendo")
-    if "contrato_independiente" in risks:
+    if "contrato_plazo_fijo" in risks:
+        messages.append("revisar estabilidad contractual antes de iniciar una evaluacion formal")
+    elif "contrato_honorarios_variable" in risks:
+        messages.append("respaldar ingresos variables con antecedentes consistentes")
+    elif "contrato_independiente" in risks:
         messages.append("respaldar mejor la estabilidad de tus ingresos")
 
     if "complemento_morosidad_alta" in risks:
@@ -109,6 +113,9 @@ def generate_ai_explanation(score_result: Dict, user_data: Dict) -> str:
 
     if "complemento_continuidad_baja" in risks or "complemento_continuidad_media" in risks:
         messages.append("consolidar la continuidad laboral del co-deudor")
+
+    if "complemento_relacion_debil" in risks:
+        messages.append("validar si la relacion del complemento sera aceptada formalmente")
 
     if "complemento_sin_datos" in risks:
         messages.append("completar la informacion del co-deudor")
@@ -145,7 +152,11 @@ def generate_improvement_plan(score_result: Dict, user_data: Dict) -> List[str]:
     else:
         plan.append("Evita tomar nuevas deudas de consumo mientras preparas tu compra.")
 
-    if "continuidad_baja" in risks or "continuidad_media" in risks or "contrato_independiente" in risks:
+    if "contrato_plazo_fijo" in risks:
+        plan.append("Evalua fortalecer tu estabilidad contractual antes de iniciar una evaluacion hipotecaria formal.")
+    elif "contrato_honorarios_variable" in risks:
+        plan.append("Ordena respaldos de ingresos variables, boletas, contratos o movimientos consistentes.")
+    elif "continuidad_baja" in risks or "continuidad_media" in risks or "contrato_independiente" in risks:
         plan.append("Mantén continuidad laboral y ordena respaldos simples de ingresos, especialmente si trabajas independiente.")
     else:
         plan.append("Conserva estabilidad laboral y evita cambios bruscos de fuente de ingreso durante la preparacion.")
@@ -170,6 +181,9 @@ def generate_improvement_plan(score_result: Dict, user_data: Dict) -> List[str]:
     if "complemento_contrato_independiente" in risks:
         plan.append("Ordena antecedentes de ingresos del co-deudor si trabaja independiente.")
 
+    if "complemento_relacion_debil" in risks:
+        plan.append("Valida con anticipacion si la relacion declarada para complementar renta sera aceptada en una evaluacion formal.")
+
     if "complemento_sin_datos" in risks:
         plan.append("Completa toda la informacion del co-deudor para una evaluacion precisa.")
 
@@ -188,9 +202,16 @@ def calculate_score(data: Dict) -> Dict:
     contrato = data.get("tipo_contrato", "")
     continuidad = data.get("continuidad_laboral", "")
     morosidad = data.get("morosidad_actual", "")
+    antiguedad_morosidad = data.get("antiguedad_morosidad", "")
     comuna = data.get("comuna_objetivo")
     dividendo = float(data.get("dividendo_estimado", 0) or 0)
     complemento = bool(data.get("complemento_renta", False))
+    comp_ingreso = float(data.get("ingreso_mensual_complementario", data.get("complemento_ingreso_mensual", 0)) or 0)
+    comp_deuda = float(data.get("deuda_mensual_complementario", data.get("complemento_deuda_mensual", 0)) or 0)
+    comp_morosidad = data.get("morosidad_complementario", data.get("complemento_morosidad", ""))
+    comp_contrato = data.get("tipo_contrato_complementario", data.get("complemento_tipo_contrato", ""))
+    comp_continuidad = data.get("continuidad_laboral_complementario", data.get("complemento_continuidad_laboral", ""))
+    comp_relacion = data.get("relacion_complementario", data.get("complemento_relacion", ""))
 
     # Base score
     score = 50.0
@@ -198,14 +219,30 @@ def calculate_score(data: Dict) -> Dict:
     riesgos: List[str] = []
     recomendaciones: List[str] = []
     risk_codes: List[str] = []
+    relaciones_debiles = {"amigo", "otro"}
+    complemento_completo = (
+        comp_ingreso > 0
+        and comp_deuda >= 0
+        and bool(comp_morosidad)
+        and bool(comp_contrato)
+        and bool(comp_continuidad)
+        and bool(comp_relacion)
+    )
+    complemento_valido_para_capacidad = (
+        complemento
+        and complemento_completo
+        and comp_morosidad == "no"
+        and comp_relacion not in relaciones_debiles
+    )
+    ingreso_para_capacidad = ingreso + (comp_ingreso if complemento_valido_para_capacidad else 0)
 
     # Evitar división por cero
     if dividendo <= 0:
         dividendo = 1.0
 
-    # Regla: ingreso >= 4x dividendo
-    ingreso_cubre_dividendo = ingreso >= 4 * dividendo
-    if ingreso >= 4 * dividendo:
+    # Regla de holgura frente al dividendo estimado.
+    ingreso_cubre_dividendo = ingreso_para_capacidad >= 4 * dividendo
+    if ingreso_cubre_dividendo:
         score += 25
         positivos.append("Ingreso consistente con el dividendo estimado")
     else:
@@ -223,14 +260,15 @@ def calculate_score(data: Dict) -> Dict:
     else:
         positivos.append("Carga de deuda aceptable")
 
-    # Evaluacion de precio objetivo y pie segun comuna.
+    # Evaluacion de precio objetivo y pie segun valor declarado o comuna.
+    property_value_clp = float(data.get("property_value_clp", 0) or 0)
     precio_referencia_uf = PRECIOS_REFERENCIA_UF.get(comuna)
     precio_objetivo_clp = 0.0
     pie_minimo_clp = 0.0
     pie_recomendado_clp = 0.0
 
-    if precio_referencia_uf:
-        precio_objetivo_clp = precio_referencia_uf * VALOR_UF_CLP
+    if property_value_clp > 0 or precio_referencia_uf:
+        precio_objetivo_clp = property_value_clp if property_value_clp > 0 else precio_referencia_uf * VALOR_UF_CLP
         pie_minimo_clp = precio_objetivo_clp * 0.10
         pie_recomendado_clp = precio_objetivo_clp * 0.20
 
@@ -260,12 +298,26 @@ def calculate_score(data: Dict) -> Dict:
     # Tipo de contrato
     if contrato == "indefinido":
         score += 10
-        positivos.append("Contrato indefinido (mayor estabilidad laboral)")
+        positivos.append("Contrato indefinido favorable para una evaluacion formal")
     elif contrato == "independiente":
-        score -= 5
-        risk_codes.append("contrato_independiente")
-        riesgos.append("Los ingresos independientes pueden requerir mayor respaldo.")
-        recomendaciones.append("Ordenar antecedentes que demuestren estabilidad de ingresos.")
+        if continuidad in ("entre_1_y_3_anios", "mas_3_anios"):
+            positivos.append("Ingreso independiente con continuidad declarada")
+            recomendaciones.append("Mantener respaldos consistentes de ingresos independientes.")
+        else:
+            score -= 5
+            risk_codes.append("contrato_independiente")
+            riesgos.append("Los ingresos independientes pueden requerir mayor respaldo de continuidad.")
+            recomendaciones.append("Ordenar antecedentes que demuestren estabilidad de ingresos.")
+    elif contrato == "plazo_fijo":
+        score -= 18
+        risk_codes.append("contrato_plazo_fijo")
+        riesgos.append("El contrato a plazo fijo puede dificultar una evaluacion hipotecaria formal.")
+        recomendaciones.append("Fortalecer estabilidad contractual antes de avanzar.")
+    elif contrato == "honorarios_variable":
+        score -= 10
+        risk_codes.append("contrato_honorarios_variable")
+        riesgos.append("Los ingresos por honorarios o variables pueden requerir mayor respaldo.")
+        recomendaciones.append("Ordenar antecedentes que demuestren continuidad y consistencia de ingresos.")
 
     if continuidad == "menos_6_meses":
         score -= 15
@@ -282,7 +334,10 @@ def calculate_score(data: Dict) -> Dict:
         positivos.append("Continuidad laboral estable")
 
     if morosidad == "si":
-        score -= 30
+        if antiguedad_morosidad in {"menos_3_meses", "3_a_12_meses"}:
+            score -= 35
+        else:
+            score -= 25
         risk_codes.append("morosidad_alta")
         riesgos.append("La morosidad declarada es un riesgo relevante para avanzar.")
         recomendaciones.append("Regularizar o aclarar pagos pendientes antes de continuar.")
@@ -294,35 +349,23 @@ def calculate_score(data: Dict) -> Dict:
 
     # Complemento de renta con evaluacion completa del co-deudor
     if complemento:
-        comp_ingreso = float(data.get("complemento_ingreso_mensual", 0) or 0)
-        comp_deuda = float(data.get("complemento_deuda_mensual", 0) or 0)
-        comp_morosidad = data.get("complemento_morosidad", "")
-        comp_contrato = data.get("complemento_tipo_contrato", "")
-        comp_continuidad = data.get("complemento_continuidad_laboral", "")
-        comp_tarjetas = int(data.get("complemento_tarjetas_activas", 0) or 0)
-
-        co_debtor_has_data = (
-            comp_ingreso > 0 or comp_deuda > 0
-            or comp_morosidad or comp_contrato
-            or comp_continuidad or comp_tarjetas > 0
-        )
-
-        if not co_debtor_has_data:
+        if not complemento_completo:
             score -= 5
             risk_codes.append("complemento_sin_datos")
             riesgos.append("Falta informacion detallada del co-deudor para evaluar el riesgo.")
-            recomendaciones.append("Completa los datos del co-deudor para una evaluacion mas precisa.")
+            recomendaciones.append("Completa los datos del co-deudor antes de considerarlo como apoyo de renta.")
         else:
             if comp_morosidad == "si":
                 score -= 20
                 risk_codes.append("complemento_morosidad_alta")
-                riesgos.append("El co-deudor declara morosidad, lo que representa un riesgo significativo.")
-                recomendaciones.append("Considera un co-deudor sin antecedentes de morosidad.")
-            elif comp_morosidad == "no_lo_se":
-                score -= 10
-                risk_codes.append("complemento_morosidad_media")
-                riesgos.append("Existe incertidumbre sobre la situacion de pagos del co-deudor.")
-                recomendaciones.append("Confirma la situacion financiera del co-deudor antes de avanzar.")
+                riesgos.append("La persona complementaria declara morosidad, por lo que no mejora esta preevaluacion.")
+                recomendaciones.append("Considera complementar renta con una persona sin morosidad declarada.")
+
+            if comp_relacion in relaciones_debiles:
+                score -= 5
+                risk_codes.append("complemento_relacion_debil")
+                riesgos.append("La relacion declarada para complementar renta podria requerir mayor respaldo.")
+                recomendaciones.append("Valida si esa relacion seria aceptada en una evaluacion hipotecaria formal.")
 
             if comp_ingreso > 0 and comp_deuda > 0.4 * comp_ingreso:
                 score -= 15
@@ -331,10 +374,21 @@ def calculate_score(data: Dict) -> Dict:
                 recomendaciones.append("El co-deudor deberia reducir sus deudas antes de comprometerse.")
 
             if comp_contrato == "independiente":
-                score -= 5
-                risk_codes.append("complemento_contrato_independiente")
-                riesgos.append("El co-deudor trabaja independiente, lo que puede sumar incertidumbre.")
-                recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
+                if comp_continuidad in ("entre_1_y_3_anios", "mas_3_anios"):
+                    recomendaciones.append("Respaldar ingresos independientes del co-deudor con antecedentes formales.")
+                else:
+                    score -= 5
+                    risk_codes.append("complemento_contrato_independiente")
+                    riesgos.append("El co-deudor trabaja independiente con continuidad aun limitada.")
+                    recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
+            elif comp_contrato == "plazo_fijo":
+                score -= 10
+                risk_codes.append("complemento_contrato_plazo_fijo")
+                riesgos.append("El contrato a plazo fijo del co-deudor puede limitar su aporte a la evaluacion.")
+            elif comp_contrato == "honorarios_variable":
+                score -= 6
+                risk_codes.append("complemento_contrato_variable")
+                riesgos.append("Los ingresos variables del co-deudor pueden requerir mayor respaldo.")
 
             if comp_continuidad == "menos_6_meses":
                 score -= 10
@@ -346,30 +400,20 @@ def calculate_score(data: Dict) -> Dict:
                 risk_codes.append("complemento_continuidad_media")
                 riesgos.append("El co-deudor tiene continuidad laboral limitada.")
 
-            if comp_tarjetas >= 5:
-                score -= 15
-                risk_codes.append("complemento_tarjetas_excesivas")
-                riesgos.append("El co-deudor tiene muchas tarjetas de credito activas, lo que puede indicar sobreendeudamiento.")
-                recomendaciones.append("El co-deudor deberia reducir su cantidad de tarjetas activas.")
-            elif comp_tarjetas >= 3:
-                score -= 8
-                risk_codes.append("complemento_tarjetas_excesivas")
-                riesgos.append("El co-deudor tiene varias tarjetas de credito activas.")
-
             perfil_limpio = (
                 comp_morosidad == "no"
                 and (comp_ingreso <= 0 or comp_deuda <= 0.4 * comp_ingreso)
                 and comp_contrato == "indefinido"
                 and comp_continuidad in ("entre_1_y_3_anios", "mas_3_anios")
-                and comp_tarjetas < 3
+                and comp_relacion not in relaciones_debiles
             )
 
             if perfil_limpio:
                 score += 10
                 positivos.append("El co-deudor presenta un perfil financiero solido")
-            else:
+            elif complemento_valido_para_capacidad and "complemento_deuda_alta" not in risk_codes:
                 score += 3
-                positivos.append("Posibilidad de complementar renta")
+                positivos.append("Complemento de renta con antecedentes basicos utilizables")
 
     # Normalización y límites
     score = clamp(score)

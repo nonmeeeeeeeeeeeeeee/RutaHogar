@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import axios from "axios";
 import { getLocalConsent } from "../services/profileService";
+
+const UF_VALUE_CLP = 40695;
+const mortgageTerms = [10, 15, 20, 25, 30];
+const buyerObjectives = new Set(["comprar_ahora", "prepararme", "evaluar_capacidad"]);
+const weakComplementRelations = new Set(["amigo", "otro"]);
 
 const consent = getLocalConsent();
 const consentDate = consent?.timestamp
@@ -11,29 +16,70 @@ const consentDate = consent?.timestamp
     })
   : null;
 
-export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
+function calculateAge(birthDate) {
+  if (!birthDate) return null;
+  const birth = new Date(`${birthDate}T00:00:00`);
+  if (Number.isNaN(birth.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const hasBirthdayPassed =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
+  if (!hasBirthdayPassed) age -= 1;
+  return age;
+}
+
+function roundCurrency(value) {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function buildPropertyValues(value, unit) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return {
+      property_value: undefined,
+      property_value_unit: unit,
+      property_value_uf: undefined,
+      property_value_clp: undefined,
+    };
+  }
+
+  const valueUf = unit === "uf" ? numericValue : numericValue / UF_VALUE_CLP;
+  const valueClp = unit === "clp" ? numericValue : numericValue * UF_VALUE_CLP;
+
+  return {
+    property_value: numericValue,
+    property_value_unit: unit,
+    property_value_uf: roundCurrency(valueUf),
+    property_value_clp: Math.round(valueClp),
+  };
+}
+
+export default function ScoreForm({ targetCommune, objective, birthDate, onResult, onViewConsent }) {
   const debtIncomeMessage =
     "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
+  const declaredAge = useMemo(() => calculateAge(birthDate), [birthDate]);
+  const asksPropertyValue = buyerObjectives.has(objective);
   const [form, setForm] = useState({
     ingreso_mensual: "",
     deuda_mensual: "",
-    edad: "",
-    numero_cargas: "",
     ahorro_disponible: "",
+    property_value: "",
+    property_value_unit: "uf",
+    plazo_credito_hipotecario: "",
     tipo_contrato: "",
     continuidad_laboral: "",
     morosidad_actual: "",
+    monto_morosidad: "",
+    antiguedad_morosidad: "",
     dividendo_estimado: "",
     complemento_renta: false,
-    complemento_nombre: "",
-    complemento_monto: "",
-    complemento_relacion: "",
-    complemento_ingreso_mensual: "",
-    complemento_deuda_mensual: "",
-    complemento_morosidad: "",
-    complemento_tipo_contrato: "",
-    complemento_continuidad_laboral: "",
-    complemento_tarjetas_activas: "",
+    ingreso_mensual_complementario: "",
+    deuda_mensual_complementario: "",
+    tipo_contrato_complementario: "",
+    continuidad_laboral_complementario: "",
+    morosidad_complementario: "",
+    relacion_complementario: "",
     consentimiento: true,
   });
   const [loading, setLoading] = useState(false);
@@ -42,38 +88,64 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
     form.ingreso_mensual !== "" &&
     form.deuda_mensual !== "" &&
     Number(form.deuda_mensual) > Number(form.ingreso_mensual);
+  const mortgageTerm = Number(form.plazo_credito_hipotecario);
+  const showMortgageAgeWarning =
+    Number.isFinite(declaredAge) &&
+    Number.isFinite(mortgageTerm) &&
+    mortgageTerm > 0 &&
+    declaredAge + mortgageTerm > 70;
+  const showComplementRelationWarning = weakComplementRelations.has(form.relacion_complementario);
+  const showComplementMorosityWarning = form.morosidad_complementario === "si";
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : type === "number" ? (value === "" ? "" : value) : value,
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === "checkbox" ? checked : type === "number" ? (value === "" ? "" : value) : value,
+      };
+
+      if (name === "morosidad_actual" && value !== "si") {
+        next.monto_morosidad = "";
+        next.antiguedad_morosidad = "";
+      }
+
+      return next;
+    });
+  };
+
+  const switchPropertyUnit = () => {
+    setForm((prev) => {
+      const nextUnit = prev.property_value_unit === "uf" ? "clp" : "uf";
+      const currentValue = Number(prev.property_value);
+      if (!Number.isFinite(currentValue) || currentValue <= 0) {
+        return { ...prev, property_value_unit: nextUnit };
+      }
+      const convertedValue =
+        nextUnit === "clp"
+          ? Math.round(currentValue * UF_VALUE_CLP)
+          : roundCurrency(currentValue / UF_VALUE_CLP);
+      return { ...prev, property_value_unit: nextUnit, property_value: String(convertedValue) };
+    });
   };
 
   const validate = () => {
     const missing = [];
     if (form.ingreso_mensual === "") missing.push("Ingreso mensual");
     if (form.deuda_mensual === "") missing.push("Deuda mensual");
-    if (form.edad === "") missing.push("Edad");
-    if (form.numero_cargas === "") missing.push("Numero de cargas");
+    if (!Number.isFinite(declaredAge)) missing.push("Fecha de nacimiento del perfil");
     if (form.ahorro_disponible === "") missing.push("Ahorro disponible");
+    if (asksPropertyValue && form.property_value === "") missing.push("Monto estimado de vivienda");
+    if (!form.plazo_credito_hipotecario) missing.push("Plazo estimado del credito hipotecario");
     if (!form.tipo_contrato) missing.push("Tipo de contrato");
     if (!form.continuidad_laboral) missing.push("Continuidad laboral");
     if (!form.morosidad_actual) missing.push("Situacion de morosidad");
+    if (form.morosidad_actual === "si") {
+      if (form.monto_morosidad === "") missing.push("Monto de morosidad");
+      if (!form.antiguedad_morosidad) missing.push("Antiguedad de morosidad");
+    }
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
     if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
-    if (form.complemento_renta) {
-      if (!form.complemento_nombre) missing.push("Nombre de la persona complementaria");
-      if (form.complemento_monto === "") missing.push("Monto de complemento de renta");
-      if (!form.complemento_relacion) missing.push("Relación con la persona complementaria");
-      if (form.complemento_ingreso_mensual === "") missing.push("Ingreso mensual del co-deudor");
-      if (form.complemento_deuda_mensual === "") missing.push("Deuda mensual del co-deudor");
-      if (!form.complemento_morosidad) missing.push("Morosidad del co-deudor");
-      if (!form.complemento_tipo_contrato) missing.push("Tipo de contrato del co-deudor");
-      if (!form.complemento_continuidad_laboral) missing.push("Continuidad laboral del co-deudor");
-      if (form.complemento_tarjetas_activas === "") missing.push("Tarjetas de crédito activas del co-deudor");
-    }
     if (missing.length) {
       setError(`Complete todos los campos: ${missing.join(", ")}`);
       return false;
@@ -82,19 +154,29 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
     const numericRules = [
       ["Ingreso mensual", form.ingreso_mensual, (value) => value > 0, "debe ser mayor que 0."],
       ["Deuda mensual", form.deuda_mensual, (value) => value >= 0, "debe ser mayor o igual a 0."],
-      ["Edad", form.edad, (value) => value >= 18 && value <= 100, "debe estar entre 18 y 100."],
-      ["Numero de cargas", form.numero_cargas, (value) => value >= 0 && value <= 10, "debe estar entre 0 y 10."],
+      ["Edad declarada", declaredAge, (value) => value >= 18 && value <= 100, "debe estar entre 18 y 100."],
       ["Ahorro disponible", form.ahorro_disponible, (value) => value >= 0, "no puede ser negativo."],
       ["Dividendo estimado", form.dividendo_estimado, (value) => value >= 0, "no puede ser negativo."],
+      ["Plazo estimado del credito hipotecario", form.plazo_credito_hipotecario, (value) => mortgageTerms.includes(value), "es invalido."],
     ];
 
+    if (asksPropertyValue) {
+      numericRules.push(["Monto estimado de vivienda", form.property_value, (value) => value > 0, "debe ser mayor que 0."]);
+    }
+
+    if (form.morosidad_actual === "si") {
+      numericRules.push(["Monto de morosidad", form.monto_morosidad, (value) => value > 0, "debe ser mayor que 0."]);
+    }
+
     if (form.complemento_renta) {
-      numericRules.push([
-        "Monto de complemento de renta",
-        form.complemento_monto,
-        (value) => value >= 0,
-        "no puede ser negativo.",
-      ]);
+      [
+        ["Ingreso mensual complementario", form.ingreso_mensual_complementario],
+        ["Deuda mensual complementaria", form.deuda_mensual_complementario],
+      ].forEach(([label, value]) => {
+        if (value !== "") {
+          numericRules.push([label, value, (parsed) => parsed >= 0, "no puede ser negativo."]);
+        }
+      });
     }
 
     const invalidNumber = numericRules.find(([, value, isValid]) => {
@@ -121,40 +203,49 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
 
     setLoading(true);
     try {
+      const propertyValues = asksPropertyValue
+        ? buildPropertyValues(form.property_value, form.property_value_unit)
+        : buildPropertyValues("", form.property_value_unit);
       const payload = {
         ingreso_mensual: parseFloat(form.ingreso_mensual),
         deuda_mensual: parseFloat(form.deuda_mensual),
-        edad: parseInt(form.edad, 10),
-        numero_cargas: parseInt(form.numero_cargas, 10),
+        edad: declaredAge,
         ahorro_disponible: parseFloat(form.ahorro_disponible),
+        ...propertyValues,
+        plazo_credito_hipotecario: parseInt(form.plazo_credito_hipotecario, 10),
         tipo_contrato: form.tipo_contrato,
         continuidad_laboral: form.continuidad_laboral,
         morosidad_actual: form.morosidad_actual,
+        monto_morosidad: form.morosidad_actual === "si" ? parseFloat(form.monto_morosidad) : undefined,
+        antiguedad_morosidad: form.morosidad_actual === "si" ? form.antiguedad_morosidad : undefined,
         comuna_objetivo: targetCommune,
         dividendo_estimado: parseFloat(form.dividendo_estimado),
         complemento_renta: form.complemento_renta,
-        complemento_nombre: form.complemento_nombre || undefined,
-        complemento_monto: form.complemento_renta ? parseFloat(form.complemento_monto) : undefined,
-        complemento_relacion: form.complemento_relacion || undefined,
-        complemento_ingreso_mensual: form.complemento_renta ? parseFloat(form.complemento_ingreso_mensual) : undefined,
-        complemento_deuda_mensual: form.complemento_renta ? parseFloat(form.complemento_deuda_mensual) : undefined,
-        complemento_morosidad: form.complemento_morosidad || undefined,
-        complemento_tipo_contrato: form.complemento_tipo_contrato || undefined,
-        complemento_continuidad_laboral: form.complemento_continuidad_laboral || undefined,
-        complemento_tarjetas_activas: form.complemento_renta ? parseInt(form.complemento_tarjetas_activas, 10) : undefined,
+        ingreso_mensual_complementario:
+          form.complemento_renta && form.ingreso_mensual_complementario !== ""
+            ? parseFloat(form.ingreso_mensual_complementario)
+            : undefined,
+        deuda_mensual_complementario:
+          form.complemento_renta && form.deuda_mensual_complementario !== ""
+            ? parseFloat(form.deuda_mensual_complementario)
+            : undefined,
+        tipo_contrato_complementario: form.tipo_contrato_complementario || undefined,
+        continuidad_laboral_complementario: form.continuidad_laboral_complementario || undefined,
+        morosidad_complementario: form.morosidad_complementario || undefined,
+        relacion_complementario: form.relacion_complementario || undefined,
         consentimiento: form.consentimiento,
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
       const res = await axios.post(`${apiBase}/score`, payload, { timeout: 60000 });
-      
+
       onResult(res.data, payload);
     } catch (err) {
       console.error(err);
-      if (err.code === 'ECONNABORTED' || err.message.includes('timeout')) {
-        setError("La petición tardó demasiado, por favor intenta nuevamente.");
+      if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
+        setError("La peticion tardo demasiado, por favor intenta nuevamente.");
       } else {
-        setError("Hubo un problema con la petición, por favor intenta nuevamente.");
+        setError("Hubo un problema con la peticion, por favor intenta nuevamente.");
       }
     } finally {
       setLoading(false);
@@ -203,36 +294,6 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
           </label>
 
           <label>
-            Edad
-            <input
-              type="number"
-              inputMode="numeric"
-              min="18"
-              max="100"
-              step="1"
-              name="edad"
-              value={form.edad}
-              onChange={handleChange}
-              placeholder="Ej: 35"
-            />
-          </label>
-
-          <label>
-            Numero de cargas
-            <input
-              type="number"
-              inputMode="numeric"
-              min="0"
-              max="10"
-              step="1"
-              name="numero_cargas"
-              value={form.numero_cargas}
-              onChange={handleChange}
-              placeholder="Ej: 0"
-            />
-          </label>
-
-          <label>
             Ahorro disponible
             <input
               type="number"
@@ -245,6 +306,29 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
             />
           </label>
 
+          {asksPropertyValue && (
+            <label>
+              Monto estimado de la vivienda
+              <div className="unit-input">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  name="property_value"
+                  value={form.property_value}
+                  onChange={handleChange}
+                  placeholder={form.property_value_unit === "uf" ? "Ej: 3500" : "Ej: 136500000"}
+                />
+                <button type="button" className="secondary-button unit-toggle" onClick={switchPropertyUnit}>
+                  {form.property_value_unit === "uf" ? "UF" : "Pesos"}
+                </button>
+              </div>
+              <span className="field-help">
+                Puedes ingresarlo en UF o pesos. Para este MVP se usa UF referencial de ${UF_VALUE_CLP.toLocaleString("es-CL")}.
+              </span>
+            </label>
+          )}
+
           <label>
             Dividendo estimado
             <input
@@ -256,6 +340,21 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
               onChange={handleChange}
               placeholder="Ej: 250000"
             />
+          </label>
+
+          <label className={showMortgageAgeWarning ? "field-with-warning" : undefined}>
+            Plazo estimado del credito hipotecario
+            <select name="plazo_credito_hipotecario" value={form.plazo_credito_hipotecario} onChange={handleChange}>
+              <option value="">Selecciona una opcion</option>
+              {mortgageTerms.map((term) => (
+                <option key={term} value={term}>{term} anos</option>
+              ))}
+            </select>
+            {showMortgageAgeWarning && (
+              <span className="field-warning">
+                Por tu edad declarada, el plazo hipotecario solicitado podria verse limitado por condiciones asociadas al seguro de desgravamen. Esto puede aumentar el dividendo mensual estimado.
+              </span>
+            )}
           </label>
         </div>
       </div>
@@ -271,8 +370,9 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
             <select name="tipo_contrato" value={form.tipo_contrato} onChange={handleChange}>
               <option value="">Selecciona un tipo</option>
               <option value="indefinido">Indefinido</option>
-              <option value="plazo_fijo">Plazo fijo</option>
               <option value="independiente">Independiente</option>
+              <option value="plazo_fijo">Plazo fijo</option>
+              <option value="honorarios_variable">Honorarios / variable</option>
             </select>
           </label>
 
@@ -293,9 +393,36 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
               <option value="">Selecciona una opcion</option>
               <option value="no">No</option>
               <option value="si">Si</option>
-              <option value="no_lo_se">No lo se</option>
             </select>
           </label>
+
+          {form.morosidad_actual === "si" && (
+            <>
+              <label>
+                Monto de morosidad
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  name="monto_morosidad"
+                  value={form.monto_morosidad}
+                  onChange={handleChange}
+                  placeholder="Ej: 250000"
+                />
+              </label>
+
+              <label>
+                Antiguedad de morosidad
+                <select name="antiguedad_morosidad" value={form.antiguedad_morosidad} onChange={handleChange}>
+                  <option value="">Selecciona una opcion</option>
+                  <option value="menos_3_meses">Menos de 3 meses</option>
+                  <option value="3_a_12_meses">3 a 12 meses</option>
+                  <option value="1_a_3_anios">1 a 3 anos</option>
+                  <option value="mas_3_anios">Mas de 3 anos</option>
+                </select>
+              </label>
+            </>
+          )}
         </div>
       </div>
 
@@ -306,7 +433,7 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
           checked={form.complemento_renta}
           onChange={handleChange}
         />
-        Complementar renta con otra persona
+        Complementar renta con una persona
       </label>
 
       {form.complemento_renta && (
@@ -314,82 +441,42 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
           <h4>Datos del complemento de renta</h4>
           <div className="form-grid">
             <label>
-              Nombre de la persona complementaria
-              <input
-                type="text"
-                name="complemento_nombre"
-                value={form.complemento_nombre}
-                onChange={handleChange}
-                placeholder="Ej: Juan Perez"
-              />
-            </label>
-            <label>
-              Monto mensual de complemento
+              Ingreso mensual complementario
               <input
                 type="number"
                 inputMode="numeric"
                 min="0"
-                name="complemento_monto"
-                value={form.complemento_monto}
-                onChange={handleChange}
-                placeholder="Ej: 250000"
-              />
-            </label>
-            <label>
-              Relacion con la persona complementaria
-              <select name="complemento_relacion" value={form.complemento_relacion} onChange={handleChange}>
-                <option value="">Selecciona una relacion</option>
-                <option value="pareja">Pareja</option>
-                <option value="familiar">Familiar</option>
-                <option value="amigo">Amigo</option>
-                <option value="otro">Otro</option>
-              </select>
-            </label>
-            <label>
-              Ingreso mensual del co-deudor
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                name="complemento_ingreso_mensual"
-                value={form.complemento_ingreso_mensual}
+                name="ingreso_mensual_complementario"
+                value={form.ingreso_mensual_complementario}
                 onChange={handleChange}
                 placeholder="Ej: 800000"
               />
             </label>
             <label>
-              Deuda mensual del co-deudor
+              Deuda mensual complementaria
               <input
                 type="number"
                 inputMode="numeric"
                 min="0"
-                name="complemento_deuda_mensual"
-                value={form.complemento_deuda_mensual}
+                name="deuda_mensual_complementario"
+                value={form.deuda_mensual_complementario}
                 onChange={handleChange}
                 placeholder="Ej: 100000"
               />
             </label>
             <label>
-              Morosidad del co-deudor
-              <select name="complemento_morosidad" value={form.complemento_morosidad} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
-                <option value="no">No</option>
-                <option value="si">Si</option>
-                <option value="no_lo_se">No lo se</option>
-              </select>
-            </label>
-            <label>
-              Tipo de contrato del co-deudor
-              <select name="complemento_tipo_contrato" value={form.complemento_tipo_contrato} onChange={handleChange}>
+              Tipo de contrato complementario
+              <select name="tipo_contrato_complementario" value={form.tipo_contrato_complementario} onChange={handleChange}>
                 <option value="">Selecciona un tipo</option>
                 <option value="indefinido">Indefinido</option>
-                <option value="plazo_fijo">Plazo fijo</option>
                 <option value="independiente">Independiente</option>
+                <option value="plazo_fijo">Plazo fijo</option>
+                <option value="honorarios_variable">Honorarios / variable</option>
               </select>
             </label>
             <label>
-              Continuidad laboral del co-deudor
-              <select name="complemento_continuidad_laboral" value={form.complemento_continuidad_laboral} onChange={handleChange}>
+              Continuidad laboral complementaria
+              <select name="continuidad_laboral_complementario" value={form.continuidad_laboral_complementario} onChange={handleChange}>
                 <option value="">Selecciona una opcion</option>
                 <option value="menos_6_meses">Menos de 6 meses</option>
                 <option value="entre_6_y_12_meses">Entre 6 y 12 meses</option>
@@ -398,25 +485,46 @@ export default function ScoreForm({ targetCommune, onResult, onViewConsent }) {
               </select>
             </label>
             <label>
-              Tarjetas de crédito activas
-              <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                name="complemento_tarjetas_activas"
-                value={form.complemento_tarjetas_activas}
-                onChange={handleChange}
-                placeholder="Ej: 2"
-              />
+              Morosidad complementaria
+              <select name="morosidad_complementario" value={form.morosidad_complementario} onChange={handleChange}>
+                <option value="">Selecciona una opcion</option>
+                <option value="no">No</option>
+                <option value="si">Si</option>
+              </select>
+            </label>
+            <label className={showComplementRelationWarning ? "field-with-warning" : undefined}>
+              Relacion complementaria
+              <select name="relacion_complementario" value={form.relacion_complementario} onChange={handleChange}>
+                <option value="">Selecciona una relacion</option>
+                <option value="conyuge">Conyuge</option>
+                <option value="pareja_conviviente">Pareja conviviente</option>
+                <option value="pareja_hijos_comun">Pareja con hijos en comun</option>
+                <option value="padre_madre">Padre/Madre</option>
+                <option value="hijo_hija">Hijo/a</option>
+                <option value="hermano_hermana">Hermano/a</option>
+                <option value="otro_familiar">Otro familiar</option>
+                <option value="amigo">Amigo/a</option>
+                <option value="otro">Otro</option>
+              </select>
+              {showComplementRelationWarning && (
+                <span className="field-warning">
+                  Esta relacion puede requerir mayor respaldo en una evaluacion hipotecaria formal.
+                </span>
+              )}
             </label>
           </div>
+          {showComplementMorosityWarning && (
+            <div className="warning-box">
+              Si la persona complementaria declara morosidad, no se considerara valida para mejorar el score orientativo.
+            </div>
+          )}
         </div>
       )}
 
       <div className="consent-info">
         <span className="consent-info-icon">✓</span>
         <span>
-          Autorización de tratamiento de datos personales otorgada el{" "}
+          Autorizacion de tratamiento de datos personales otorgada el{" "}
           <strong>{consentDate || "fecha registrada"}</strong>.
           {onViewConsent && (
             <>

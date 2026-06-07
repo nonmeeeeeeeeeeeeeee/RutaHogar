@@ -269,23 +269,26 @@ export default function App() {
       ingreso_mensual: input.ingreso_mensual,
       deuda_mensual: input.deuda_mensual,
       edad: input.edad,
-      numero_cargas: input.numero_cargas,
       ahorro_disponible: input.ahorro_disponible,
+      property_value: input.property_value,
+      property_value_unit: input.property_value_unit,
+      property_value_uf: input.property_value_uf,
+      property_value_clp: input.property_value_clp,
+      plazo_credito_hipotecario: input.plazo_credito_hipotecario,
       dividendo_estimado: input.dividendo_estimado,
       comuna_objetivo: input.comuna_objetivo,
       tipo_contrato: input.tipo_contrato,
       continuidad_laboral: input.continuidad_laboral,
       morosidad_actual: input.morosidad_actual,
+      monto_morosidad: input.monto_morosidad,
+      antiguedad_morosidad: input.antiguedad_morosidad,
       complemento_renta: input.complemento_renta,
-      complemento_nombre: input.complemento_nombre,
-      complemento_monto: input.complemento_monto,
-      complemento_relacion: input.complemento_relacion,
-      complemento_ingreso_mensual: input.complemento_ingreso_mensual,
-      complemento_deuda_mensual: input.complemento_deuda_mensual,
-      complemento_morosidad: input.complemento_morosidad,
-      complemento_tipo_contrato: input.complemento_tipo_contrato,
-      complemento_continuidad_laboral: input.complemento_continuidad_laboral,
-      complemento_tarjetas_activas: input.complemento_tarjetas_activas,
+      ingreso_mensual_complementario: input.ingreso_mensual_complementario,
+      deuda_mensual_complementario: input.deuda_mensual_complementario,
+      tipo_contrato_complementario: input.tipo_contrato_complementario,
+      continuidad_laboral_complementario: input.continuidad_laboral_complementario,
+      morosidad_complementario: input.morosidad_complementario,
+      relacion_complementario: input.relacion_complementario,
     };
 
     try {
@@ -501,6 +504,8 @@ export default function App() {
           )}
           <ScoreForm
               targetCommune={userOnboarding?.comuna_interes}
+              objective={userOnboarding?.objetivo_principal}
+              birthDate={profile?.birth_date}
               onResult={handleResult}
               onViewConsent={() => setPage("dataconsent")}
             />
