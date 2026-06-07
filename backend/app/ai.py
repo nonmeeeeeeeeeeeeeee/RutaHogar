@@ -16,16 +16,18 @@ if _env_path.exists():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
  
-_client = Groq() if Groq else None
-
-
 def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
     """Wrapper interno que llama a llama-3.1-8b-instant vía Groq."""
-    if _client is None:
+    if Groq is None:
         return "Resumen IA no disponible en entorno local."
 
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return "Resumen IA no disponible: GROQ_API_KEY no configurada."
+
+    client = Groq(api_key=api_key)
     try:
-        completion = _client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens,
