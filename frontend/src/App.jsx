@@ -26,7 +26,7 @@ const plazoLabels = {
   "0_3_meses": "0 a 3 meses",
   "3_6_meses": "3 a 6 meses",
   "6_12_meses": "6 a 12 meses",
-  "mas_12_meses": "Mas de 12 meses",
+  "mas_12_meses": "Más de 12 meses",
 };
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
@@ -35,32 +35,32 @@ const futureModules = [
   {
     title: "Objetivo inmobiliario",
     status: "Disponible",
-    description: "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluacion.",
+    description: "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluación.",
   },
   {
-    title: "Pre-evaluacion financiera",
+    title: "Pre-evaluación financiera",
     status: "Disponible",
-    description: "Formulario guiado, score preliminar, clasificacion y recomendaciones basicas para el usuario.",
+    description: "Formulario guiado, score preliminar, clasificacion y recomendaciones básicas para el usuario.",
   },
   {
     title: "Recomendaciones inteligentes",
     status: "Disponible",
-    description: "Entrega recomendaciones orientativas basadas en la ultima preevaluacion, sin reemplazar una evaluacion bancaria formal.",
+    description: "Entrega recomendaciones orientativas basadas en la ultima preevaluación, sin reemplazar una evaluación bancaria formal.",
   },
   {
-    title: "Priorizacion comercial",
+    title: "Priorización comercial",
     status: "Futuro",
     description: "Vista para equipos comerciales con leads ordenados por viabilidad y principales factores de riesgo.",
   },
   {
     title: "Seguimiento financiero",
     status: "Futuro",
-    description: "Plan de preparacion para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
+    description: "Plan de preparación para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
   },
   {
     title: "Integraciones",
     status: "Futuro",
-    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integracion este disponible.",
+    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración este disponible.",
   },
 ];
 
@@ -168,7 +168,7 @@ export default function App() {
         if (active) setTrackingGoals(createdGoals);
       } catch (err) {
         console.error(err);
-        if (active) setDataError("No pudimos cargar tus metas de seguimiento. Revisa la configuracion de Supabase.");
+        if (active) setDataError("No pudimos cargar tus metas de seguimiento. Revisa la configuración de Supabase.");
       }
     }
 
@@ -318,7 +318,7 @@ export default function App() {
     } catch (err) {
       console.error(err);
       setResultSaved(false);
-      setDataError("El score se calculo, pero no pudimos guardar la preevaluacion. Revisa que tu sesion siga activa y que Supabase permita insertar evaluaciones.");
+      setDataError("El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesion siga activa y que Supabase permita insertar evaluaciones.");
     }
   };
 
@@ -330,7 +330,7 @@ export default function App() {
       setTrackingGoals([]);
     } catch (err) {
       console.error(err);
-      setDataError("No se pudo eliminar la evaluacion seleccionada.");
+      setDataError("No se pudo eliminar la evaluación seleccionada.");
     }
   };
 
@@ -356,7 +356,7 @@ export default function App() {
       if (updatedEvaluation) {
         setEvaluations((prev) => prev.map((item) => (item.id === updatedEvaluation.id ? updatedEvaluation : item)));
       }
-      setDataError("Plan activado. Podras volver a precalificar despues de avanzar en tus metas.");
+      setDataError("Plan activado. Podrás volver a precalificar después de avanzar en tus metas.");
     } catch (err) {
       console.error(err);
       setDataError("No pudimos activar el plan. Intentalo nuevamente.");
@@ -447,10 +447,10 @@ export default function App() {
                 </div>
               )}
               <p>
-                Plataforma para preevaluar leads inmobiliarios antes de iniciar una evaluacion bancaria formal.
-                El foco del producto es entregar una pre-evaluacion financiera clara, rapida y orientativa.
+                Plataforma para preevaluar leads inmobiliarios antes de iniciar una evaluación bancaria formal.
+                El foco del producto es entregar una pre-evaluación financiera clara, rapida y orientativa.
               </p>
-              <p className="hero-note">Sin documentos, sin claves bancarias y sin aprobacion bancaria.</p>
+              <p className="hero-note">Sin documentos, sin claves bancarias y sin aprobación bancaria.</p>
             </div>
 
             <aside className="score-preview" aria-label="Resumen de ScoreLeads">
@@ -467,8 +467,8 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la vision completa de ScoreLeads. Actualmente estan habilitados el
-                objetivo inmobiliario y la pre-evaluacion financiera.
+                Estas tarjetas muestran la visión completa de ScoreLeads. Actualmente estan habilitados el
+                objetivo inmobiliario y la pre-evaluación financiera.
               </p>
             </div>
 
@@ -490,8 +490,8 @@ export default function App() {
           <button className="secondary-button" onClick={() => setPage("home")}>Volver al inicio</button>
           <div className="section-heading compact">
             <span className="eyebrow">Disponible</span>
-            <h1>Pre-evaluacion financiera</h1>
-            <p>Completa todos los campos para calcular un score orientativo. El resultado no equivale a aprobacion bancaria.</p>
+            <h1>Pre-evaluación financiera</h1>
+            <p>Completa todos los campos para calcular un score orientativo. El resultado no equivale a aprobación bancaria.</p>
           </div>
           {userOnboarding && (
             <div className="context-summary">

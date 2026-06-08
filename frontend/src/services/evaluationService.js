@@ -106,7 +106,7 @@ export async function createEvaluation(userId, evaluationPayload) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluacion.");
+  if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluación.");
   await ensureUserProfile(user);
 
   const { data, error } = await supabase
@@ -170,7 +170,7 @@ export async function getLatestEvaluation(userId) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) throw new Error("No hay usuario autenticado para cargar la evaluacion actual.");
+  if (!user?.id) throw new Error("No hay usuario autenticado para cargar la evaluación actual.");
 
   const { data, error } = await supabase
     .from("evaluations")

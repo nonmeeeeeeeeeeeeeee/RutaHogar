@@ -4,15 +4,15 @@ import { roleLabels } from "../services/auth";
 
 const objetivoLabels = {
   comprar_ahora: "Comprar ahora",
-  prepararme: "Prepararme para comprar mas adelante",
+  prepararme: "Prepararme para comprar más adelante",
   evaluar_capacidad: "Evaluar mi capacidad de compra",
-  conocer_propiedad: "Conocer que tipo de propiedad podria buscar",
+  conocer_propiedad: "Conocer que tipo de propiedad podría buscar",
 };
 
 const propertyLabels = {
   departamento: "Departamento",
   casa: "Casa",
-  aun_no_lo_se: "Aun no lo se",
+  aun_no_lo_se: "Aun no lo sé",
   indiferente: "Indiferente",
 };
 
@@ -20,7 +20,7 @@ const plazoLabels = {
   "0_3_meses": "0 a 3 meses",
   "3_6_meses": "3 a 6 meses",
   "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Mas de 12 meses",
+  mas_12_meses: "Mpas de 12 meses",
 };
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
@@ -87,7 +87,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
     }
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
-      setError("Selecciona una comuna alternativa desde la lista o dejala vacia.");
+      setError("Selecciona una comuna alternativa desde la lista o dejala vacía.");
       return;
     }
 
@@ -125,7 +125,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
               <dd>{profile?.email || "Sin correo"}</dd>
             </div>
             <div>
-              <dt>Telefono</dt>
+              <dt>Teléfono</dt>
               <dd>{profile?.phone || "Sin telefono"}</dd>
             </div>
             <div>
@@ -173,21 +173,21 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
             <label>
               Objetivo inmobiliario
               <select name="objetivo_principal" value={form.objetivo_principal} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="comprar_ahora">Comprar ahora</option>
-                <option value="prepararme">Prepararme para comprar mas adelante</option>
+                <option value="prepararme">Prepararme para comprar más adelante</option>
                 <option value="evaluar_capacidad">Evaluar mi capacidad de compra</option>
-                <option value="conocer_propiedad">Conocer que tipo de propiedad podria buscar</option>
+                <option value="conocer_propiedad">Conocer que tipo de propiedad podría buscar</option>
               </select>
             </label>
 
             <label>
               Tipo de propiedad
               <select name="tipo_propiedad" value={form.tipo_propiedad} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="casa">Casa</option>
                 <option value="departamento">Departamento</option>
-                <option value="aun_no_lo_se">Aun no lo se</option>
+                <option value="aun_no_lo_se">Aun no lo sé</option>
               </select>
             </label>
 
@@ -204,11 +204,11 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
             <label>
               Plazo estimado de compra
               <select name="plazo_compra" value={form.plazo_compra} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="0_3_meses">0 a 3 meses</option>
                 <option value="3_6_meses">3 a 6 meses</option>
                 <option value="6_12_meses">6 a 12 meses</option>
-                <option value="mas_12_meses">Mas de 12 meses</option>
+                <option value="mas_12_meses">Más de 12 meses</option>
               </select>
             </label>
 
@@ -258,7 +258,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                 </dl>
                 {item.result.ai_explanation ? (
                   <>
-                    <strong>Explicacion mejorada con IA</strong>
+                    <strong>Explicación mejorada con IA</strong>
                     <p>{item.result.ai_explanation}</p>
                   </>
                 ) : null}
@@ -268,7 +268,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
         ) : (
           <div className="empty-state">
             <strong>Aun no tienes precalificaciones guardadas.</strong>
-            <p>Cuando completes una evaluacion, aparecera aqui como registro independiente.</p>
+            <p>Cuando completes una evaluación, aparecerá aqui como registro independiente.</p>
           </div>
         )}
       </section>

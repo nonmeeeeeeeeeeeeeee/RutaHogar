@@ -34,7 +34,7 @@ export default function Onboarding({ initialData, onComplete }) {
     const required = [
       ["objetivo_principal", "Objetivo principal"],
       ["tipo_propiedad", "Tipo de propiedad"],
-      ["comuna_interes", "Comuna de interes"],
+      ["comuna_interes", "Comuna de interés"],
       ["plazo_compra", "Plazo de compra"],
     ];
     const missing = required.filter(([key]) => !form[key]).map(([, label]) => label);
@@ -45,12 +45,12 @@ export default function Onboarding({ initialData, onComplete }) {
     }
 
     if (!comunasMvp.includes(form.comuna_interes)) {
-      setError("Selecciona una comuna de interes desde la lista.");
+      setError("Selecciona una comuna de interés desde la lista.");
       return;
     }
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
-      setError("Selecciona una comuna alternativa desde la lista o dejala vacia.");
+      setError("Selecciona una comuna alternativa desde la lista o dejala vacía.");
       return;
     }
 
@@ -68,36 +68,36 @@ export default function Onboarding({ initialData, onComplete }) {
         <span className="eyebrow">Contexto inicial</span>
         <h1>Antes de evaluar tu perfil</h1>
         <p>
-          Estas preguntas ayudan a ordenar tu objetivo inmobiliario. No reemplazan la pre-evaluacion financiera
-          ni se usan como aprobacion formal.
+          Estas preguntas ayudan a ordenar tu objetivo inmobiliario. No reemplazan la pre-evaluación financiera
+          ni se usan como aprobación formal.
         </p>
       </div>
 
       <form className="score-form" onSubmit={submit}>
         <div className="form-grid">
           <label>
-            Cual es tu objetivo principal?
+            ¿Cuál es tu objetivo principal?
             <select name="objetivo_principal" value={form.objetivo_principal} onChange={handleChange}>
-              <option value="">Selecciona una opcion</option>
+              <option value="">Selecciona una opción</option>
               <option value="comprar_ahora">Comprar ahora</option>
-              <option value="prepararme">Prepararme para comprar mas adelante</option>
+              <option value="prepararme">Prepararme para comprar más adelante</option>
               <option value="evaluar_capacidad">Evaluar mi capacidad de compra</option>
-              <option value="conocer_propiedad">Conocer que tipo de propiedad podria buscar</option>
+              <option value="conocer_propiedad">Conocer que tipo de propiedad podría buscar</option>
             </select>
           </label>
 
           <label>
-            Que tipo de propiedad te interesa?
+            ¿Qué tipo de propiedad te interesa?
             <select name="tipo_propiedad" value={form.tipo_propiedad} onChange={handleChange}>
-              <option value="">Selecciona una opcion</option>
+              <option value="">Selecciona una opción</option>
               <option value="casa">Casa</option>
               <option value="departamento">Departamento</option>
-              <option value="aun_no_lo_se">Aun no lo se</option>
+              <option value="aun_no_lo_se">Aun no lo sé</option>
             </select>
           </label>
 
           <label>
-            En que comuna te gustaria comprar?
+            ¿En qué comuna te gustaría comprar?
             <select
               name="comuna_interes"
               value={form.comuna_interes}
@@ -113,18 +113,18 @@ export default function Onboarding({ initialData, onComplete }) {
           </label>
 
           <label>
-            En que plazo te gustaria comprar?
+            ¿En qué plazo te gustaría comprar?
             <select name="plazo_compra" value={form.plazo_compra} onChange={handleChange}>
-              <option value="">Selecciona una opcion</option>
+              <option value="">Selecciona una opción</option>
               <option value="0_3_meses">0 a 3 meses</option>
               <option value="3_6_meses">3 a 6 meses</option>
               <option value="6_12_meses">6 a 12 meses</option>
-              <option value="mas_12_meses">Mas de 12 meses</option>
+              <option value="mas_12_meses">Más de 12 meses</option>
             </select>
           </label>
 
           <label>
-            Tienes una comuna alternativa?
+            ¿Tienes una comuna alternativa?
             <select
               name="comuna_alternativa"
               value={form.comuna_alternativa}

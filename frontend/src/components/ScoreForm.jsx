@@ -317,9 +317,9 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
     } catch (err) {
       console.error(err);
       if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
-        setError("La peticion tardo demasiado, por favor intenta nuevamente.");
+        setError("La petición tardó demasiado, por favor intenta nuevamente.");
       } else {
-        setError("Hubo un problema con la peticion, por favor intenta nuevamente.");
+        setError("Hubo un problema con la petición, por favor intenta nuevamente.");
       }
     } finally {
       setLoading(false);
@@ -331,7 +331,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
       <div className="form-section">
         <div>
           <span className="eyebrow">Datos financieros</span>
-          <p>Usa montos aproximados. No pedimos claves, documentos ni informacion bancaria privada.</p>
+          <p>Usa montos aproximados. No pedimos claves, documentos ni información bancaria privada.</p>
         </div>
         <div className="form-grid">
           <label>
@@ -343,7 +343,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               name="ingreso_mensual"
               value={form.ingreso_mensual}
               onChange={handleChange}
-              placeholder="Ej: 1200000"
+              placeholder="Ej: 1.200.000"
             />
           </label>
 
@@ -356,7 +356,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               name="deuda_mensual"
               value={form.deuda_mensual}
               onChange={handleChange}
-              placeholder="Ej: 150000"
+              placeholder="Ej: 150.000"
               aria-invalid={debtExceedsIncome}
               aria-describedby={debtExceedsIncome ? "debt-income-warning" : undefined}
             />
@@ -376,7 +376,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               name="ahorro_disponible"
               value={form.ahorro_disponible}
               onChange={handleChange}
-              placeholder="Ej: 3000000"
+              placeholder="Ej: 3.000.000"
             />
           </label>
 
@@ -394,11 +394,11 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
                   placeholder={form.property_value_unit === "uf" ? "Ej: 3500" : "Ej: 136500000"}
                 />
                 <button type="button" className="secondary-button unit-toggle" onClick={switchPropertyUnit}>
-                  {form.property_value_unit === "uf" ? "UF" : "Pesos"}
+                  {form.property_value_unit === "uf" ? "UF" : "CLP"}
                 </button>
               </div>
               <span className="field-help">
-                Puedes ingresarlo en UF o pesos. {ufHelpText}
+                Puedes ingresarlo en UF o CLP. {ufHelpText}
               </span>
             </label>
           )}
@@ -436,7 +436,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
       <div className="form-section">
         <div>
           <span className="eyebrow">Trabajo y antecedentes declarados</span>
-          <p>La morosidad es autodeclarada y solo se usa como senal orientativa. No consultamos CMF, DICOM ni APIs externas.</p>
+          <p>La morosidad es autodeclarada y sólo se usa como señal orientativa. No consultamos CMF, DICOM ni APIs externas.</p>
         </div>
         <div className="form-grid">
           <label>
@@ -456,17 +456,17 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               <option value="">Selecciona una opcion</option>
               <option value="menos_6_meses">Menos de 6 meses</option>
               <option value="entre_6_y_12_meses">Entre 6 y 12 meses</option>
-              <option value="entre_1_y_3_anios">Entre 1 y 3 anos</option>
-              <option value="mas_3_anios">Mas de 3 anos</option>
+              <option value="entre_1_y_3_anios">Entre 1 y 3 años</option>
+              <option value="mas_3_anios">Más de 3 años</option>
             </select>
           </label>
 
           <label>
             Morosidad actual
             <select name="morosidad_actual" value={form.morosidad_actual} onChange={handleChange}>
-              <option value="">Selecciona una opcion</option>
+              <option value="">Selecciona una opción</option>
               <option value="no">No</option>
-              <option value="si">Si</option>
+              <option value="si">Sí</option>
             </select>
           </label>
 
@@ -491,8 +491,8 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
                   <option value="">Selecciona una opcion</option>
                   <option value="menos_3_meses">Menos de 3 meses</option>
                   <option value="3_a_12_meses">3 a 12 meses</option>
-                  <option value="1_a_3_anios">1 a 3 anos</option>
-                  <option value="mas_3_anios">Mas de 3 anos</option>
+                  <option value="1_a_3_anios">1 a 3 años</option>
+                  <option value="mas_3_anios">Más de 3 años</option>
                 </select>
               </label>
             </>
@@ -523,7 +523,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
                 name="ingreso_mensual_complementario"
                 value={form.ingreso_mensual_complementario}
                 onChange={handleChange}
-                placeholder="Ej: 800000"
+                placeholder="Ej: 800.000"
               />
             </label>
             <label>
@@ -535,7 +535,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
                 name="deuda_mensual_complementario"
                 value={form.deuda_mensual_complementario}
                 onChange={handleChange}
-                placeholder="Ej: 100000"
+                placeholder="Ej: 100.000"
               />
             </label>
             <label>
@@ -551,28 +551,28 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
             <label>
               Continuidad laboral complementaria
               <select name="continuidad_laboral_complementario" value={form.continuidad_laboral_complementario} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="menos_6_meses">Menos de 6 meses</option>
                 <option value="entre_6_y_12_meses">Entre 6 y 12 meses</option>
-                <option value="entre_1_y_3_anios">Entre 1 y 3 anos</option>
-                <option value="mas_3_anios">Mas de 3 anos</option>
+                <option value="entre_1_y_3_anios">Entre 1 y 3 años</option>
+                <option value="mas_3_anios">Más de 3 años</option>
               </select>
             </label>
             <label>
               Morosidad complementaria
               <select name="morosidad_complementario" value={form.morosidad_complementario} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="no">No</option>
-                <option value="si">Si</option>
+                <option value="si">Sí</option>
               </select>
             </label>
             <label className={showComplementRelationWarning ? "field-with-warning" : undefined}>
-              Relacion complementaria
+              Relación complementaria
               <select name="relacion_complementario" value={form.relacion_complementario} onChange={handleChange}>
-                <option value="">Selecciona una relacion</option>
+                <option value="">Selecciona una relación</option>
                 <option value="conyuge">Conyuge</option>
                 <option value="pareja_conviviente">Pareja conviviente</option>
-                <option value="pareja_hijos_comun">Pareja con hijos en comun</option>
+                <option value="pareja_hijos_comun">Pareja con hijos en común</option>
                 <option value="padre_madre">Padre/Madre</option>
                 <option value="hijo_hija">Hijo/a</option>
                 <option value="hermano_hermana">Hermano/a</option>
@@ -582,14 +582,14 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               </select>
               {showComplementRelationWarning && (
                 <span className="field-warning">
-                  Esta relacion puede requerir mayor respaldo en una evaluacion hipotecaria formal.
+                  Esta relación puede requerir mayor respaldo en una evaluación hipotecaria formal.
                 </span>
               )}
             </label>
           </div>
           {showComplementMorosityWarning && (
             <div className="warning-box">
-              Si la persona complementaria declara morosidad, no se considerara valida para mejorar el score orientativo.
+              Si la persona complementaria declara morosidad, no se considerará válida para mejorar el score orientativo.
             </div>
           )}
         </div>
@@ -602,7 +602,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
           checked={form.declara_patrimonio}
           onChange={handleChange}
         />
-        Declarar patrimonio (Vehiculos, Inmuebles, etc.)
+        Declarar patrimonio (Vehículos, Inmuebles, etc.)
       </label>
 
       {form.declara_patrimonio && (
@@ -616,7 +616,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
           </div>
           <div className="form-grid">
             <label>
-              Valor total de vehiculos
+              Valor total de vehículos
               <input
                 type="number"
                 inputMode="decimal"
@@ -640,14 +640,14 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               />
             </label>
           </div>
-          <p className="field-help">Declara el valor comercial estimado de tus activos. Esto fortalece tu perfil de cara a una evaluacion hipotecaria.</p>
+          <p className="field-help">Declara el valor comercial estimado de tus activos. Esto fortalece tu perfil de cara a una evaluación hipotecaria.</p>
         </div>
       )}
 
       <div className="consent-info">
         <span className="consent-info-icon">✓</span>
         <span>
-          Autorizacion de tratamiento de datos personales otorgada el{" "}
+          Autorización de tratamiento de datos personales otorgada el{" "}
           <strong>{consentDate || "fecha registrada"}</strong>.
           {onViewConsent && (
             <>
