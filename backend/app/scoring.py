@@ -1,7 +1,8 @@
 from typing import Dict, List
 from .ai import (
     generate_executive_summary,
-    generate_commercial_guidance
+    generate_commercial_guidance,
+    generate_user_explanation,
 )
 
 
@@ -70,67 +71,6 @@ def _unique(items: List[str]) -> List[str]:
             result.append(item)
     return result
 
-
-def generate_ai_explanation(score_result: Dict, user_data: Dict) -> str:
-    """Mock de explicacion asistida por IA.
-
-    Esta funcion deja aislada la capa para conectar un proveedor de IA mas adelante.
-    El texto evita reglas exactas, ponderaciones, formulas y factores positivos.
-    """
-    risks = set(score_result.get("risk_codes", []))
-    messages = []
-
-    if "morosidad_alta" in risks:
-        messages.append("regularizar posibles compromisos pendientes")
-    elif "morosidad_media" in risks:
-        messages.append("confirmar tu situacion financiera antes de avanzar")
-
-    if "deuda_alta" in risks:
-        messages.append("revisar tu nivel de endeudamiento mensual")
-    if "ahorro_bajo" in risks:
-        messages.append("fortalecer tu ahorro disponible")
-    if "continuidad_baja" in risks or "continuidad_media" in risks:
-        messages.append("consolidar mayor continuidad laboral")
-    if "ingreso_dividendo" in risks or "precio_objetivo" in risks:
-        messages.append("ajustar tus expectativas de compra o dividendo")
-    if "contrato_plazo_fijo" in risks:
-        messages.append("revisar estabilidad contractual antes de iniciar una evaluacion formal")
-    elif "contrato_honorarios_variable" in risks:
-        messages.append("respaldar ingresos variables con antecedentes consistentes")
-    elif "contrato_independiente" in risks:
-        messages.append("respaldar mejor la estabilidad de tus ingresos")
-
-    if "complemento_morosidad_alta" in risks:
-        messages.append("evaluar la situacion de morosidad del co-deudor")
-    elif "complemento_morosidad_media" in risks:
-        messages.append("confirmar la situacion financiera del co-deudor")
-
-    if "complemento_deuda_alta" in risks:
-        messages.append("revisar el nivel de endeudamiento del co-deudor")
-
-    if "complemento_tarjetas_excesivas" in risks:
-        messages.append("reducir la cantidad de tarjetas de credito del co-deudor")
-
-    if "complemento_continuidad_baja" in risks or "complemento_continuidad_media" in risks:
-        messages.append("consolidar la continuidad laboral del co-deudor")
-
-    if "complemento_relacion_debil" in risks:
-        messages.append("validar si la relacion del complemento sera aceptada formalmente")
-
-    if "complemento_sin_datos" in risks:
-        messages.append("completar la informacion del co-deudor")
-
-    if not messages:
-        return (
-            "Tu perfil no muestra riesgos principales evidentes en esta pre-evaluacion. "
-            "De todas formas, el resultado es solo orientativo y debe revisarse con antecedentes formales."
-        )
-
-    focus = ", ".join(_unique(messages[:4]))
-    return (
-        "Tu perfil presenta algunos elementos que podrian dificultar una evaluacion hipotecaria favorable. "
-        f"Te recomendamos {focus} antes de avanzar con una solicitud formal."
-    )
 
 
 def generate_improvement_plan(score_result: Dict, user_data: Dict) -> List[str]:
@@ -444,9 +384,11 @@ def calculate_score(data: Dict) -> Dict:
         "risk_codes": _unique(risk_codes),
     }
 
-    result["ai_explanation"] = generate_ai_explanation(
-        result,
-        data
+    result["ai_explanation"] = generate_user_explanation(
+        classification=clasificacion,
+        score=round(score, 1),
+        positive_indicators=_unique(positivos),
+        risks=_unique(riesgos),
     )
 
     result["improvement_plan"] = generate_improvement_plan(

@@ -120,3 +120,37 @@ NO debes:
 """
 
     return _ask_groq(prompt, max_tokens=120)
+
+
+def generate_user_explanation(
+    classification: str,
+    score: float,
+    positive_indicators: list,
+    risks: list,
+) -> str:
+    positivos_txt = "\n".join(f"- {p}" for p in positive_indicators) or "- Sin indicadores positivos"
+    riesgos_txt   = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos detectados"
+
+    prompt = f"""Eres un asesor financiero hipotecario que habla directamente con una persona interesada en comprar vivienda.
+Redacta UN párrafo de entre 80 y 120 palabras explicando los principales factores que influyeron en su evaluación.
+
+Datos de la evaluación:
+- Score: {score}/100
+- Clasificación: {classification}
+
+Factores positivos:
+{positivos_txt}
+
+Factores de riesgo:
+{riesgos_txt}
+
+El párrafo debe:
+1. Mencionar brevemente lo que jugó a su favor.
+2. Explicar de manera constructiva los factores de riesgo.
+3. Usar un tono empático e informativo, sin tecnicismos ni fórmulas.
+4. Hablar directamente al usuario en segunda persona (tú).
+5. No mencionar el puntaje exacto ni los umbrales del sistema.
+
+Responde solo el párrafo, sin títulos ni encabezados."""
+
+    return _ask_groq(prompt, max_tokens=250)
