@@ -35,7 +35,7 @@ export function useLeads({ userId, profile }) {
         const filterId = isStaff ? null : isUUID(userId) ? userId : "loading";
         if (filterId === "loading") return;
 
-        const list = await getEvaluations(filterId);
+        const list = await getEvaluations(filterId, profile?.role);
         const sorted = sortEvaluations(list);
 
         if (isStaff) {
