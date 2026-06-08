@@ -22,7 +22,7 @@ export default function Result({ data }) {
 
       <div className="result-grid">
         <section>
-          <strong>Explicacion asistida</strong>
+          <strong>Explicacion mejorada con IA</strong>
           <p>{ai_explanation}</p>
         </section>
 

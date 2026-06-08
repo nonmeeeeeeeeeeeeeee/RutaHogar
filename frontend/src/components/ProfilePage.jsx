@@ -242,7 +242,12 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                     <dd>{objetivoLabels[item.onboarding?.objetivo_principal] || "No declarado"}</dd>
                   </div>
                 </dl>
-                <p>{item.result.ai_explanation}</p>
+                {item.result.ai_explanation ? (
+                  <>
+                    <strong>Explicacion mejorada con IA</strong>
+                    <p>{item.result.ai_explanation}</p>
+                  </>
+                ) : null}
               </article>
             ))}
           </div>
