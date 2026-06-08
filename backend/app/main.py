@@ -40,6 +40,10 @@ class ScoreRequest(BaseModel):
     morosidad_complementario: Optional[str] = None
     relacion_complementario: Optional[str] = None
     consentimiento: bool
+    declara_patrimonio: bool = False
+    valor_vehiculos: Optional[float] = 0.0
+    valor_inmuebles: Optional[float] = 0.0
+    patrimonio_unit: Optional[str] = "clp"
 
     @field_validator("ingreso_mensual")
     @classmethod
@@ -55,7 +59,14 @@ class ScoreRequest(BaseModel):
             raise ValueError("El valor no puede ser negativo")
         return value
 
-    @field_validator("property_value", "property_value_uf", "property_value_clp", "monto_morosidad")
+    @field_validator(
+        "property_value", 
+        "property_value_uf", 
+        "property_value_clp", 
+        "monto_morosidad",
+        "valor_vehiculos",
+        "valor_inmuebles"
+    )
     @classmethod
     def validate_optional_non_negative(cls, value):
         if value is not None and value < 0:

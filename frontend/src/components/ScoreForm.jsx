@@ -81,6 +81,10 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
     morosidad_complementario: "",
     relacion_complementario: "",
     consentimiento: true,
+    declara_patrimonio: false,
+    valor_vehiculos: "",
+    valor_inmuebles: "",
+    patrimonio_unit: "clp",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -129,6 +133,23 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
     });
   };
 
+  const switchPatrimonioUnit = () => {
+    setForm((prev) => {
+      const nextUnit = prev.patrimonio_unit === "uf" ? "clp" : "uf";
+      const nextForm = { ...prev, patrimonio_unit: nextUnit };
+
+      if (prev.valor_vehiculos !== "") {
+        const val = Number(prev.valor_vehiculos);
+        nextForm.valor_vehiculos = String(nextUnit === "clp" ? Math.round(val * UF_VALUE_CLP) : roundCurrency(val / UF_VALUE_CLP));
+      }
+      if (prev.valor_inmuebles !== "") {
+        const val = Number(prev.valor_inmuebles);
+        nextForm.valor_inmuebles = String(nextUnit === "clp" ? Math.round(val * UF_VALUE_CLP) : roundCurrency(val / UF_VALUE_CLP));
+      }
+      return nextForm;
+    });
+  };
+
   const validate = () => {
     const missing = [];
     if (form.ingreso_mensual === "") missing.push("Ingreso mensual");
@@ -172,6 +193,17 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
       [
         ["Ingreso mensual complementario", form.ingreso_mensual_complementario],
         ["Deuda mensual complementaria", form.deuda_mensual_complementario],
+      ].forEach(([label, value]) => {
+        if (value !== "") {
+          numericRules.push([label, value, (parsed) => parsed >= 0, "no puede ser negativo."]);
+        }
+      });
+    }
+
+    if (form.declara_patrimonio) {
+      [
+        ["Valor de vehiculos", form.valor_vehiculos],
+        ["Valor de inmuebles", form.valor_inmuebles],
       ].forEach(([label, value]) => {
         if (value !== "") {
           numericRules.push([label, value, (parsed) => parsed >= 0, "no puede ser negativo."]);
@@ -234,6 +266,10 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
         morosidad_complementario: form.morosidad_complementario || undefined,
         relacion_complementario: form.relacion_complementario || undefined,
         consentimiento: form.consentimiento,
+        declara_patrimonio: form.declara_patrimonio,
+        valor_vehiculos: form.declara_patrimonio && form.valor_vehiculos !== "" ? parseFloat(form.valor_vehiculos) : 0,
+        valor_inmuebles: form.declara_patrimonio && form.valor_inmuebles !== "" ? parseFloat(form.valor_inmuebles) : 0,
+        patrimonio_unit: form.patrimonio_unit,
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
@@ -518,6 +554,55 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
               Si la persona complementaria declara morosidad, no se considerara valida para mejorar el score orientativo.
             </div>
           )}
+        </div>
+      )}
+
+      <label className="check-row">
+        <input
+          type="checkbox"
+          name="declara_patrimonio"
+          checked={form.declara_patrimonio}
+          onChange={handleChange}
+        />
+        Declarar patrimonio (Vehiculos, Inmuebles, etc.)
+      </label>
+
+      {form.declara_patrimonio && (
+        <div className="nested-fields">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h4 style={{ margin: 0 }}>Activos y Patrimonio</h4>
+            <div className="unit-toggle-group">
+               <button type="button" className={`secondary-button compact-button ${form.patrimonio_unit === 'clp' ? 'is-active' : ''}`} onClick={() => form.patrimonio_unit !== 'clp' && switchPatrimonioUnit()}>Pesos</button>
+               <button type="button" className={`secondary-button compact-button ${form.patrimonio_unit === 'uf' ? 'is-active' : ''}`} onClick={() => form.patrimonio_unit !== 'uf' && switchPatrimonioUnit()}>UF</button>
+            </div>
+          </div>
+          <div className="form-grid">
+            <label>
+              Valor total de vehiculos
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                name="valor_vehiculos"
+                value={form.valor_vehiculos}
+                onChange={handleChange}
+                placeholder={form.patrimonio_unit === "uf" ? "Ej: 400" : "Ej: 15000000"}
+              />
+            </label>
+            <label>
+              Valor total de inmuebles / otros
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                name="valor_inmuebles"
+                value={form.valor_inmuebles}
+                onChange={handleChange}
+                placeholder={form.patrimonio_unit === "uf" ? "Ej: 2500" : "Ej: 100000000"}
+              />
+            </label>
+          </div>
+          <p className="field-help">Declara el valor comercial estimado de tus activos. Esto fortalece tu perfil de cara a una evaluacion hipotecaria.</p>
         </div>
       )}
 
