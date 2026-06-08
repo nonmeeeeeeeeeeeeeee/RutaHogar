@@ -153,4 +153,8 @@ El párrafo debe:
 
 Responde solo el párrafo, sin títulos ni encabezados."""
 
-    return _ask_groq(prompt, max_tokens=250)
+    explanation = _ask_groq(prompt, max_tokens=250)
+    disclaimer = "Este resultado es orientativo y no reemplaza una evaluación bancaria formal."
+    if disclaimer not in explanation:
+        explanation = f"{explanation}\n\n{disclaimer}"
+    return explanation
