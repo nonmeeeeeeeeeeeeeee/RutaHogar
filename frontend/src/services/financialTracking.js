@@ -110,7 +110,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Aumentar ahorro disponible",
-        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia MVP, una meta saludable seria llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
+        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia financiera, una meta saludable seria llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
         months,
       ),
     );
@@ -231,6 +231,6 @@ export function buildFinancialTracking(evaluation) {
     warning: unrealisticTimeline
       ? "Esto no significa rechazo ni imposibilidad definitiva; es una senal para ajustar el objetivo antes de una evaluacion formal."
       : "",
-    ufNote: `Esta proyeccion es referencial y no corresponde a una prediccion oficial del valor de la UF. Para escenarios ligados a UF se usa una variacion anual estimada de ${(ESTIMATED_ANNUAL_UF_INCREASE * 100).toFixed(0)}% solo como supuesto MVP.`,
+    ufNote: `Esta proyeccion es referencial y no corresponde a una prediccion oficial del valor de la UF. Para escenarios ligados a UF se usa una variacion anual estimada de ${(ESTIMATED_ANNUAL_UF_INCREASE * 100).toFixed(0)}% solo como supuesto financiero.`,
   };
 }

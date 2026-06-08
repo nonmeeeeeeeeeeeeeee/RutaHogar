@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from fastapi.middleware.cors import CORSMiddleware
 from .scoring import calculate_score
 
-app = FastAPI(title="ScoreLeads MVP")
+app = FastAPI(title="ScoreLeads")
 
 app.add_middleware(
     CORSMiddleware,

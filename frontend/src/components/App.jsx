@@ -33,17 +33,17 @@ const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Numb
 const futureModules = [
   {
     title: "Objetivo inmobiliario",
-    status: "MVP activo",
+    status: "Disponible",
     description: "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluacion.",
   },
   {
     title: "Pre-evaluacion financiera",
-    status: "MVP activo",
+    status: "Disponible",
     description: "Formulario guiado, score preliminar, clasificacion y recomendaciones basicas para el usuario.",
   },
   {
     title: "Recomendaciones inteligentes",
-    status: "MVP activo",
+    status: "Disponible",
     description: "Entrega recomendaciones orientativas basadas en la ultima preevaluacion, sin reemplazar una evaluacion bancaria formal.",
   },
   {
@@ -59,7 +59,7 @@ const futureModules = [
   {
     title: "Integraciones",
     status: "Futuro",
-    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando el MVP ya este validado.",
+    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integracion este disponible.",
   },
 ];
 
@@ -429,7 +429,7 @@ export default function App() {
         <>
           <section className="hero">
             <div className="hero-copy">
-              <span className="eyebrow">MVP inmobiliario</span>
+              <span className="eyebrow">Solucion inmobiliaria</span>
               <h1>ScoreLeads</h1>
               {result && (
                 <div className={resultSaved === false ? "error-message" : "success-message"}>
@@ -442,12 +442,12 @@ export default function App() {
               )}
               <p>
                 Plataforma para preevaluar leads inmobiliarios antes de iniciar una evaluacion bancaria formal.
-                En esta etapa el foco real del producto es la pre-evaluacion financiera.
+                El foco del producto es entregar una pre-evaluacion financiera clara, rapida y orientativa.
               </p>
               <p className="hero-note">Sin documentos, sin claves bancarias y sin aprobacion bancaria.</p>
             </div>
 
-            <aside className="score-preview" aria-label="Resumen del MVP">
+            <aside className="score-preview" aria-label="Resumen de ScoreLeads">
               <span className="preview-label">Flujo activo</span>
               <strong>Formulario - Score - Recomendaciones</strong>
               <p>Resultado orientativo: Alto, Medio o Bajo.</p>
@@ -461,14 +461,14 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la vision completa de ScoreLeads. En el MVP actual estan habilitados el
+                Estas tarjetas muestran la vision completa de ScoreLeads. Actualmente estan habilitados el
                 objetivo inmobiliario y la pre-evaluacion financiera.
               </p>
             </div>
 
             <div className="module-grid">
               {futureModules.map((module) => (
-                <article className={`module-card ${module.status === "MVP activo" ? "is-active" : ""}`} key={module.title}>
+                <article className={`module-card ${module.status === "Disponible" ? "is-active" : ""}`} key={module.title}>
                   <div>
                     <span className="module-status">{module.status}</span>
                     <h3>{module.title}</h3>
@@ -483,7 +483,7 @@ export default function App() {
         <section className="evaluation-panel">
           <button className="secondary-button" onClick={() => setPage("home")}>Volver al inicio</button>
           <div className="section-heading compact">
-            <span className="eyebrow">MVP activo</span>
+            <span className="eyebrow">Disponible</span>
             <h1>Pre-evaluacion financiera</h1>
             <p>Completa todos los campos para calcular un score orientativo. El resultado no equivale a aprobacion bancaria.</p>
           </div>
@@ -535,7 +535,7 @@ export default function App() {
           <div className="section-heading">
             <span className="eyebrow">Vista no disponible</span>
             <h1>Revisa tu navegacion</h1>
-            <p>Tu rol actual no tiene acceso a esta vista del MVP.</p>
+            <p>Tu rol actual no tiene acceso a esta vista.</p>
           </div>
         </section>
       )}

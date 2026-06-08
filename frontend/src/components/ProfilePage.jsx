@@ -38,6 +38,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
   const [form, setForm] = useState(savedOnboarding);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const alternativeCommunes = form.comuna_interes
+    ? comunasMvp.filter((comuna) => comuna !== form.comuna_interes)
+    : [];
   const hasChanges = useMemo(
     () => Object.keys(savedOnboarding).some((key) => form[key] !== savedOnboarding[key]),
     [form, savedOnboarding],
@@ -49,7 +52,13 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === "comuna_interes" && value === prev.comuna_alternativa) {
+        next.comuna_alternativa = "";
+      }
+      return next;
+    });
   };
 
   const submit = async (event) => {
@@ -79,6 +88,11 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
       setError("Selecciona una comuna alternativa desde la lista o dejala vacia.");
+      return;
+    }
+
+    if (form.comuna_alternativa && form.comuna_alternativa === form.comuna_interes) {
+      setError("La comuna alternativa debe ser distinta a la comuna principal.");
       return;
     }
 
@@ -200,9 +214,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
 
             <label>
               Comuna alternativa
-              <select name="comuna_alternativa" value={form.comuna_alternativa} onChange={handleChange}>
-                <option value="">Sin comuna alternativa</option>
-                {comunasMvp.map((comuna) => (
+              <select name="comuna_alternativa" value={form.comuna_alternativa} onChange={handleChange} disabled={!form.comuna_interes}>
+                <option value="">{form.comuna_interes ? "Sin comuna alternativa" : "Elige primero una comuna principal"}</option>
+                {alternativeCommunes.map((comuna) => (
                   <option key={comuna} value={comuna}>{comuna}</option>
                 ))}
               </select>

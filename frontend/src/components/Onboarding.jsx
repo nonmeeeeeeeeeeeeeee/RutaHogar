@@ -12,10 +12,19 @@ export default function Onboarding({ initialData, onComplete }) {
     comuna_alternativa: initialData?.comuna_alternativa || "",
   });
   const [error, setError] = useState("");
+  const alternativeCommunes = form.comuna_interes
+    ? comunasMvp.filter((comuna) => comuna !== form.comuna_interes)
+    : [];
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+      if (name === "comuna_interes" && value === prev.comuna_alternativa) {
+        next.comuna_alternativa = "";
+      }
+      return next;
+    });
   };
 
   const submit = (event) => {
@@ -42,6 +51,11 @@ export default function Onboarding({ initialData, onComplete }) {
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
       setError("Selecciona una comuna alternativa desde la lista o dejala vacia.");
+      return;
+    }
+
+    if (form.comuna_alternativa && form.comuna_alternativa === form.comuna_interes) {
+      setError("La comuna alternativa debe ser distinta a la comuna principal.");
       return;
     }
 
@@ -115,9 +129,10 @@ export default function Onboarding({ initialData, onComplete }) {
               name="comuna_alternativa"
               value={form.comuna_alternativa}
               onChange={handleChange}
+              disabled={!form.comuna_interes}
             >
-              <option value="">Sin comuna alternativa</option>
-              {comunasMvp.map((comuna) => (
+              <option value="">{form.comuna_interes ? "Sin comuna alternativa" : "Elige primero una comuna principal"}</option>
+              {alternativeCommunes.map((comuna) => (
                 <option key={comuna} value={comuna}>
                   {comuna}
                 </option>

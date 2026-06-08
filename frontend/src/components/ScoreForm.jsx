@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { getLocalConsent } from "../services/profileService";
 
-const UF_VALUE_CLP = 40695;
+const FALLBACK_UF_VALUE_CLP = 40695;
 const mortgageTerms = [10, 15, 20, 25, 30];
 const buyerObjectives = new Set(["comprar_ahora", "prepararme", "evaluar_capacidad"]);
 const weakComplementRelations = new Set(["amigo", "otro"]);
@@ -33,7 +33,7 @@ function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
-function buildPropertyValues(value, unit) {
+function buildPropertyValues(value, unit, ufValueClp) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) {
     return {
@@ -44,8 +44,8 @@ function buildPropertyValues(value, unit) {
     };
   }
 
-  const valueUf = unit === "uf" ? numericValue : numericValue / UF_VALUE_CLP;
-  const valueClp = unit === "clp" ? numericValue : numericValue * UF_VALUE_CLP;
+  const valueUf = unit === "uf" ? numericValue : numericValue / ufValueClp;
+  const valueClp = unit === "clp" ? numericValue : numericValue * ufValueClp;
 
   return {
     property_value: numericValue,
@@ -88,6 +88,8 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [ufValueClp, setUfValueClp] = useState(FALLBACK_UF_VALUE_CLP);
+  const [ufStatus, setUfStatus] = useState("fallback");
   const debtExceedsIncome =
     form.ingreso_mensual !== "" &&
     form.deuda_mensual !== "" &&
@@ -100,6 +102,41 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
     declaredAge + mortgageTerm > 70;
   const showComplementRelationWarning = weakComplementRelations.has(form.relacion_complementario);
   const showComplementMorosityWarning = form.morosidad_complementario === "si";
+  const ufHelpText =
+    ufStatus === "loading"
+      ? `Consultando valor UF referencial. Respaldo interno: $${ufValueClp.toLocaleString("es-CL")}.`
+      : ufStatus === "live"
+      ? `Valor UF referencial actualizado: $${ufValueClp.toLocaleString("es-CL")}.`
+      : `Valor UF referencial: $${ufValueClp.toLocaleString("es-CL")} (respaldo interno).`;
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 2500);
+
+    async function loadUfValue() {
+      try {
+        setUfStatus("loading");
+        const response = await fetch("https://mindicador.cl/api/uf", { signal: controller.signal });
+        if (!response.ok) throw new Error("No se pudo obtener la UF.");
+        const data = await response.json();
+        const latestUf = Number(data?.serie?.[0]?.valor);
+        if (!Number.isFinite(latestUf) || latestUf <= 0) throw new Error("UF invalida.");
+        setUfValueClp(Math.round(latestUf));
+        setUfStatus("live");
+      } catch {
+        setUfValueClp(FALLBACK_UF_VALUE_CLP);
+        setUfStatus("fallback");
+      } finally {
+        window.clearTimeout(timeoutId);
+      }
+    }
+
+    loadUfValue();
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, []);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -127,8 +164,8 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
       }
       const convertedValue =
         nextUnit === "clp"
-          ? Math.round(currentValue * UF_VALUE_CLP)
-          : roundCurrency(currentValue / UF_VALUE_CLP);
+          ? Math.round(currentValue * ufValueClp)
+          : roundCurrency(currentValue / ufValueClp);
       return { ...prev, property_value_unit: nextUnit, property_value: String(convertedValue) };
     });
   };
@@ -140,11 +177,11 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
 
       if (prev.valor_vehiculos !== "") {
         const val = Number(prev.valor_vehiculos);
-        nextForm.valor_vehiculos = String(nextUnit === "clp" ? Math.round(val * UF_VALUE_CLP) : roundCurrency(val / UF_VALUE_CLP));
+        nextForm.valor_vehiculos = String(nextUnit === "clp" ? Math.round(val * ufValueClp) : roundCurrency(val / ufValueClp));
       }
       if (prev.valor_inmuebles !== "") {
         const val = Number(prev.valor_inmuebles);
-        nextForm.valor_inmuebles = String(nextUnit === "clp" ? Math.round(val * UF_VALUE_CLP) : roundCurrency(val / UF_VALUE_CLP));
+        nextForm.valor_inmuebles = String(nextUnit === "clp" ? Math.round(val * ufValueClp) : roundCurrency(val / ufValueClp));
       }
       return nextForm;
     });
@@ -236,8 +273,8 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
     setLoading(true);
     try {
       const propertyValues = asksPropertyValue
-        ? buildPropertyValues(form.property_value, form.property_value_unit)
-        : buildPropertyValues("", form.property_value_unit);
+        ? buildPropertyValues(form.property_value, form.property_value_unit, ufValueClp)
+        : buildPropertyValues("", form.property_value_unit, ufValueClp);
       const payload = {
         ingreso_mensual: parseFloat(form.ingreso_mensual),
         deuda_mensual: parseFloat(form.deuda_mensual),
@@ -270,6 +307,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
         valor_vehiculos: form.declara_patrimonio && form.valor_vehiculos !== "" ? parseFloat(form.valor_vehiculos) : 0,
         valor_inmuebles: form.declara_patrimonio && form.valor_inmuebles !== "" ? parseFloat(form.valor_inmuebles) : 0,
         patrimonio_unit: form.patrimonio_unit,
+        uf_value_clp: ufValueClp,
       };
 
       const apiBase = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
@@ -360,7 +398,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, onResul
                 </button>
               </div>
               <span className="field-help">
-                Puedes ingresarlo en UF o pesos. Para este MVP se usa UF referencial de ${UF_VALUE_CLP.toLocaleString("es-CL")}.
+                Puedes ingresarlo en UF o pesos. {ufHelpText}
               </span>
             </label>
           )}

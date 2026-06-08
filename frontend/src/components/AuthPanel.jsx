@@ -1,14 +1,52 @@
-import React, { useState } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, roleLabels, roles, signIn, signUp } from "../services/auth";
 
-function formatChileanPhone(value) {
-  const digits = value.replace(/\D/g, "").replace(/^56/, "").slice(0, 9);
-  if (!digits) return "";
-  const mobileDigits = digits.startsWith("9") ? digits : `9${digits}`.slice(0, 9);
-  const firstBlock = mobileDigits.slice(0, 1);
-  const secondBlock = mobileDigits.slice(1, 5);
-  const thirdBlock = mobileDigits.slice(5, 9);
-  return [`+56 ${firstBlock}`, secondBlock, thirdBlock].filter(Boolean).join(" ");
+const currentYear = new Date().getFullYear();
+const dayOptions = Array.from({ length: 31 }, (_, index) => {
+  const value = String(index + 1).padStart(2, "0");
+  return { value, label: value };
+});
+const monthOptions = [
+  ["01", "Enero"],
+  ["02", "Febrero"],
+  ["03", "Marzo"],
+  ["04", "Abril"],
+  ["05", "Mayo"],
+  ["06", "Junio"],
+  ["07", "Julio"],
+  ["08", "Agosto"],
+  ["09", "Septiembre"],
+  ["10", "Octubre"],
+  ["11", "Noviembre"],
+  ["12", "Diciembre"],
+].map(([value, month]) => ({ value, label: `${value} ${month}` }));
+const yearOptions = Array.from({ length: currentYear - 18 - 1900 + 1 }, (_, index) => {
+  const value = String(currentYear - 18 - index);
+  return { value, label: value };
+});
+
+function onlyDigits(value, maxLength) {
+  return value.replace(/\D/g, "").slice(0, maxLength);
+}
+
+function formatPhoneDigits(value) {
+  const digits = onlyDigits(value, 8);
+  const firstBlock = digits.slice(0, 4);
+  const secondBlock = digits.slice(4, 8);
+  return [firstBlock, secondBlock].filter(Boolean).join(" ");
+}
+
+function getNormalizedPhone(value) {
+  const digits = onlyDigits(value, 8);
+  return digits.length === 8 ? `+569${digits}` : "";
+}
+
+function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
+  const day = onlyDigits(birth_day, 2).padStart(2, "0");
+  const month = onlyDigits(birth_month, 2).padStart(2, "0");
+  const year = onlyDigits(birth_year, 4);
+  if (year.length !== 4 || day.length !== 2 || month.length !== 2) return "";
+  return `${year}-${month}-${day}`;
 }
 
 function calculateAge(birthDate) {
@@ -24,22 +62,154 @@ function calculateAge(birthDate) {
   return age;
 }
 
+function getBirthDateError(form) {
+  if (!form.birth_day || !form.birth_month || !form.birth_year) {
+    return "Ingresa tu fecha de nacimiento para crear la cuenta.";
+  }
+
+  const birthDate = buildBirthDateIso(form);
+  const dayValue = Number(onlyDigits(form.birth_day, 2));
+  const monthValue = Number(onlyDigits(form.birth_month, 2));
+  const yearValue = Number(onlyDigits(form.birth_year, 4));
+  const birth = new Date(`${birthDate}T00:00:00`);
+  const [year, month, day] = birthDate.split("-").map(Number);
+  const isInRange =
+    dayValue >= 1 &&
+    dayValue <= 31 &&
+    monthValue >= 1 &&
+    monthValue <= 12 &&
+    yearValue >= 1900 &&
+    yearValue <= currentYear;
+  const isValidDate =
+    isInRange &&
+    Number.isFinite(birth.getTime()) &&
+    birth.getFullYear() === year &&
+    birth.getMonth() === month - 1 &&
+    birth.getDate() === day;
+
+  if (!isValidDate) return "Ingresa una fecha de nacimiento válida.";
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (birth > today) return "Ingresa una fecha de nacimiento válida.";
+
+  if (calculateAge(birthDate) < 18) return "Debes ser mayor de 18 años para registrarte.";
+
+  return "";
+}
+
+function getPasswordStrength(password) {
+  const checks = [
+    password.length >= 8,
+    /[A-Z]/.test(password),
+    /[a-z]/.test(password),
+    /\d/.test(password),
+    /[^A-Za-z0-9]/.test(password),
+  ];
+  const score = checks.filter(Boolean).length;
+
+  if (!password) return { label: "Debil", level: "weak", percent: 0, score };
+  if (score <= 2) return { label: "Debil", level: "weak", percent: 25, score };
+  if (score === 3) return { label: "Media", level: "medium", percent: 50, score };
+  if (score === 4) return { label: "Segura", level: "strong", percent: 75, score };
+  return { label: "Muy segura", level: "very-strong", percent: 100, score };
+}
+
+function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, options, activeDropdown, onOpen, onClose, onBlur, onChange, onSelect }) {
+  const isOpen = activeDropdown === name;
+
+  return (
+    <div className="date-dropdown-field">
+      <input
+        type="text"
+        name={name}
+        value={value}
+        onChange={onChange}
+        onFocus={() => onOpen(name)}
+        onBlur={onBlur}
+        inputMode="numeric"
+        maxLength={maxLength}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        autoComplete="off"
+      />
+      {isOpen && (
+        <div className="date-dropdown-menu" role="listbox">
+          {options.map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              role="option"
+              aria-selected={value === option.value}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onSelect(name, option.value);
+                onClose();
+              }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function AuthPanel({ onAuth }) {
   const [mode, setMode] = useState("signin");
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
-    birth_date: "",
+    birth_day: "",
+    birth_month: "",
+    birth_year: "",
     email: "",
     password: "",
     role: roles.user,
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showWeakPasswordConfirm, setShowWeakPasswordConfirm] = useState(false);
+  const [activeDateDropdown, setActiveDateDropdown] = useState(null);
+  const passwordRef = useRef(null);
+  const formRef = useRef(null);
+  const weakPasswordConfirmedRef = useRef(false);
+  const passwordStrength = useMemo(() => getPasswordStrength(form.password), [form.password]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: name === "phone" ? formatChileanPhone(value) : value }));
+    setForm((prev) => {
+      const nextValue =
+        name === "phone"
+          ? onlyDigits(value, 8)
+          : name === "birth_day" || name === "birth_month"
+            ? onlyDigits(value, 2)
+            : name === "birth_year"
+              ? onlyDigits(value, 4)
+              : value;
+      return { ...prev, [name]: nextValue };
+    });
+
+    if (name === "password") {
+      weakPasswordConfirmedRef.current = false;
+      setShowWeakPasswordConfirm(false);
+    }
+  };
+
+  const handleBirthDateSelect = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const normalizeBirthDatePart = (name) => {
+    setForm((prev) => {
+      if (name !== "birth_day" && name !== "birth_month") return prev;
+      const digits = onlyDigits(prev[name], 2);
+      if (!digits) return prev;
+      return { ...prev, [name]: digits.padStart(2, "0") };
+    });
   };
 
   const submit = async (event) => {
@@ -56,29 +226,42 @@ export default function AuthPanel({ onAuth }) {
       return;
     }
 
+    const normalizedPhone = getNormalizedPhone(form.phone);
+    const birthDate = buildBirthDateIso(form);
+
     if (mode === "signup" && !form.phone.trim()) {
       setError("Ingresa tu telefono para crear la cuenta.");
       return;
     }
 
-    if (mode === "signup" && !/^\+56 9 \d{4} \d{4}$/.test(form.phone)) {
-      setError("Ingresa un telefono chileno valido. Ej: +56 9 1234 5678.");
+    if (mode === "signup" && !normalizedPhone) {
+      setError("Ingresa exactamente 8 digitos despues de +56 9. Ej: +56 9 1234 5678.");
       return;
     }
 
-    if (mode === "signup" && !form.birth_date) {
-      setError("Ingresa tu fecha de nacimiento para crear la cuenta.");
-      return;
-    }
-
-    if (mode === "signup" && calculateAge(form.birth_date) < 18) {
-      setError("Debes ser mayor de 18 anos para registrarte.");
-      return;
+    if (mode === "signup") {
+      const birthDateError = getBirthDateError(form);
+      if (birthDateError) {
+        setError(birthDateError);
+        return;
+      }
+      if (form.password.length < 6) {
+        setError("La contrasena debe tener al menos 6 caracteres para crear la cuenta.");
+        return;
+      }
+      if (passwordStrength.level === "weak" && !weakPasswordConfirmedRef.current) {
+        setShowWeakPasswordConfirm(true);
+        setError("");
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      const auth = mode === "signin" ? await signIn(form) : await signUp(form);
+      const auth =
+        mode === "signin"
+          ? await signIn(form)
+          : await signUp({ ...form, phone: normalizedPhone, birth_date: birthDate });
       onAuth(auth);
     } catch (err) {
       const fallback =
@@ -105,18 +288,18 @@ export default function AuthPanel({ onAuth }) {
     <section className="auth-panel">
       <div className="auth-copy">
         <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
-        <span className="eyebrow">Acceso MVP</span>
+        <span className="eyebrow">Acceso a ScoreLeads</span>
         <h1>Ingresa a tu pre-evaluacion</h1>
         <p>
-          Este acceso separa vistas por rol y protege la informacion del flujo. En modo MVP, los roles pueden
-          probarse localmente; con Supabase configurado se usa Supabase Auth.
+          Este acceso separa vistas por rol y protege la informacion del flujo. Con Supabase configurado se usa
+          autenticacion segura para gestionar las cuentas.
         </p>
         {!isSupabaseConfigured && (
-          <p className="inline-note">Modo local activo: configura VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY para usar Supabase.</p>
+          <p className="inline-note">Autenticacion de respaldo activa: configura VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY para usar Supabase.</p>
         )}
       </div>
 
-      <form className="auth-form" onSubmit={submit}>
+      <form ref={formRef} className="auth-form" onSubmit={submit}>
         <div className="segmented-control" aria-label="Modo de acceso">
           <button type="button" className={mode === "signin" ? "is-active" : ""} onClick={() => setMode("signin")}>
             Entrar
@@ -135,12 +318,71 @@ export default function AuthPanel({ onAuth }) {
 
             <label>
               Telefono
-              <input type="tel" name="phone" value={form.phone} onChange={handleChange} placeholder="+56 9 1234 5678" />
+              <div className="phone-input">
+                <span>+56 9</span>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formatPhoneDigits(form.phone)}
+                  onChange={handleChange}
+                  inputMode="numeric"
+                  maxLength="9"
+                  placeholder="1234 5678"
+                  aria-label="8 digitos restantes del telefono"
+                />
+              </div>
+              <span className="field-help">Escribe solo los 8 digitos restantes. Se guardara como +56912345678.</span>
             </label>
 
             <label>
               Fecha de nacimiento
-              <input type="date" name="birth_date" value={form.birth_date} onChange={handleChange} max={new Date().toISOString().slice(0, 10)} />
+              <div className="birth-date-grid" onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                  setActiveDateDropdown(null);
+                }
+              }}>
+                <BirthDateField
+                  name="birth_day"
+                  value={form.birth_day}
+                  onChange={handleChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthDateSelect}
+                  onBlur={() => normalizeBirthDatePart("birth_day")}
+                  maxLength="2"
+                  placeholder="DD"
+                  ariaLabel="Dia de nacimiento"
+                  options={dayOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+                <BirthDateField
+                  name="birth_month"
+                  value={form.birth_month}
+                  onChange={handleChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthDateSelect}
+                  onBlur={() => normalizeBirthDatePart("birth_month")}
+                  maxLength="2"
+                  placeholder="MM"
+                  ariaLabel="Mes de nacimiento"
+                  options={monthOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+                <BirthDateField
+                  name="birth_year"
+                  value={form.birth_year}
+                  onChange={handleChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthDateSelect}
+                  maxLength="4"
+                  placeholder="AAAA"
+                  ariaLabel="Ano de nacimiento"
+                  options={yearOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+              </div>
             </label>
           </>
         )}
@@ -152,11 +394,59 @@ export default function AuthPanel({ onAuth }) {
 
         <label>
           Contrasena
-          <input type="password" name="password" value={form.password} onChange={handleChange} placeholder="Minimo 6 caracteres" />
+          <input
+            ref={passwordRef}
+            type="password"
+            name="password"
+            value={form.password}
+            onChange={handleChange}
+            placeholder="Minimo 6 caracteres"
+          />
         </label>
+        {mode === "signup" && (
+          <div className={`password-meter ${passwordStrength.level}`}>
+            <div className="password-meter-header">
+              <span>Seguridad de contrasena</span>
+              <strong>{passwordStrength.label}</strong>
+            </div>
+            <div className="password-meter-track" aria-hidden="true">
+              <span style={{ width: `${passwordStrength.percent}%` }} />
+            </div>
+            <p>8 o mas caracteres, mayuscula, minuscula, numero y caracter especial mejoran la seguridad.</p>
+          </div>
+        )}
+
+        {showWeakPasswordConfirm && (
+          <div className="password-confirmation" role="alert">
+            <strong>Tu contrasena es debil. Deseas continuar de todas formas?</strong>
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={() => {
+                  weakPasswordConfirmedRef.current = true;
+                  setShowWeakPasswordConfirm(false);
+                  window.setTimeout(() => formRef.current?.requestSubmit(), 0);
+                }}
+              >
+                Si, continuar
+              </button>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  weakPasswordConfirmedRef.current = false;
+                  setShowWeakPasswordConfirm(false);
+                  passwordRef.current?.focus();
+                }}
+              >
+                No, mejorar contrasena
+              </button>
+            </div>
+          </div>
+        )}
 
         <label>
-          Rol para este MVP
+          Tipo de usuario
           <select name="role" value={form.role} onChange={handleChange}>
             <option value={roles.user}>{roleLabels[roles.user]}</option>
             <option value={roles.sales}>{roleLabels[roles.sales]}</option>

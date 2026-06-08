@@ -189,6 +189,148 @@ li {
   font-size: 0.9rem;
 }
 
+.phone-input {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0;
+  align-items: stretch;
+  margin-top: 7px;
+}
+
+.phone-input span {
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  padding: 0 13px;
+  border: 1px solid #93a4b5;
+  border-right: 0;
+  border-radius: 8px 0 0 8px;
+  background: #e7eef4;
+  color: #172033;
+  font-weight: 800;
+}
+
+.phone-input input {
+  margin-top: 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.birth-date-grid {
+  display: grid;
+  grid-template-columns: minmax(58px, 0.7fr) minmax(128px, 1.55fr) minmax(82px, 1fr);
+  gap: 8px;
+}
+
+.date-dropdown-field {
+  position: relative;
+  min-width: 0;
+}
+
+.date-dropdown-field input {
+  margin-top: 7px;
+}
+
+.date-dropdown-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 100%;
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgba(31, 47, 70, 0.16);
+}
+
+.date-dropdown-menu button {
+  display: block;
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  background: transparent;
+  color: #172033;
+  font-weight: 700;
+  text-align: left;
+}
+
+.date-dropdown-menu button:hover,
+.date-dropdown-menu button[aria-selected="true"] {
+  background: #eef3f8;
+  color: #246354;
+}
+
+.password-meter {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.password-meter-header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.password-meter-track {
+  overflow: hidden;
+  height: 8px;
+  border-radius: 999px;
+  background: #e7eef4;
+}
+
+.password-meter-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 160ms ease, background 160ms ease;
+}
+
+.password-meter.weak .password-meter-track span {
+  background: #b42318;
+}
+
+.password-meter.medium .password-meter-track span {
+  background: #d97706;
+}
+
+.password-meter.strong .password-meter-track span {
+  background: #246354;
+}
+
+.password-meter.very-strong .password-meter-track span {
+  background: #166534;
+}
+
+.password-meter p {
+  margin-bottom: 0;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.password-confirmation {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid #f5c27a;
+  border-radius: 8px;
+  background: #fff8eb;
+}
+
+.password-confirmation strong {
+  color: #7a4b00;
+}
+
 .navbar {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
