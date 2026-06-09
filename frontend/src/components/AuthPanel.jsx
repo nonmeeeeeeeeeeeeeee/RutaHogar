@@ -246,7 +246,7 @@ export default function AuthPanel({ onAuth }) {
         return;
       }
       if (form.password.length < 6) {
-        setError("La contrasena debe tener al menos 6 caracteres para crear la cuenta.");
+        setError("La contraseña debe tener al menos 6 caracteres para crear la cuenta.");
         return;
       }
       if (passwordStrength.level === "weak" && !weakPasswordConfirmedRef.current) {
@@ -289,7 +289,7 @@ export default function AuthPanel({ onAuth }) {
       <div className="auth-copy">
         <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
         <span className="eyebrow">Acceso a ScoreLeads</span>
-        <h1>Ingresa a tu pre-evaluacion</h1>
+        <h1>Ingresa a tu pre-evaluación</h1>
         <p>
           Este acceso separa vistas por rol y protege la información del flujo. Con Supabase configurado se usa
           autenticación segura para gestionar las cuentas.
@@ -394,20 +394,20 @@ export default function AuthPanel({ onAuth }) {
         </label>
 
         <label>
-          Contrasena
+          Contraseña
           <input
             ref={passwordRef}
             type="password"
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Minimo 6 caracteres"
+            placeholder="Mínimo 6 caracteres"
           />
         </label>
         {mode === "signup" && (
           <div className={`password-meter ${passwordStrength.level}`}>
             <div className="password-meter-header">
-              <span>Seguridad de contrasena</span>
+              <span>Seguridad de contraseña</span>
               <strong>{passwordStrength.label}</strong>
             </div>
             <div className="password-meter-track" aria-hidden="true">

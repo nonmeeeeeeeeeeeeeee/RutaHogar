@@ -433,7 +433,7 @@ export default function App() {
                   {resultSaved === false
                     ? `Score calculado: ${formatScore(result.score)} / ${result.classification}. No se pudo guardar en historial.`
                     : resultSaved === true
-                      ? `Precalificacion guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
+                      ? `Precalificación guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
                       : `Score calculado: ${formatScore(result.score)} / ${result.classification}. Guardando historial...`}
                 </div>
               )}

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-
+ 
 function formatFecha(created_at) {
   if (!created_at) return "-";
   const d = new Date(created_at);
@@ -10,16 +10,42 @@ function formatFecha(created_at) {
     year: "numeric",
   });
 }
-
+ 
+const AGE_RANGES = [
+  { label: "Todas las edades", min: 0, max: Infinity },
+  { label: "18 – 25 años", min: 18, max: 25 },
+  { label: "25 – 35 años", min: 25, max: 35 },
+  { label: "35 – 45 años", min: 35, max: 45 },
+  { label: "45 – 55 años", min: 45, max: 55 },
+  { label: "55 – 65 años", min: 55, max: 65 },
+  { label: "65+ años", min: 65, max: Infinity },
+];
+ 
 export default function DashboardLeads({ evaluations }) {
   const [filter, setFilter] = useState("todos");
+  const [filterCommune, setFilterCommune] = useState("todas");
+  const [filterAge, setFilterAge] = useState(0);
   const [selectedLead, setSelectedLead] = useState(null);
-
-  const filtered = useMemo(() => {
-    if (filter === "todos") return evaluations;
-    return evaluations.filter((item) => item.result.classification === filter);
-  }, [evaluations, filter]);
-
+ 
+  const hasActiveFilters = filter !== "todos" || filterCommune !== "todas" || filterAge !== 0;
+ 
+  const clearFilters = () => {
+    setFilter("todos");
+    setFilterCommune("todas");
+    setFilterAge(0);
+  };
+ 
+  const allCommunes = useMemo(() => {
+    const set = new Set();
+    evaluations.forEach((item) => {
+      const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
+      const alt = item.onboarding?.comuna_alternativa;
+      if (main) set.add(main);
+      if (alt) set.add(alt);
+    });
+    return [...set].sort();
+  }, [evaluations]);
+ 
   const counts = useMemo(() => {
     const c = { Alto: 0, Medio: 0, Bajo: 0 };
     evaluations.forEach((item) => {
@@ -27,7 +53,24 @@ export default function DashboardLeads({ evaluations }) {
     });
     return c;
   }, [evaluations]);
-
+ 
+  const filtered = useMemo(() => {
+    const ageRange = AGE_RANGES[filterAge];
+    return evaluations.filter((item) => {
+      if (filter !== "todos" && item.result.classification !== filter) return false;
+      if (filterCommune !== "todas") {
+        const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
+        const alt = item.onboarding?.comuna_alternativa;
+        if (main !== filterCommune && alt !== filterCommune) return false;
+      }
+      if (ageRange.min > 0 || ageRange.max !== Infinity) {
+        const age = item.input?.edad;
+        if (age == null || age < ageRange.min || age >= ageRange.max) return false;
+      }
+      return true;
+    });
+  }, [evaluations, filter, filterCommune, filterAge]);
+ 
   return (
     <section className="section-block">
       <div className="section-heading">
@@ -35,10 +78,10 @@ export default function DashboardLeads({ evaluations }) {
         <h1>Dashboard Leads</h1>
         <p>Vista para revisar leads evaluados y priorizar acciones comerciales.</p>
       </div>
-
-      <div className="toolbar">
+ 
+      <div className="toolbar-filters">
         <label>
-          Filtrar por clasificación
+          Clasificación
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="todos">Todos ({evaluations.length})</option>
             <option value="Alto">Alto ({counts.Alto})</option>
@@ -46,6 +89,27 @@ export default function DashboardLeads({ evaluations }) {
             <option value="Bajo">Bajo ({counts.Bajo})</option>
           </select>
         </label>
+ 
+        <label>
+          Comuna
+          <select value={filterCommune} onChange={(e) => setFilterCommune(e.target.value)}>
+            <option value="todas">Todas las comunas</option>
+            {allCommunes.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+ 
+        <label>
+          Rango de edad
+          <select value={filterAge} onChange={(e) => setFilterAge(Number(e.target.value))}>
+            {AGE_RANGES.map((range, i) => (
+              <option key={i} value={i}>{range.label}</option>
+            ))}
+          </select>
+        </label>
+ 
+        
       </div>
 
       <div className="table-wrap">
@@ -140,8 +204,14 @@ export default function DashboardLeads({ evaluations }) {
               <p style={{ margin: 0 }}>
                 <strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}
               </p>
+              <p style={{ margin: 0 }}><strong>Edad:</strong> {selectedLead.input?.edad ?? "-"} años</p>
               <p style={{ margin: 0 }}>
-                <strong>Comuna objetivo:</strong> {selectedLead.input?.comuna_objetivo || "-"}
+                <strong>Comuna principal:</strong>{" "}
+                {selectedLead.input?.comuna_objetivo || selectedLead.onboarding?.comuna_interes || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Comuna alternativa:</strong>{" "}
+                {selectedLead.onboarding?.comuna_alternativa || "-"}
               </p>
               <p style={{ margin: 0 }}>
                 <strong>Score:</strong> {selectedLead.result.score}
