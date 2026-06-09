@@ -1,12 +1,51 @@
 import React, { useMemo, useState } from "react";
-
+ 
+function formatFecha(created_at) {
+  if (!created_at) return "-";
+  const d = new Date(created_at);
+  if (isNaN(d.getTime())) return "-";
+  return d.toLocaleDateString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+ 
+const AGE_RANGES = [
+  { label: "Todas las edades", min: 0, max: Infinity },
+  { label: "18 – 25 años", min: 18, max: 25 },
+  { label: "25 – 35 años", min: 25, max: 35 },
+  { label: "35 – 45 años", min: 35, max: 45 },
+  { label: "45 – 55 años", min: 45, max: 55 },
+  { label: "55 – 65 años", min: 55, max: 65 },
+  { label: "65+ años", min: 65, max: Infinity },
+];
+ 
 export default function DashboardLeads({ evaluations }) {
   const [filter, setFilter] = useState("todos");
-  const filtered = useMemo(() => {
-    if (filter === "todos") return evaluations;
-    return evaluations.filter((item) => item.result.classification === filter);
-  }, [evaluations, filter]);
-
+  const [filterCommune, setFilterCommune] = useState("todas");
+  const [filterAge, setFilterAge] = useState(0);
+  const [selectedLead, setSelectedLead] = useState(null);
+ 
+  const hasActiveFilters = filter !== "todos" || filterCommune !== "todas" || filterAge !== 0;
+ 
+  const clearFilters = () => {
+    setFilter("todos");
+    setFilterCommune("todas");
+    setFilterAge(0);
+  };
+ 
+  const allCommunes = useMemo(() => {
+    const set = new Set();
+    evaluations.forEach((item) => {
+      const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
+      const alt = item.onboarding?.comuna_alternativa;
+      if (main) set.add(main);
+      if (alt) set.add(alt);
+    });
+    return [...set].sort();
+  }, [evaluations]);
+ 
   const counts = useMemo(() => {
     const c = { Alto: 0, Medio: 0, Bajo: 0 };
     evaluations.forEach((item) => {
@@ -14,25 +53,63 @@ export default function DashboardLeads({ evaluations }) {
     });
     return c;
   }, [evaluations]);
-
+ 
+  const filtered = useMemo(() => {
+    const ageRange = AGE_RANGES[filterAge];
+    return evaluations.filter((item) => {
+      if (filter !== "todos" && item.result.classification !== filter) return false;
+      if (filterCommune !== "todas") {
+        const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
+        const alt = item.onboarding?.comuna_alternativa;
+        if (main !== filterCommune && alt !== filterCommune) return false;
+      }
+      if (ageRange.min > 0 || ageRange.max !== Infinity) {
+        const age = item.input?.edad;
+        if (age == null || age < ageRange.min || age >= ageRange.max) return false;
+      }
+      return true;
+    });
+  }, [evaluations, filter, filterCommune, filterAge]);
+ 
   return (
     <section className="section-block">
       <div className="section-heading">
-        <span className="eyebrow">Gestion comercial</span>
+        <span className="eyebrow">Gestión comercial</span>
         <h1>Dashboard Leads</h1>
-        <p>Vista simple para revisar leads evaluados con datos minimos necesarios para seguimiento comercial.</p>
+        <p>Vista para revisar leads evaluados y priorizar acciones comerciales.</p>
       </div>
-
-      <div className="toolbar">
+ 
+      <div className="toolbar-filters">
         <label>
-          Filtrar por clasificacion
-          <select value={filter} onChange={(event) => setFilter(event.target.value)}>
+          Clasificación
+          <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="todos">Todos ({evaluations.length})</option>
             <option value="Alto">Alto ({counts.Alto})</option>
             <option value="Medio">Medio ({counts.Medio})</option>
             <option value="Bajo">Bajo ({counts.Bajo})</option>
           </select>
         </label>
+ 
+        <label>
+          Comuna
+          <select value={filterCommune} onChange={(e) => setFilterCommune(e.target.value)}>
+            <option value="todas">Todas las comunas</option>
+            {allCommunes.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </label>
+ 
+        <label>
+          Rango de edad
+          <select value={filterAge} onChange={(e) => setFilterAge(Number(e.target.value))}>
+            {AGE_RANGES.map((range, i) => (
+              <option key={i} value={i}>{range.label}</option>
+            ))}
+          </select>
+        </label>
+ 
+        
       </div>
 
       <div className="table-wrap">
@@ -40,30 +117,151 @@ export default function DashboardLeads({ evaluations }) {
           <thead>
             <tr>
               <th>Fecha</th>
-              <th>Email</th>
+              <th>Nombre</th>
               <th>Comuna</th>
-              <th>Clasificacion</th>
+              <th>Clasificación</th>
               <th>Riesgos</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((item) => (
               <tr key={item.id}>
-                <td>{new Date(item.created_at).toLocaleDateString("es-CL")}</td>
-                <td>{item.email}</td>
-                <td>{item.input.comuna_objetivo}</td>
-                <td><span className={`status-pill ${item.result.classification.toLowerCase()}`}>{item.result.classification}</span></td>
-                <td>{item.result.risks?.slice(0, 2).join(" ") || "Sin riesgos relevantes declarados."}</td>
+                <td>{formatFecha(item.created_at)}</td>
+                <td>{item.full_name}</td>
+                <td>{item.input?.comuna_objetivo || "-"}</td>
+                <td>
+                  <span className={`status-pill ${item.result.classification?.toLowerCase()}`}>
+                    {item.result.classification}
+                  </span>
+                </td>
+                <td>
+                  {item.result.risks?.length
+                    ? item.result.risks.slice(0, 2).join(" ")
+                    : "Sin riesgos relevantes"}
+                </td>
+                <td>
+                  <button
+                    className="secondary-button compact-button"
+                    onClick={() => setSelectedLead(item)}
+                  >
+                    Ver detalles
+                  </button>
+                </td>
               </tr>
             ))}
             {!filtered.length && (
               <tr>
-                <td colSpan="5">Aun no hay leads para este filtro.</td>
+                <td colSpan="6">Aún no existen leads para esta clasificación.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Modal de detalles */}
+      {selectedLead && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={() => setSelectedLead(null)}
+        >
+          <div
+            className="lead-detail-card"
+            style={{
+              background: "var(--color-surface, #fff)",
+              borderRadius: "14px",
+              padding: "2rem",
+              maxWidth: "80%",
+              width: "90%",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+              <h2 style={{ margin: 0 }}>Perfil del Lead</h2>
+              <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
+                Cerrar
+              </button>
+            </div>
+
+            <div style={{ display: "grid", gap: "0.4rem", marginBottom: "1.25rem" }}>
+              <p style={{ margin: 0 }}>
+                <strong>Nombre:</strong> {selectedLead.full_name || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Email:</strong> {selectedLead.email || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}
+              </p>
+              <p style={{ margin: 0 }}><strong>Edad:</strong> {selectedLead.input?.edad ?? "-"} años</p>
+              <p style={{ margin: 0 }}>
+                <strong>Comuna principal:</strong>{" "}
+                {selectedLead.input?.comuna_objetivo || selectedLead.onboarding?.comuna_interes || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Comuna alternativa:</strong>{" "}
+                {selectedLead.onboarding?.comuna_alternativa || "-"}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Score:</strong> {selectedLead.result.score}
+              </p>
+              <p style={{ margin: 0 }}>
+                <strong>Clasificación:</strong>{" "}
+                <span className={`status-pill ${selectedLead.result.classification?.toLowerCase()}`}>
+                  {selectedLead.result.classification}
+                </span>
+              </p>
+            </div>
+
+            {selectedLead.result.positive_indicators?.length > 0 && (
+              <>
+                <h3 style={{ marginBottom: "0.5rem" }}>Indicadores positivos</h3>
+                <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
+                  {selectedLead.result.positive_indicators.map((ind, i) => (
+                    <li key={i}>{ind}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {selectedLead.result.risks?.length > 0 && (
+              <>
+                <h3 style={{ marginBottom: "0.5rem" }}>Riesgos detectados</h3>
+                <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
+                  {selectedLead.result.risks.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            {selectedLead.result.executive_summary && (
+              <>
+                <h3 style={{ marginBottom: "0.5rem" }}>Resumen Ejecutivo</h3>
+                <p style={{ marginBottom: "1.25rem" }}>{selectedLead.result.executive_summary}</p>
+              </>
+            )}
+
+            {selectedLead.result.commercial_guidance && (
+              <>
+                <h3 style={{ marginBottom: "0.5rem" }}>Orientación Comercial</h3>
+                <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

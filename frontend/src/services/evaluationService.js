@@ -15,13 +15,14 @@ function writeLocalEvaluations(evaluations) {
   localStorage.setItem(EVALUATIONS_KEY, JSON.stringify(evaluations));
 }
 
-export function normalizeEvaluation(row) {
+export function normalizeEvaluation(row, profilesMap = {}) {
   if (!row) return null;
 
   const recommendationData = row.recommendations || {};
   const recommendations = Array.isArray(recommendationData)
     ? recommendationData
     : recommendationData.items || [];
+
   const onboarding = {
     objetivo_principal: row.objective || "",
     tipo_propiedad: row.property_type || "",
@@ -34,6 +35,8 @@ export function normalizeEvaluation(row) {
     id: row.id,
     created_at: row.created_at,
     email: row.email,
+    // Busca el nombre en el mapa de profiles por user_id
+    full_name: profilesMap[row.user_id] || null,
     user_id: row.user_id,
     onboarding,
     input: row.financial_data || {},
@@ -44,6 +47,9 @@ export function normalizeEvaluation(row) {
       recommendations,
       ai_explanation: row.explanation || "",
       improvement_plan: Array.isArray(recommendationData.improvement_plan) ? recommendationData.improvement_plan : [],
+      positive_indicators: Array.isArray(recommendationData.positive_indicators) ? recommendationData.positive_indicators : [],
+      executive_summary: row.executive_summary || "",
+      commercial_guidance: row.commercial_guidance || "",
     },
   };
 }
@@ -55,7 +61,6 @@ function buildRow(userId, evaluationPayload) {
   return {
     user_id: userId,
     email: evaluationPayload.email || null,
-    created_at: new Date().toISOString(),
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
     objective: onboarding.objetivo_principal || null,
@@ -69,31 +74,19 @@ function buildRow(userId, evaluationPayload) {
       items: result.recommendations || [],
       risks: result.risks || [],
       improvement_plan: result.improvement_plan || [],
+      positive_indicators: result.positive_indicators || [],
     },
+    executive_summary: result.executive_summary || null,
+    commercial_guidance: result.commercial_guidance || null,
   };
 }
 
-const evaluationSelectColumns = [
-  "id",
-  "user_id",
-  "email",
-  "score",
-  "classification",
-  "objective",
-  "property_type",
-  "target_commune",
-  "alternative_commune",
-  "purchase_timeline",
-  "financial_data",
-  "explanation",
-  "recommendations",
-  "created_at",
+const selectColumns = [
+  "id", "user_id", "email", "score", "classification",
+  "objective", "property_type", "target_commune", "alternative_commune",
+  "purchase_timeline", "financial_data", "explanation", "recommendations",
+  "executive_summary", "commercial_guidance", "created_at",
 ].join(", ");
-
-const isUUID = (id) => {
-  if (!id || typeof id !== 'string') return false;
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-};
 
 export async function createEvaluation(userId, evaluationPayload) {
   if (!isSupabaseDataConfigured) {
@@ -101,6 +94,7 @@ export async function createEvaluation(userId, evaluationPayload) {
       id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
       created_at: new Date().toISOString(),
       email: evaluationPayload.email,
+      full_name: evaluationPayload.full_name || null,
       user_id: userId,
       onboarding: evaluationPayload.onboarding || null,
       input: evaluationPayload.input || {},
@@ -112,54 +106,62 @@ export async function createEvaluation(userId, evaluationPayload) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) {
-    throw new Error("No hay usuario autenticado para guardar la preevaluacion.");
-  }
+  if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluación.");
   await ensureUserProfile(user);
 
   const { data, error } = await supabase
     .from("evaluations")
     .insert(buildRow(user.id, evaluationPayload))
-    .select(evaluationSelectColumns)
+    .select(selectColumns)
     .single();
 
-  if (error) {
-    logSupabaseError(error);
-    throw error;
-  }
+  if (error) { logSupabaseError(error); throw error; }
   return normalizeEvaluation(data);
 }
 
-export async function getEvaluations(userId) {
+export async function getEvaluations(userId, role) {
   if (!isSupabaseDataConfigured) {
-    const local = readLocalEvaluations();
-    return userId ? local.filter((item) => item.user_id === userId || item.email === userId) : local;
+    const isSales = role === "ejecutivo" || role === "admin";
+    if (isSales) return readLocalEvaluations();
+    return readLocalEvaluations().filter((item) => item.user_id === userId || item.email === userId);
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) {
-    throw new Error("No hay usuario autenticado para cargar evaluaciones.");
-  }
+  if (!user?.id) throw new Error("No hay usuario autenticado para cargar evaluaciones.");
+  await ensureUserProfile(user);
 
-  // Intentamos sincronizar el perfil pero no bloqueamos la carga si falla
-  ensureUserProfile(user).catch(err => console.warn("Error no crítico sincronizando perfil:", err));
+  const isSales = role === "ejecutivo" || role === "admin";
 
   let query = supabase
     .from("evaluations")
-    .select(evaluationSelectColumns);
+    .select(selectColumns)
+    .order("created_at", { ascending: false });
 
-  // Solo filtramos por user_id si se especificó un ID válido (no staff)
-  if (isUUID(userId)) {
-    query = query.eq("user_id", userId);
+  if (!isSales) {
+    query = query.eq("user_id", user.id);
   }
 
-  const { data, error } = await query.order("created_at", { ascending: false });
+  const { data, error } = await query;
+  if (error) { logSupabaseError(error); throw error; }
 
-  if (error) {
-    logSupabaseError(error);
-    throw error;
+  // Para ejecutivos: buscar los full_name de los profiles en una segunda query.
+  // Necesario porque evaluations.user_id apunta a auth.users (no a public.profiles),
+  // y la política RLS de profiles solo permite leer el propio — usamos service-level
+  // a través del email guardado en la evaluación como fallback.
+  let profilesMap = {};
+  if (isSales && data?.length) {
+    const userIds = [...new Set(data.map((r) => r.user_id).filter(Boolean))];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", userIds);
+
+    if (profilesData) {
+      profilesMap = Object.fromEntries(profilesData.map((p) => [p.id, p.full_name]));
+    }
   }
-  return (data || []).map(normalizeEvaluation);
+
+  return (data || []).map((row) => normalizeEvaluation(row, profilesMap));
 }
 
 export async function getLatestEvaluation(userId) {
@@ -168,43 +170,28 @@ export async function getLatestEvaluation(userId) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) {
-    throw new Error("No hay usuario autenticado para cargar la evaluacion actual.");
-  }
-  //const { data, error } = await supabase
-  let query = supabase
+  if (!user?.id) throw new Error("No hay usuario autenticado para cargar la evaluación actual.");
+
+  const { data, error } = await supabase
     .from("evaluations")
-    /*.select(evaluationSelectColumns)
+    .select(selectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(1)*/
-    .select(evaluationSelectColumns);
-
-  if (userId && isUUID(userId)) {
-    query = query.eq("user_id", userId);
-  }
-
-  const { data, error } = await query.order("created_at", { ascending: false }).limit(1)
+    .limit(1)
     .maybeSingle();
 
-  if (error) {
-    logSupabaseError(error);
-    throw error;
-  }
+  if (error) { logSupabaseError(error); throw error; }
   return normalizeEvaluation(data);
 }
 
 export async function deleteEvaluation(evaluationId, userId) {
   if (!isSupabaseDataConfigured) {
-    const next = readLocalEvaluations().filter((item) => item.id !== evaluationId);
-    writeLocalEvaluations(next);
+    writeLocalEvaluations(readLocalEvaluations().filter((item) => item.id !== evaluationId));
     return;
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) {
-    throw new Error("No hay usuario autenticado para eliminar evaluaciones.");
-  }
+  if (!user?.id) throw new Error("No hay usuario autenticado para eliminar evaluaciones.");
 
   const { error } = await supabase
     .from("evaluations")
@@ -212,10 +199,7 @@ export async function deleteEvaluation(evaluationId, userId) {
     .eq("id", evaluationId)
     .eq("user_id", user.id);
 
-  if (error) {
-    logSupabaseError(error);
-    throw error;
-  }
+  if (error) { logSupabaseError(error); throw error; }
 }
 
 export async function acceptEvaluationPlan(evaluationId, userId) {

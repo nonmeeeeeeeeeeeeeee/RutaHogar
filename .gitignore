@@ -1,6 +1,8 @@
 frontend/.env.local
 backend/.venv/
 frontend/.env
+backend/ .env
+.env
 
 # Dependencies
 node_modules/
@@ -15,3 +17,9 @@ frontend/dist/
 
 # Obsidian UI state
 **/.obsidian/workspace.json
+.vercel
+.env*
+
+stuff.txt
+
+backend/vercel.json
