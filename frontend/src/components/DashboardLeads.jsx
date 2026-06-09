@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
  
 function formatFecha(created_at) {
   if (!created_at) return "-";
@@ -138,7 +137,7 @@ export default function DashboardLeads({ evaluations }) {
                 </td>
                 <td>
                   {item.result.risks?.length
-                    ? normalizeDisplayList(item.result.risks).slice(0, 2).join(", ")
+                    ? item.result.risks.slice(0, 2).join(" ")
                     : "Sin riesgos relevantes"}
                 </td>
                 <td>
@@ -189,7 +188,7 @@ export default function DashboardLeads({ evaluations }) {
             onClick={(e) => e.stopPropagation()}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
-              <h2 style={{ margin: 0 }}>Perfil del lead</h2>
+              <h2 style={{ margin: 0 }}>Perfil del Lead</h2>
               <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
                 Cerrar
               </button>
@@ -230,7 +229,7 @@ export default function DashboardLeads({ evaluations }) {
                 <h3 style={{ marginBottom: "0.5rem" }}>Indicadores positivos</h3>
                 <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
                   {selectedLead.result.positive_indicators.map((ind, i) => (
-                    <li key={i}>{normalizeDisplayText(ind)}</li>
+                    <li key={i}>{ind}</li>
                   ))}
                 </ul>
               </>
@@ -241,7 +240,7 @@ export default function DashboardLeads({ evaluations }) {
                 <h3 style={{ marginBottom: "0.5rem" }}>Riesgos detectados</h3>
                 <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
                   {selectedLead.result.risks.map((r, i) => (
-                    <li key={i}>{normalizeDisplayText(r)}</li>
+                    <li key={i}>{r}</li>
                   ))}
                 </ul>
               </>
@@ -249,15 +248,15 @@ export default function DashboardLeads({ evaluations }) {
 
             {selectedLead.result.executive_summary && (
               <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Resumen ejecutivo</h3>
-                <p style={{ marginBottom: "1.25rem" }}>{normalizeDisplayText(selectedLead.result.executive_summary)}</p>
+                <h3 style={{ marginBottom: "0.5rem" }}>Resumen Ejecutivo</h3>
+                <p style={{ marginBottom: "1.25rem" }}>{selectedLead.result.executive_summary}</p>
               </>
             )}
 
             {selectedLead.result.commercial_guidance && (
               <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Orientación comercial</h3>
-                <p style={{ margin: 0 }}>{normalizeDisplayText(selectedLead.result.commercial_guidance)}</p>
+                <h3 style={{ marginBottom: "0.5rem" }}>Orientación Comercial</h3>
+                <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
               </>
             )}
           </div>

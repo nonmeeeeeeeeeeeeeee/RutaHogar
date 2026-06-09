@@ -1574,3 +1574,120 @@ th {
 .toolbar-filters .compact-button {
   flex-shrink: 0;
 }
+
+.field-wrap {
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 0;
+}
+
+.field-label-row label {
+  margin: 0;
+  color: #334155;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: default;
+}
+
+.field-wrap input,
+.field-wrap select {
+  margin-top: 0;
+}
+
+.field-tooltip-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.field-tooltip-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #3774cb;
+
+  outline: none;
+  box-shadow: none;
+}
+
+.field-tooltip-btn:hover,
+.field-tooltip-btn:focus,
+.field-tooltip-btn:active,
+.field-tooltip-btn.is-open {
+  background: transparent;
+  box-shadow: none;
+}
+
+.field-tooltip-btn i {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.field-tooltip-btn:hover i,
+.field-tooltip-btn.is-open i {
+  color: #123b93; /* opcional */
+}
+
+.field-tooltip-btn i {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.field-tooltip-cloud {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+
+  width: 260px;
+  padding: 12px;
+
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  box-shadow:
+    0 10px 25px rgba(0,0,0,0.08),
+    0 4px 10px rgba(0,0,0,0.04);
+
+  font-size: 13px;
+  line-height: 1.4;
+  color: #426da9;
+
+  z-index: 999;
+}
+
+/* Flechita */
+.field-tooltip-cloud::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 12px;
+
+  width: 10px;
+  height: 10px;
+
+  background: white;
+  border-left: 1px solid #e2e8f0;
+  border-top: 1px solid #e2e8f0;
+
+  transform: rotate(45deg);
+}
