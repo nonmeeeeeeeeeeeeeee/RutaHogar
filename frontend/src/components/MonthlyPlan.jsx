@@ -1,12 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { buildMonthlyPlan, formatClp, isMonetaryPlanGoal, serializeMonthlyProgress } from "../services/monthlyPlanService";
 
-const statusLabels = {
-  pendiente: "Pendiente",
-  logrado: "Logrado",
-  no_logrado: "No logrado",
-};
-
 export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }) {
   const [progressData, setProgressData] = useState(goal?.progress_data || null);
   const hasMonetaryGoal = isMonetaryPlanGoal(goal);

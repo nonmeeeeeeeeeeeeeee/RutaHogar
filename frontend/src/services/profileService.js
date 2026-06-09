@@ -1,10 +1,7 @@
 import { supabase } from "../utils/supabase";
 import { normalizePhone } from "../utils/phone";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-export const isSupabaseDataConfigured = Boolean(supabaseUrl && supabasePublishableKey && supabase);
+export const isSupabaseDataConfigured = Boolean(supabase);
 
 const roleAliases = {
   usuario_comun: "usuario",
@@ -18,7 +15,7 @@ export function normalizeRole(role) {
   return roleAliases[role] || "usuario";
 }
 
-function isUUID(id) {
+export function isUUID(id) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 

@@ -12,13 +12,13 @@ const classificationMessages = {
   Bajo: "Conviene preparar mejor tu situación financiera antes de avanzar.",
 };
 
-const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
+export const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
   maximumFractionDigits: 0,
 });
 
-const timelineMonths = {
+export const timelineMonths = {
   "0_3_meses": 3,
   "3_6_meses": 6,
   "6_12_meses": 12,
@@ -40,7 +40,7 @@ function money(value) {
   return CLP_FORMATTER.format(Math.round(number / 1000) * 1000);
 }
 
-function getTimelineMonths(onboarding) {
+export function getTimelineMonths(onboarding) {
   return timelineMonths[onboarding?.plazo_compra] || 12;
 }
 

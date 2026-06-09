@@ -1,18 +1,5 @@
 import React from "react";
-
-const timelineLabels = {
-  "0_3_meses": "0 a 3 meses",
-  "3_6_meses": "3 a 6 meses",
-  "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Más de 12 meses",
-};
-
-const propertyLabels = {
-  departamento: "Departamento",
-  casa: "Casa",
-  aun_no_lo_se: "Aún no lo sé",
-  indiferente: "Indiferente",
-};
+import { plazoLabels as timelineLabels, propertyLabels } from "../constants";
 
 export default function ObjectiveReview({ evaluation, onBack }) {
   const onboarding = evaluation?.onboarding || {};

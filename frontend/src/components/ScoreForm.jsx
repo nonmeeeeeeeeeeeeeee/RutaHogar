@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { getLocalConsent } from "../services/profileService";
+import { calculateAge } from "../utils/helpers";
 import FieldTooltip from "./FieldTooltip";
 import DataConsent from "./DataConsent";
 
@@ -26,20 +27,6 @@ const integerFormattedFields = new Set([
   "valor_inmuebles",
   "property_value",
 ]);
-
-function calculateAge(birthDate) {
-  if (!birthDate) return null;
-  const birth = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const hasBirthdayPassed =
-    today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() &&
-      today.getDate() >= birth.getDate());
-  if (!hasBirthdayPassed) age -= 1;
-  return age;
-}
 
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;

@@ -1,5 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
-import { isSupabaseConfigured, roleLabels, roles, signIn, signUp } from "../services/auth";
+import { isSupabaseDataConfigured } from "../services/profileService";
+import { calculateAge } from "../utils/helpers";
+import { roleLabels, roles, signIn, signUp } from "../services/auth";
 import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 const currentYear = new Date().getFullYear();
@@ -36,19 +38,6 @@ function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
   const year = onlyDigits(birth_year, 4);
   if (year.length !== 4 || day.length !== 2 || month.length !== 2) return "";
   return `${year}-${month}-${day}`;
-}
-
-function calculateAge(birthDate) {
-  if (!birthDate) return null;
-  const birth = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const hasBirthdayPassed =
-    today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate());
-  if (!hasBirthdayPassed) age -= 1;
-  return age;
 }
 
 function getBirthDateError(form) {
@@ -283,7 +272,7 @@ export default function AuthPanel({ onAuth }) {
           Este acceso separa vistas por rol y protege la información del flujo. Con Supabase configurado se usa
           autenticación segura para gestionar las cuentas.
         </p>
-        {!isSupabaseConfigured && (
+        {!isSupabaseDataConfigured && (
           <p className="inline-note">Autenticación de respaldo activa: configura VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY para usar Supabase.</p>
         )}
       </div>

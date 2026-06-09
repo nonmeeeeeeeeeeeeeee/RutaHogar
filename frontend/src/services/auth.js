@@ -6,13 +6,11 @@ import {
   normalizeBirthDateForStorage,
   normalizePhoneForStorage,
   normalizeRole,
+  isSupabaseDataConfigured,
 } from "./profileService";
 
 const PROFILE_KEY = "scoreleads_profile";
 const SESSION_KEY = "scoreleads_session";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const roles = {
   user: "usuario",
@@ -25,8 +23,6 @@ export const roleLabels = {
   ejecutivo: "Ejecutivo comercial",
   admin: "Admin",
 };
-
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 function readStored(key) {
   try {
@@ -104,7 +100,7 @@ function authUserAlreadyExists(data) {
 }
 
 export async function signIn({ email, password, role = roles.user }) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
       throw new Error("Supabase no está configurado correctamente.");
     }
@@ -130,7 +126,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
   const normalizedPhone = normalizePhoneForStorage(phone);
   const normalizedBirthDate = normalizeBirthDateForStorage(birth_date);
 
-  if (isSupabaseConfigured) {
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
       throw new Error("Supabase no esta configurado correctamente.");
     }
@@ -189,7 +185,7 @@ export function updateStoredProfile(profile) {
 }
 
 export async function signOut() {
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseDataConfigured) {
     await supabase.auth.signOut();
   }
   localStorage.removeItem(SESSION_KEY);

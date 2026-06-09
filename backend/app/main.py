@@ -4,6 +4,17 @@ from pydantic import BaseModel, field_validator, model_validator
 from fastapi.middleware.cors import CORSMiddleware
 from .scoring import calculate_score
 
+VALID_CONTRACT_TYPES = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
+VALID_CONTINUITY_VALUES = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
+VALID_DELINQUENCY_VALUES = {"si", "no"}
+VALID_DELINQUENCY_AGE_VALUES = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
+VALID_PROPERTY_UNITS = {"uf", "clp"}
+VALID_MORTGAGE_TERMS = {10, 15, 20, 25, 30}
+VALID_RELATION_TYPES = {
+    "conyuge", "pareja_conviviente", "pareja_hijos_comun", "padre_madre",
+    "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
+}
+
 app = FastAPI(title="ScoreLeads")
 
 app.add_middleware(
@@ -85,31 +96,28 @@ class ScoreRequest(BaseModel):
     @field_validator("plazo_credito_hipotecario")
     @classmethod
     def validate_mortgage_term(cls, value):
-        if value not in {10, 15, 20, 25, 30}:
+        if value not in VALID_MORTGAGE_TERMS:
             raise ValueError("Plazo de crédito hipotecario inválido")
         return value
 
     @field_validator("tipo_contrato")
     @classmethod
     def validate_contract_type(cls, value):
-        allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
-        if value not in allowed:
+        if value not in VALID_CONTRACT_TYPES:
             raise ValueError("Tipo de contrato inválido")
         return value
 
     @field_validator("continuidad_laboral")
     @classmethod
     def validate_work_continuity(cls, value):
-        allowed = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
-        if value not in allowed:
+        if value not in VALID_CONTINUITY_VALUES:
             raise ValueError("Continuidad laboral inválida")
         return value
 
     @field_validator("morosidad_actual")
     @classmethod
     def validate_current_delinquency(cls, value):
-        allowed = {"si", "no"}
-        if value not in allowed:
+        if value not in VALID_DELINQUENCY_VALUES:
             raise ValueError("Morosidad actual inválida")
         return value
 
@@ -117,15 +125,14 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_delinquency_age(cls, value):
         if value is not None:
-            allowed = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
-            if value not in allowed:
+            if value not in VALID_DELINQUENCY_AGE_VALUES:
                 raise ValueError("Antigüedad de morosidad inválida")
         return value
 
     @field_validator("property_value_unit")
     @classmethod
     def validate_property_value_unit(cls, value):
-        if value is not None and value not in {"uf", "clp"}:
+        if value is not None and value not in VALID_PROPERTY_UNITS:
             raise ValueError("Unidad de monto de vivienda inválida")
         return value
 
@@ -147,8 +154,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_complement_delinquency(cls, value):
         if value is not None:
-            allowed = {"si", "no"}
-            if value not in allowed:
+            if value not in VALID_DELINQUENCY_VALUES:
                 raise ValueError("Morosidad del co-deudor inválida")
         return value
 
@@ -156,8 +162,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_complement_contract(cls, value):
         if value is not None:
-            allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
-            if value not in allowed:
+            if value not in VALID_CONTRACT_TYPES:
                 raise ValueError("Tipo de contrato del co-deudor inválido")
         return value
 
@@ -165,8 +170,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_complement_continuity(cls, value):
         if value is not None:
-            allowed = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
-            if value not in allowed:
+            if value not in VALID_CONTINUITY_VALUES:
                 raise ValueError("Continuidad laboral del co-deudor inválida")
         return value
 
@@ -174,11 +178,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_complement_relation(cls, value):
         if value is not None:
-            allowed = {
-                "conyuge", "pareja_conviviente", "pareja_hijos_comun", "padre_madre",
-                "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
-            }
-            if value not in allowed:
+            if value not in VALID_RELATION_TYPES:
                 raise ValueError("Relación del complemento de renta inválida")
         return value
 

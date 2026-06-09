@@ -13,45 +13,34 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { getScoringHistory } from "./services/getScoringHistory";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
-import {
-  acceptEvaluationPlan,
-  createEvaluation,
-  deleteEvaluation as deleteStoredEvaluation,
-  getEvaluations,
-} from "./services/evaluationService";
-import {
-  createGoal,
-  getGoals,
-  updateGoalProgress,
-  updateGoalStatus,
-} from "./services/goalsService";
-import {
-  getStoredAuth,
-  roles,
-  signOut,
-  updateStoredProfile,
-} from "./services/auth";
+import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
+import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
 import {
   getConsent,
   saveConsent,
   updateProfileOnboarding,
   isSupabaseDataConfigured,
+  isUUID,
 } from "./services/profileService";
+import { formatScore } from "./utils/helpers";
+import { plazoLabels } from "./constants";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
 
-const plazoLabels = {
-  "0_3_meses": "0 a 3 meses",
-  "3_6_meses": "3 a 6 meses",
-  "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Más de 12 meses",
-};
-
-const formatScore = (score) =>
-  Number.isFinite(Number(score)) ? Math.round(Number(score)) : null;
+function getChannel() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const validChannels = ['web', 'chatbot', 'whatsapp', 'vendedor'];
+    const channel = params.get('channel');
+    if (channel && validChannels.includes(channel)) return channel;
+  } catch {}
+  return 'web';
+}
 
 const isUuidValue = (id) =>
   typeof id === "string" &&
@@ -149,18 +138,13 @@ export default function App() {
       return {};
     }
   });
+  const [scoringHistory, setScoringHistory] = useState([]);
   const [consentGranted, setConsentGranted] = useState(() => {
     const local = getConsent(null);
     return local?.granted === true;
   });
 
   const profile = auth.profile;
-  const isUUID = (id) => {
-    if (!id || typeof id !== "string") return false;
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-      id,
-    );
-  };
   const userId = isUUID(profile?.id)
     ? profile.id
     : isUUID(profile?.user_id)
@@ -225,6 +209,21 @@ export default function App() {
     }
 
     loadEvaluations();
+
+    async function loadScoringHistory() {
+      if (!userId) {
+        setScoringHistory([]);
+        return;
+      }
+      try {
+        const storedHistory = await getScoringHistory(userId);
+        if (active) setScoringHistory(storedHistory);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+    loadScoringHistory();
+
     return () => {
       active = false;
     };
@@ -360,6 +359,8 @@ export default function App() {
       positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
       executive_summary: normalizeDisplayText(scoreResult.executive_summary),
       commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
+      algorithm_version: scoreResult.algorithm_version,
+      component_scores: scoreResult.component_scores,
     };
 
     const financialInput = {
@@ -413,17 +414,19 @@ export default function App() {
       }
 
       // Solo enviamos el userId si es un UUID válido, de lo contrario pasamos null para que el servicio use el usuario autenticado
-      const savedEvaluation = await createEvaluation(
-        isUUID(userId) ? userId : null,
-        {
-          email: profile?.email || "sin-email",
-          onboarding: userOnboarding ? { ...userOnboarding } : null,
-          input: financialInput,
-          result: resultSnapshot,
-        },
-      );
+      const savedEvaluation = await createEvaluation(isUUID(userId) ? userId : null, {
+        email: profile?.email || "sin-email",
+        onboarding: userOnboarding ? { ...userOnboarding } : null,
+        input: financialInput,
+        result: resultSnapshot,
+        channel: getChannel(),
+      });
 
       setResultSaved(true);
+      setEvaluations((prev) => {
+        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
+        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
+      });
       prependEvaluation(savedEvaluation);
     } catch (err) {
       console.error(err);
@@ -688,6 +691,7 @@ export default function App() {
           profile={profile}
           onboarding={userOnboarding}
           evaluations={userEvaluations}
+          scoringHistory={scoringHistory}
           onSaveOnboarding={handleProfileOnboardingSave}
           onDeleteEvaluation={deleteEvaluation}
           onProfileUpdate={handleProfileUpdate}

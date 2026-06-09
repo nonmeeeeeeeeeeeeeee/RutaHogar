@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { submitArcoRequest } from "../services/arcoService";
 
 const CONSENT_VERSION = "1.0";
 
@@ -46,13 +47,14 @@ export default function DataConsent({ profile, onAccept, onBack, readonly }) {
   });
   const [arcoSent, setArcoSent] = useState(false);
   const [arcoError, setArcoError] = useState("");
+  const [arcoLoading, setArcoLoading] = useState(false);
 
   const handleArcoChange = (e) => {
     const { name, value } = e.target;
     setArcoForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleArcoSubmit = (e) => {
+  const handleArcoSubmit = async (e) => {
     e.preventDefault();
     setArcoError("");
 
@@ -65,25 +67,23 @@ export default function DataConsent({ profile, onAccept, onBack, readonly }) {
       return;
     }
 
-    const request = {
-      id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
-      ...arcoForm,
-      estado: "pendiente",
-      created_at: new Date().toISOString(),
-    };
-
-    const existing = (() => {
-      try {
-        return JSON.parse(localStorage.getItem("scoreleads_arco_requests")) || [];
-      } catch {
-        return [];
-      }
-    })();
-
-    localStorage.setItem("scoreleads_arco_requests", JSON.stringify([request, ...existing]));
-
-    setArcoSent(true);
-    setArcoForm({ tipo: "", email: profile?.email || "", descripcion: "" });
+    setArcoLoading(true);
+    try {
+      await submitArcoRequest({
+        tipo: arcoForm.tipo,
+        email: arcoForm.email,
+        descripcion: arcoForm.descripcion,
+        userId: profile?.id || profile?.user_id,
+        userRole: profile?.role,
+        userName: profile?.full_name,
+      });
+      setArcoSent(true);
+      setArcoForm({ tipo: "", email: profile?.email || "", descripcion: "" });
+    } catch (err) {
+      setArcoError(err.message || "Error al enviar la solicitud. Intenta de nuevo.");
+    } finally {
+      setArcoLoading(false);
+    }
   };
 
   const handleAccept = () => {
@@ -233,7 +233,9 @@ export default function DataConsent({ profile, onAccept, onBack, readonly }) {
               />
             </label>
             {arcoError && <div className="error-message">{arcoError}</div>}
-            <button type="submit" className="secondary-button">Enviar solicitud</button>
+            <button type="submit" className="secondary-button" disabled={arcoLoading}>
+              {arcoLoading ? "Enviando..." : "Enviar solicitud"}
+            </button>
           </form>
         )}
       </div>

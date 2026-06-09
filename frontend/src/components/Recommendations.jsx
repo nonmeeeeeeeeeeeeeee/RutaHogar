@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
-
-const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : "Sin score");
+import { formatScore } from "../utils/helpers";
 
 export default function Recommendations({ evaluation, onStartEvaluation }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
@@ -33,7 +32,7 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       <div className="recommendation-summary">
         <div className="score-badge-wrap">
           <span>Score actual</span>
-          <strong>{formatScore(data.score)}</strong>
+          <strong>{formatScore(data.score, "Sin score")}</strong>
           <small>{data.classification}</small>
         </div>
         <p>{data.summary}</p>
