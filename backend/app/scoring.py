@@ -267,7 +267,7 @@ def calculate_score(data: Dict) -> Dict:
     elif continuidad == "entre_6_y_12_meses":
         score -= 8
         risk_codes.append("continuidad_media")
-        riesgos.append("La continuidad laboral aun podría ser un punto a fortalecer.")
+        riesgos.append("La continuidad laboral aún podría ser un punto a fortalecer.")
         recomendaciones.append("Seguir consolidando antiguedad y estabilidad de ingresos.")
     elif continuidad == "mas_3_anios":
         score += 5
@@ -319,7 +319,7 @@ def calculate_score(data: Dict) -> Dict:
                 else:
                     score -= 5
                     risk_codes.append("complemento_contrato_independiente")
-                    riesgos.append("El co-deudor trabaja independiente con continuidad aun limitada.")
+                    riesgos.append("El co-deudor trabaja independiente con continuidad aún limitada.")
                     recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
             elif comp_contrato == "plazo_fijo":
                 score -= 10

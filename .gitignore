@@ -20,4 +20,6 @@ frontend/dist/
 .vercel
 .env*
 
+stuff.txt
+
 backend/vercel.json
