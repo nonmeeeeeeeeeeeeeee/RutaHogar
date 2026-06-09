@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
-from groq import Groq
+
+try:
+    from groq import Groq
+except ImportError:
+    Groq = None
  
 
 _env_path = Path(__file__).resolve().parent.parent / ".env"
@@ -12,13 +16,18 @@ if _env_path.exists():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
  
-_client = Groq()
-
-
 def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
     """Wrapper interno que llama a llama-3.1-8b-instant vía Groq."""
+    if Groq is None:
+        return "Resumen IA no disponible en entorno local."
+
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        return "Resumen IA no disponible: GROQ_API_KEY no configurada."
+
+    client = Groq(api_key=api_key)
     try:
-        completion = _client.chat.completions.create(
+        completion = client.chat.completions.create(
             model="llama-3.1-8b-instant",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=max_tokens,
@@ -111,3 +120,41 @@ NO debes:
 """
 
     return _ask_groq(prompt, max_tokens=120)
+
+
+def generate_user_explanation(
+    classification: str,
+    score: float,
+    positive_indicators: list,
+    risks: list,
+) -> str:
+    positivos_txt = "\n".join(f"- {p}" for p in positive_indicators) or "- Sin indicadores positivos"
+    riesgos_txt   = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos detectados"
+
+    prompt = f"""Eres un asesor financiero hipotecario que habla directamente con una persona interesada en comprar vivienda.
+Redacta UN párrafo de entre 80 y 120 palabras explicando los principales factores que influyeron en su evaluación.
+
+Datos de la evaluación:
+- Score: {score}/100
+- Clasificación: {classification}
+
+Factores positivos:
+{positivos_txt}
+
+Factores de riesgo:
+{riesgos_txt}
+
+El párrafo debe:
+1. Mencionar brevemente lo que jugó a su favor.
+2. Explicar de manera constructiva los factores de riesgo.
+3. Usar un tono empático e informativo, sin tecnicismos ni fórmulas.
+4. Hablar directamente al usuario en segunda persona (tú).
+5. No mencionar el puntaje exacto ni los umbrales del sistema.
+
+Responde solo el párrafo, sin títulos ni encabezados."""
+
+    explanation = _ask_groq(prompt, max_tokens=250)
+    disclaimer = "Este resultado es orientativo y no reemplaza una evaluación bancaria formal."
+    if disclaimer not in explanation:
+        explanation = f"{explanation}\n\n{disclaimer}"
+    return explanation

@@ -12,13 +12,13 @@ const classificationMessages = {
   Bajo: "Conviene preparar mejor tu situacion financiera antes de avanzar.",
 };
 
-const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
+export const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
   style: "currency",
   currency: "CLP",
   maximumFractionDigits: 0,
 });
 
-const timelineMonths = {
+export const timelineMonths = {
   "0_3_meses": 3,
   "3_6_meses": 6,
   "6_12_meses": 12,
@@ -40,7 +40,7 @@ function money(value) {
   return CLP_FORMATTER.format(Math.round(number / 1000) * 1000);
 }
 
-function getTimelineMonths(onboarding) {
+export function getTimelineMonths(onboarding) {
   return timelineMonths[onboarding?.plazo_compra] || 12;
 }
 
@@ -110,7 +110,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Aumentar ahorro disponible",
-        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia MVP, una meta saludable seria llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
+        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia financiera, una meta saludable seria llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
         months,
       ),
     );
@@ -222,15 +222,15 @@ export function buildFinancialTracking(evaluation) {
     score: evaluation.result?.score,
     classification,
     message: unrealisticTimeline
-      ? "Con la informacion actual, el plazo declarado no parece realista. Te recomendamos reevaluar el tipo de propiedad, comuna objetivo o aumentar el plazo antes de una nueva preevaluacion."
+      ? "Con la información actual, el plazo declarado no parece realista. Te recomendamos reevaluar el tipo de propiedad, comuna objetivo o aumentar el plazo antes de una nueva preevaluación."
       : classificationMessages[classification] || classificationMessages.Bajo,
     months,
     targetCommune: onboarding.comuna_interes || input.comuna_objetivo || "",
     propertyType: onboarding.tipo_propiedad || "",
     goals: goalsFromEvaluation(evaluation, months),
     warning: unrealisticTimeline
-      ? "Esto no significa rechazo ni imposibilidad definitiva; es una senal para ajustar el objetivo antes de una evaluacion formal."
+      ? "Esto no significa rechazo ni imposibilidad definitiva; es una señal para ajustar el objetivo antes de una evaluación formal."
       : "",
-    ufNote: `Esta proyeccion es referencial y no corresponde a una prediccion oficial del valor de la UF. Para escenarios ligados a UF se usa una variacion anual estimada de ${(ESTIMATED_ANNUAL_UF_INCREASE * 100).toFixed(0)}% solo como supuesto MVP.`,
+    ufNote: `Esta proyección es referencial y no corresponde a una predicción oficial del valor de la UF. Para escenarios ligados a UF se usa una variación anual estimada de ${(ESTIMATED_ANNUAL_UF_INCREASE * 100).toFixed(0)}% solo como supuesto financiero.`,
   };
 }

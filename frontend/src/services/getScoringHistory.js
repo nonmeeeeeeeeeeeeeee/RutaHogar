@@ -44,7 +44,7 @@ const scoringHistorySelectColumns = [
 
 export async function getScoringHistory(userId) {
   if (!isSupabaseDataConfigured) {
-    return readLocalScoringHistory().filter((item) => item.user_id === userId || item.email === userId);
+    return readLocalScoringHistory().filter((item) => item.user_id === userId);
   }
 
   const user = await getAuthenticatedUser();

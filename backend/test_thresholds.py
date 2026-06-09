@@ -1,10 +1,10 @@
 import sys
 import os
 
-# Añadir el directorio backend al sys.path para poder importar app.scoring
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), 'app')))
+# Añadir el directorio backend al sys.path para importar el paquete app.scoring
+sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from scoring import calculate_score
+from app.scoring import calculate_score
 
 def test_tc_004_alto():
     print("Ejecutando TC-004 (Parte 1): Validar umbral para clasificación 'Alto' (>= 70)")
@@ -12,6 +12,7 @@ def test_tc_004_alto():
         "ingreso_mensual": 400000,
         "deuda_mensual": 0,
         "ahorro_disponible": 100000,
+        "plazo_credito_hipotecario": 20,
         "tipo_contrato": "indefinido",
         "continuidad_laboral": "mas_3_anios",
         "morosidad_actual": "no",
@@ -37,6 +38,7 @@ def test_tc_004_medio():
         "ingreso_mensual": 400000,
         "deuda_mensual": 0,
         "ahorro_disponible": 0,
+        "plazo_credito_hipotecario": 20,
         "tipo_contrato": "independiente",
         "continuidad_laboral": "entre_6_y_12_meses",
         "morosidad_actual": "no",
@@ -47,7 +49,7 @@ def test_tc_004_medio():
     # ingreso >= 4 * dividendo (400k >= 400k): +25 -> 75
     # deuda <= 0.4 * ingreso: +0
     # ahorro < dividendo (0 < 100k): -10 -> 65
-    # contrato = independiente: -5 -> 60
+    # contrato = independiente con continuidad limitada: alerta moderada
     # continuidad = entre_6_y_12_meses: -8 -> 52
     # morosidad = no: +0
     result = calculate_score(data)
@@ -62,6 +64,7 @@ def test_tc_005_bajo():
         "ingreso_mensual": 300000,
         "deuda_mensual": 200000,
         "ahorro_disponible": 0,
+        "plazo_credito_hipotecario": 20,
         "tipo_contrato": "independiente",
         "continuidad_laboral": "menos_6_meses",
         "morosidad_actual": "si",

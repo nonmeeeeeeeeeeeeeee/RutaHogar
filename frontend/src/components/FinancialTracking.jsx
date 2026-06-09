@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { buildFinancialTracking, goalStatuses } from "../services/financialTracking";
-
-const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : "Sin score");
+import { formatScore } from "../utils/helpers";
 
 const scoreColorClass = (score) => {
   const n = Number(score);
@@ -29,9 +28,9 @@ export default function FinancialTracking({
           <h1>Mi plan de mejora</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluacion.</strong>
-          <p>Realiza una preevaluacion para generar tu seguimiento financiero.</p>
-          <button type="button" onClick={onStartEvaluation}>Iniciar pre-evaluacion</button>
+          <strong>Aun no tienes una preevaluación.</strong>
+          <p>Realiza una preevaluación para generar tu seguimiento financiero.</p>
+          <button type="button" onClick={onStartEvaluation}>Iniciar pre-evaluación</button>
         </div>
       </section>
     );
@@ -49,13 +48,13 @@ export default function FinancialTracking({
       <div className="section-heading">
         <span className="eyebrow">Seguimiento financiero</span>
         <h1>Mi plan de mejora</h1>
-        <p>Metas accionables para preparar mejor tu situacion financiera a partir de tu ultima preevaluacion.</p>
+        <p>Metas accionables para preparar mejor tu situación financiera a partir de tu ultima preevaluación.</p>
       </div>
 
       <div className="tracking-summary">
         <div className={`score-badge-wrap ${scoreColorClass(tracking.score)}`}>
           <span>Score actual</span>
-          <strong>{formatScore(tracking.score)}</strong>
+          <strong>{formatScore(tracking.score, "Sin score")}</strong>
           <small>{tracking.classification}</small>
         </div>
         <p>{tracking.message}</p>
@@ -64,7 +63,7 @@ export default function FinancialTracking({
       {tracking.warning && <div className="warning-note">{tracking.warning}</div>}
 
       {evaluation?.plan_accepted_at ? (
-        <div className="success-message">Plan activado. Podras volver a precalificar despues de avanzar en tus metas.</div>
+        <div className="success-message">Plan activado. Podrás volver a precalificar después de avanzar en tus metas.</div>
       ) : displayedGoals.length > 0 ? (
         <div className="tracking-actions">
           <button type="button" onClick={onAcceptPlan}>Aceptar plan</button>
@@ -73,8 +72,8 @@ export default function FinancialTracking({
 
       {displayedGoals.length === 0 ? (
         <div className="empty-state">
-          <strong>No hay informacion suficiente para generar un plan detallado.</strong>
-          <p>Realiza una preevaluacion completa para generar metas mensuales y acciones sugeridas.</p>
+          <strong>No hay información suficiente para generar un plan detallado.</strong>
+          <p>Realiza una preevaluación completa para generar metas mensuales y acciones sugeridas.</p>
           <button type="button" onClick={onStartEvaluation}>Ir a precalificacion</button>
         </div>
       ) : null}

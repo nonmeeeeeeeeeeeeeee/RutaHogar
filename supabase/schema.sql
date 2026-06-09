@@ -26,7 +26,9 @@ create table if not exists public.profiles (
 
 alter table public.profiles
 add column if not exists onboarding_data jsonb,
-add column if not exists last_lead_seen_at timestamptz;
+add column if not exists last_lead_seen_at timestamptz,
+add column if not exists phone text,
+add column if not exists birth_date date;
 
 alter table public.profiles
 add column if not exists consent_data jsonb;
@@ -51,7 +53,19 @@ create table if not exists public.evaluations (
 );
 
 alter table public.evaluations replica identity full;
-alter publication supabase_realtime add table public.evaluations;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+    and tablename = 'evaluations'
+    and schemaname = 'public'
+  ) then
+    alter publication supabase_realtime add table public.evaluations;
+  end if;
+end;
+$$;
 
 alter table public.evaluations
 add column if not exists objective text,
@@ -78,14 +92,6 @@ create table if not exists public.improvement_goals (
 alter table public.improvement_goals
 add column if not exists progress_data jsonb;
 
-alter table public.scoring_history
-add column if not exists algorithm_version text,
-add column if not exists channel text;
-
-alter table public.scoring_history
-alter column algorithm_version set not null,
-alter column channel set not null;
-
 create table if not exists public.scoring_history (
   id uuid primary key default gen_random_uuid(),
   evaluation_id uuid not null references public.evaluations(id) on delete restrict,
@@ -101,6 +107,14 @@ create table if not exists public.scoring_history (
   constraint scoring_history_classification_check check (classification in ('Alto', 'Medio', 'Bajo')),
   constraint scoring_history_channel_check check (channel in ('web', 'chatbot', 'whatsapp', 'vendedor'))
 );
+
+alter table public.scoring_history
+add column if not exists algorithm_version text,
+add column if not exists channel text;
+
+alter table public.scoring_history
+alter column algorithm_version set not null,
+alter column channel set not null;
 
 create index if not exists scoring_history_user_created_idx
   on public.scoring_history (user_id, created_at desc);

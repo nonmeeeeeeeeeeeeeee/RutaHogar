@@ -129,16 +129,26 @@ export async function createEvaluation(userId, evaluationPayload) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluacion.");
+  if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluación.");
   await ensureUserProfile(user);
 
   const { data, error } = await supabase
     .from("evaluations")
     .insert(buildRow(user.id, evaluationPayload))
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .single();
 
   if (error) { logSupabaseError(error); throw error; }
+
+  const historyRow = buildScoringHistoryRow(user.id, data.id, evaluationPayload);
+  const { error: historyError } = await supabase
+    .from("scoring_history")
+    .insert(historyRow);
+
+  if (historyError) {
+    logSupabaseError(historyError);
+  }
+
   return normalizeEvaluation(data);
 }
 
@@ -157,7 +167,7 @@ export async function getEvaluations(userId, role) {
 
   let query = supabase
     .from("evaluations")
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .order("created_at", { ascending: false });
 
   if (!isSales) {
@@ -193,11 +203,11 @@ export async function getLatestEvaluation(userId) {
   }
 
   const user = await getAuthenticatedUser();
-  if (!user?.id) throw new Error("No hay usuario autenticado para cargar la evaluacion actual.");
+  if (!user?.id) throw new Error("No hay usuario autenticado para cargar la evaluación actual.");
 
   const { data, error } = await supabase
     .from("evaluations")
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)

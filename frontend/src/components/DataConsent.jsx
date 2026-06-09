@@ -26,7 +26,7 @@ const dataBlocks = [
   },
   {
     title: "Documentos",
-    items: ["No se solicitan documentos en la versión actual del MVP"],
+    items: ["No se solicitan documentos en la version actual"],
   },
 ];
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { getEvaluations, normalizeEvaluation } from "../services/evaluationService";
-import { updateLastLeadSeenAt } from "../services/profileService";
+import { isUUID, updateLastLeadSeenAt } from "../services/profileService";
 import { updateStoredProfile, roles } from "../services/auth";
 import { supabase } from "../utils/supabase";
 
@@ -21,9 +21,6 @@ export function useLeads({ userId, profile }) {
   const [error, setError] = useState("");
 
   const isStaff = profile?.role === roles.sales || profile?.role === roles.admin;
-  const isUUID = (id) =>
-    typeof id === "string" &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   useEffect(() => {
     let active = true;
@@ -35,7 +32,7 @@ export function useLeads({ userId, profile }) {
         const filterId = isStaff ? null : isUUID(userId) ? userId : "loading";
         if (filterId === "loading") return;
 
-        const list = await getEvaluations(filterId);
+        const list = await getEvaluations(filterId, profile?.role);
         const sorted = sortEvaluations(list);
 
         if (isStaff) {

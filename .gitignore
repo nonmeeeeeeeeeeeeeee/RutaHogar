@@ -17,3 +17,9 @@ frontend/dist/
 
 # Obsidian UI state
 **/.obsidian/workspace.json
+.vercel
+.env*
+
+stuff.txt
+
+backend/vercel.json

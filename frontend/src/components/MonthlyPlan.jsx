@@ -1,12 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { buildMonthlyPlan, formatClp, isMonetaryPlanGoal, serializeMonthlyProgress } from "../services/monthlyPlanService";
 
-const statusLabels = {
-  pendiente: "Pendiente",
-  logrado: "Logrado",
-  no_logrado: "No logrado",
-};
-
 export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }) {
   const [progressData, setProgressData] = useState(goal?.progress_data || null);
   const hasMonetaryGoal = isMonetaryPlanGoal(goal);
@@ -50,7 +44,7 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
       ) : !plan.hasValidTarget ? (
         <div className="empty-state">
           <strong>Plan sin metas monetarias calculadas.</strong>
-          <p>No hay una meta adicional de ahorro o reduccion mensual para esta evaluacion. Mantén estabilidad y revisa tus avances antes de volver a evaluar.</p>
+          <p>No hay una meta adicional de ahorro o reduccion mensual para esta evaluación. Mantén estabilidad y revisa tus avances antes de volver a evaluar.</p>
         </div>
       ) : (
         <>
@@ -85,7 +79,7 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
                 </div>
 
                 <label>
-                  Cuanto lograste ahorrar este mes?
+                  ¿Cuánto lograste ahorrar este mes?
                   <input
                     type="number"
                     min="0"

@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import AdminPanel from "./components/AdminPanel";
 import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
-import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
@@ -14,78 +13,60 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
-import { getScoringHistory } from "./services/getScoringHistory";
-import { useLeads } from "./hooks/useLeads";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
-import {
-  getConsent,
-  saveConsent,
-  updateProfileOnboarding,
-  isSupabaseDataConfigured,
-  isUUID,
-} from "./services/profileService";
-import { formatScore } from "./utils/helpers";
-import { plazoLabels } from "./constants";
+import { updateProfileOnboarding, isSupabaseDataConfigured } from "./services/profileService";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
+const LAST_LEAD_CHECK_KEY = "scoreleads_last_lead_check";
 
-function getChannel() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const validChannels = ['web', 'chatbot', 'whatsapp', 'vendedor'];
-    const channel = params.get('channel');
-    if (channel && validChannels.includes(channel)) return channel;
-  } catch {}
-  return 'web';
-}
+const plazoLabels = {
+  "0_3_meses": "0 a 3 meses",
+  "3_6_meses": "3 a 6 meses",
+  "6_12_meses": "6 a 12 meses",
+  "mas_12_meses": "Mas de 12 meses",
+};
+
+const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
 
 const futureModules = [
   {
     title: "Objetivo inmobiliario",
     status: "Disponible",
-    description:
-      "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluación.",
+    description: "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluación.",
   },
   {
     title: "Pre-evaluación financiera",
     status: "Disponible",
-    description:
-      "Formulario guiado, score preliminar, clasificacion y recomendaciones básicas para el usuario.",
+    description: "Formulario guiado, score preliminar, clasificación y recomendaciones básicas para el usuario.",
   },
   {
     title: "Recomendaciones inteligentes",
     status: "Disponible",
-    description:
-      "Entrega recomendaciones orientativas basadas en la ultima preevaluación, sin reemplazar una evaluación bancaria formal.",
+    description: "Entrega recomendaciones orientativas basadas en la última preevaluación, sin reemplazar una evaluación bancaria formal.",
   },
   {
     title: "Priorización comercial",
     status: "Futuro",
-    description:
-      "Vista para equipos comerciales con leads ordenados por viabilidad y principales factores de riesgo.",
+    description: "Vista para equipos comerciales con leads ordenados por viabilidad y principales factores de riesgo.",
   },
   {
     title: "Seguimiento financiero",
     status: "Futuro",
-    description:
-      "Plan de preparación para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
+    description: "Plan de preparación para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
   },
   {
     title: "Integraciones",
     status: "Futuro",
-    description:
-      "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración este disponible.",
+    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración este disponible.",
   },
 ];
 
 export default function App() {
   const storedAuth = useMemo(() => getStoredAuth(), []);
   const [auth, setAuth] = useState(storedAuth);
-  const [page, setPage] = useState(() =>
-    storedAuth.profile?.role === roles.user ? "onboarding" : "home",
-  );
+  const [page, setPage] = useState(() => (storedAuth.profile?.role === roles.user ? "onboarding" : "home"));
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
@@ -98,49 +79,23 @@ export default function App() {
       return {};
     }
   });
-  const [scoringHistory, setScoringHistory] = useState([]);
-  const [consentGranted, setConsentGranted] = useState(() => {
-    const local = getConsent(null);
-    return local?.granted === true;
-  });
+  const [evaluations, setEvaluations] = useState([]);
+  const [newHighLeadsCount, setNewHighLeadsCount] = useState(0);
 
   const profile = auth.profile;
-  const userId = isUUID(profile?.id)
-    ? profile.id
-    : isUUID(profile?.user_id)
-      ? profile.user_id
-      : null;
-  const {
-    evaluations,
-    setEvaluations,
-    newHighLeadsCount,
-    counts,
-    error: leadsError,
-    markLeadsSeen,
-    dismissToastLocally,
-    removeEvaluation,
-    prependEvaluation,
-  } = useLeads({ userId, profile });
-  const visibleError = dataError || leadsError;
+  const isUUID = (id) => {
+    if (!id || typeof id !== 'string') return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+  };
+  const userId = isUUID(profile?.id) ? profile.id : isUUID(profile?.user_id) ? profile.user_id : null;
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
-  const userOnboarding = userId
-    ? profile?.onboarding_data ||
-      onboarding[userId] ||
-      onboarding[profile?.email] ||
-      currentEvaluation?.onboarding ||
-      null
-    : null;
-  const currentScoreNumber = currentEvaluation
-    ? formatScore(currentEvaluation.result?.score)
-    : null;
+  const userOnboarding = userId ? profile?.onboarding_data || onboarding[userId] || onboarding[profile?.email] || currentEvaluation?.onboarding || null : null;
+  const currentScoreNumber = currentEvaluation ? formatScore(currentEvaluation.result?.score) : null;
   const currentScore =
     currentEvaluation && currentScoreNumber !== null
-      ? {
-          score: currentScoreNumber,
-          classification: currentEvaluation.result.classification,
-        }
+      ? { score: currentScoreNumber, classification: currentEvaluation.result.classification }
       : null;
 
   useEffect(() => {
@@ -154,33 +109,51 @@ export default function App() {
 
       try {
         setDataError("");
-        const storedEvaluations = await getEvaluations(userId, profile?.role);
+
+        const userRole = profile?.role;
+        const isStaff = userRole === roles.sales || userRole === roles.admin;
+        
+        const filterId = isStaff ? null : (userId || "loading");
+        
+        if (filterId === "loading") return; 
+
+        let storedEvaluations = await getEvaluations(filterId);
+
+        const classificationOrder = {
+          "Alto": 1,
+          "Medio": 2,
+          "Bajo": 3,
+        };
+        storedEvaluations.sort((a, b) => {
+          const orderA = classificationOrder[a.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
+          const orderB = classificationOrder[b.result.classification] || 99; // Asigna un valor alto si la clasificación es desconocida
+          if (orderA !== orderB) {
+            return orderA - orderB; // Ordena por clasificación (Alto primero)
+          }
+          // Orden secundario: más reciente primero si las clasificaciones son iguales
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        // Lógica de notificación para ejecutivos
+        if (isStaff) {
+          const lastCheck = localStorage.getItem(LAST_LEAD_CHECK_KEY) || new Date(0).toISOString();
+          const freshHighLeads = storedEvaluations.filter(
+            ev => 
+              ev.result.classification === "Alto" && 
+              ev.created_at > lastCheck &&
+              ev.user_id !== userId // No notificarse a sí mismo si está probando
+          );
+          setNewHighLeadsCount(freshHighLeads.length);
+        }
+
         if (active) setEvaluations(storedEvaluations);
       } catch (err) {
-        console.error(err);
-        if (active)
-          setDataError(
-            "No pudimos cargar tu historial. Revisa que las tablas de Supabase esten creadas y vuelve a intentar.",
-          );
+        console.error("Error al cargar evaluaciones:", err);
+        if (active) setDataError("No pudimos cargar tu historial.");
       }
     }
 
     loadEvaluations();
-
-    async function loadScoringHistory() {
-      if (!userId) {
-        setScoringHistory([]);
-        return;
-      }
-      try {
-        const storedHistory = await getScoringHistory(userId);
-        if (active) setScoringHistory(storedHistory);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    loadScoringHistory();
-
     return () => {
       active = false;
     };
@@ -215,10 +188,7 @@ export default function App() {
         if (active) setTrackingGoals(createdGoals);
       } catch (err) {
         console.error(err);
-        if (active)
-          setDataError(
-            "No pudimos cargar tus metas de seguimiento. Revisa la configuración de Supabase.",
-          );
+        if (active) setDataError("No pudimos cargar tus metas de seguimiento.");
       }
     }
 
@@ -227,10 +197,6 @@ export default function App() {
       active = false;
     };
   }, [userId, currentEvaluation?.id, page]);
-
-  useEffect(() => {
-    if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
-  }, [page]);
 
   const startEvaluation = () => {
     setResult(null);
@@ -279,34 +245,15 @@ export default function App() {
       await saveOnboardingAnswers(answers);
     } catch (err) {
       console.error(err);
-      setDataError(
-        "No se pudieron guardar tus respuestas preliminares. Puedes intentarlo nuevamente desde Perfil.",
-      );
+      setDataError("No se pudieron guardar tus respuestas preliminares. Puedes intentarlo nuevamente desde Perfil.");
     }
     setResult(null);
-    if (consentGranted) {
-      setPage("evaluate");
-    } else {
-      setPage("dataconsent");
-    }
+    setPage("evaluate");
   };
 
   const handleProfileOnboardingSave = async (answers) => {
     setDataError("");
     await saveOnboardingAnswers(answers);
-  };
-
-  const handleProfileUpdate = (updatedProfile) => {
-    const nextProfile = updateStoredProfile(updatedProfile);
-    setAuth((prev) => ({ ...prev, profile: nextProfile }));
-  };
-
-  const handleDataConsent = async (consentData) => {
-    if (userId) {
-      await saveConsent(userId, consentData);
-    }
-    setConsentGranted(true);
-    setPage("evaluate");
   };
 
   const handleResult = async (scoreResult, input) => {
@@ -317,56 +264,36 @@ export default function App() {
       recommendations: [...(scoreResult.recommendations || [])],
       ai_explanation: scoreResult.ai_explanation,
       improvement_plan: [...(scoreResult.improvement_plan || [])],
-      positive_indicators: [...(scoreResult.positive_indicators || [])],
-      executive_summary: scoreResult.executive_summary || "",
-      commercial_guidance: scoreResult.commercial_guidance || "",
-      algorithm_version: scoreResult.algorithm_version,
-      component_scores: scoreResult.component_scores,
     };
 
     const financialInput = {
       ingreso_mensual: input.ingreso_mensual,
       deuda_mensual: input.deuda_mensual,
-      edad: input.edad,
       ahorro_disponible: input.ahorro_disponible,
-      property_value: input.property_value,
-      property_value_unit: input.property_value_unit,
-      property_value_uf: input.property_value_uf,
-      property_value_clp: input.property_value_clp,
-      plazo_credito_hipotecario: input.plazo_credito_hipotecario,
       dividendo_estimado: input.dividendo_estimado,
       comuna_objetivo: input.comuna_objetivo,
       tipo_contrato: input.tipo_contrato,
       continuidad_laboral: input.continuidad_laboral,
       morosidad_actual: input.morosidad_actual,
-      monto_morosidad: input.monto_morosidad,
-      antiguedad_morosidad: input.antiguedad_morosidad,
       complemento_renta: input.complemento_renta,
-      ingreso_mensual_complementario: input.ingreso_mensual_complementario,
-      deuda_mensual_complementario: input.deuda_mensual_complementario,
-      tipo_contrato_complementario: input.tipo_contrato_complementario,
-      continuidad_laboral_complementario:
-        input.continuidad_laboral_complementario,
-      morosidad_complementario: input.morosidad_complementario,
-      relacion_complementario: input.relacion_complementario,
+      declara_patrimonio: input.declara_patrimonio,
+      valor_vehiculos: input.valor_vehiculos,
+      valor_inmuebles: input.valor_inmuebles,
+      patrimonio_unit: input.patrimonio_unit,
     };
 
     try {
       setResult(resultSnapshot);
       setResultSaved(null);
-
+      
       // Si el score es Bajo, redirigir a educación financiera (recommendations)
       // De lo contrario, ir al home para ver el resultado detallado
-      setPage(
-        resultSnapshot.classification === "Alto" ? "home" : "recommendations",
-      );
+      setPage(resultSnapshot.classification === "Bajo" ? "recommendations" : "home");
 
       setDataError("");
       // Corrección: se usaban variables 'rt' y 't' no definidas.
       if (isSupabaseDataConfigured && !auth.session) {
-        throw new Error(
-          "No hay una sesión activa. Por favor, inicia sesión nuevamente.",
-        );
+        throw new Error("No hay una sesión activa. Por favor, inicia sesión nuevamente.");
       }
 
       // Solo enviamos el userId si es un UUID válido, de lo contrario pasamos null para que el servicio use el usuario autenticado
@@ -375,32 +302,22 @@ export default function App() {
         onboarding: userOnboarding ? { ...userOnboarding } : null,
         input: financialInput,
         result: resultSnapshot,
-        channel: getChannel(),
       });
 
       setResultSaved(true);
-      setEvaluations((prev) => {
-        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
-        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
-      });
-      prependEvaluation(savedEvaluation);
+      setEvaluations((prev) => [savedEvaluation, ...prev.filter((item) => item.id !== savedEvaluation.id)].slice(0, 25));
     } catch (err) {
       console.error(err);
       setResultSaved(false);
-      setDataError(
-        "El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesion siga activa y que Supabase permita insertar evaluaciones.",
-      );
+      setDataError("El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesión siga activa.");
     }
   };
 
   const deleteEvaluation = async (evaluationId) => {
     try {
       setDataError("");
-      await deleteStoredEvaluation(
-        evaluationId,
-        userId || profile?.email || "local-user",
-      );
-      removeEvaluation(evaluationId);
+      await deleteStoredEvaluation(evaluationId, userId || profile?.email || "local-user");
+      setEvaluations((prev) => prev.filter((item) => item.id !== evaluationId));
       setTrackingGoals([]);
     } catch (err) {
       console.error(err);
@@ -411,15 +328,9 @@ export default function App() {
   const handleGoalStatusChange = async (goalId, status) => {
     try {
       setDataError("");
-      const updatedGoal = await updateGoalStatus(
-        goalId,
-        userId || profile?.email || "local-user",
-        status,
-      );
+      const updatedGoal = await updateGoalStatus(goalId, userId || profile?.email || "local-user", status);
       if (updatedGoal) {
-        setTrackingGoals((prev) =>
-          prev.map((goal) => (goal.id === updatedGoal.id ? updatedGoal : goal)),
-        );
+        setTrackingGoals((prev) => prev.map((goal) => (goal.id === updatedGoal.id ? updatedGoal : goal)));
       }
     } catch (err) {
       console.error(err);
@@ -432,52 +343,29 @@ export default function App() {
 
     try {
       setDataError("");
-      const updatedEvaluation = await acceptEvaluationPlan(
-        currentEvaluation.id,
-        userId || profile?.email || "local-user",
-      );
+      const updatedEvaluation = await acceptEvaluationPlan(currentEvaluation.id, userId || profile?.email || "local-user");
       if (updatedEvaluation) {
-        setEvaluations((prev) =>
-          prev.map((item) =>
-            item.id === updatedEvaluation.id ? updatedEvaluation : item,
-          ),
-        );
+        setEvaluations((prev) => prev.map((item) => (item.id === updatedEvaluation.id ? updatedEvaluation : item)));
       }
-      setDataError(
-        "Plan activado. Podrás volver a precalificar después de avanzar en tus metas.",
-      );
+      setDataError("Plan activado. Podrás volver a precalificar después de avanzar en tus metas.");
     } catch (err) {
       console.error(err);
-      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+      setDataError("No pudimos activar el plan. Inténtalo nuevamente.");
     }
   };
 
   const handleOpenGoalPlan = (goal) => {
     setActiveGoal(goal);
-    setPage(
-      goal.title === "Revisar objetivo inmobiliario"
-        ? "objective-review"
-        : "monthly-plan",
-    );
+    setPage(goal.title === "Revisar objetivo inmobiliario" ? "objective-review" : "monthly-plan");
   };
 
   const handleSaveGoalProgress = async (goalId, progressData) => {
     try {
       setDataError("");
-      const updatedGoal = await updateGoalProgress(
-        goalId,
-        userId || profile?.email || "local-user",
-        progressData,
-      );
+      const updatedGoal = await updateGoalProgress(goalId, userId || profile?.email || "local-user", progressData);
       if (updatedGoal) {
-        setTrackingGoals((prev) =>
-          prev.map((goal) =>
-            goal.id === updatedGoal.id ? { ...goal, ...updatedGoal } : goal,
-          ),
-        );
-        setActiveGoal((prev) =>
-          prev?.id === updatedGoal.id ? { ...prev, ...updatedGoal } : prev,
-        );
+        setTrackingGoals((prev) => prev.map((goal) => (goal.id === updatedGoal.id ? { ...goal, ...updatedGoal } : goal)));
+        setActiveGoal((prev) => (prev?.id === updatedGoal.id ? { ...prev, ...updatedGoal } : prev));
       }
     } catch (err) {
       console.error(err);
@@ -495,9 +383,16 @@ export default function App() {
     setResultSaved(null);
   };
 
-  const handleNotificationClick = () => setPage("leads");
+  const handleNotificationClick = () => {
+    setNewHighLeadsCount(0);
+    localStorage.setItem(LAST_LEAD_CHECK_KEY, new Date().toISOString());
+    setPage("leads");
+  };
 
-  const handleDismissNotification = () => markLeadsSeen();
+  const handleDismissNotification = () => {
+    setNewHighLeadsCount(0);
+    localStorage.setItem(LAST_LEAD_CHECK_KEY, new Date().toISOString());
+  };
 
   if (!profile) {
     return (
@@ -513,59 +408,40 @@ export default function App() {
         profile={profile}
         page={page}
         currentScore={currentScore}
-        onNavigate={(nextPage) =>
-          nextPage === "evaluate" ? startEvaluation() : setPage(nextPage)
-        }
+        onNavigate={(nextPage) => (nextPage === "evaluate" ? startEvaluation() : setPage(nextPage))}
         onLogout={handleLogout}
       />
-      {visibleError && <div className="error-message">{visibleError}</div>}
+      {dataError && <div className="error-message">{dataError}</div>}
 
       {/* Notificación para ejecutivos */}
-      <NotificationToast
-        count={newHighLeadsCount}
+      <NotificationToast 
+        count={newHighLeadsCount} 
         onClick={handleNotificationClick}
         onClose={handleDismissNotification}
       />
 
       {page === "onboarding" && profile.role === roles.user ? (
-        <Onboarding
-          initialData={userOnboarding}
-          onComplete={handleOnboardingComplete}
-        />
-      ) : page === "dataconsent" && profile.role === roles.user ? (
-        <DataConsent
-          profile={profile}
-          readonly={consentGranted}
-          onAccept={handleDataConsent}
-          onBack={() => setPage(consentGranted ? "evaluate" : "onboarding")}
-        />
+        <Onboarding initialData={userOnboarding} onComplete={handleOnboardingComplete} />
       ) : page === "home" ? (
         <>
           <section className="hero">
             <div className="hero-copy">
-              <span className="eyebrow">Solucion inmobiliaria</span>
+              <span className="eyebrow">Solución inmobiliaria</span>
               <h1>ScoreLeads</h1>
               {result && (
-                <div
-                  className={
-                    resultSaved === false ? "error-message" : "success-message"
-                  }
-                >
+                <div className={resultSaved === false ? "error-message" : "success-message"}>
                   {resultSaved === false
                     ? `Score calculado: ${formatScore(result.score)} / ${result.classification}. No se pudo guardar en historial.`
                     : resultSaved === true
-                      ? `Precalificacion guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
+                      ? `Precalificación guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
                       : `Score calculado: ${formatScore(result.score)} / ${result.classification}. Guardando historial...`}
                 </div>
               )}
               <p>
-                Plataforma para preevaluar leads inmobiliarios antes de iniciar
-                una evaluación bancaria formal. El foco del producto es entregar
-                una pre-evaluación financiera clara, rapida y orientativa.
+                Plataforma para preevaluar leads inmobiliarios antes de iniciar una evaluación bancaria formal.
+                El foco del producto es entregar una pre-evaluación financiera clara, rápida y orientativa.
               </p>
-              <p className="hero-note">
-                Sin documentos, sin claves bancarias y sin aprobación bancaria.
-              </p>
+              <p className="hero-note">Sin documentos, sin claves bancarias y sin aprobación bancaria.</p>
             </div>
 
             <aside className="score-preview" aria-label="Resumen de ScoreLeads">
@@ -582,18 +458,14 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la visión completa de ScoreLeads.
-                Actualmente estan habilitados el objetivo inmobiliario y la
-                pre-evaluación financiera.
+                Estas tarjetas muestran la visión completa de ScoreLeads. Actualmente están habilitados el
+                objetivo inmobiliario y la pre-evaluación financiera.
               </p>
             </div>
 
             <div className="module-grid">
               {futureModules.map((module) => (
-                <article
-                  className={`module-card ${module.status === "Disponible" ? "is-active" : ""}`}
-                  key={module.title}
-                >
+                <article className={`module-card ${module.status === "Disponible" ? "is-active" : ""}`} key={module.title}>
                   <div>
                     <span className="module-status">{module.status}</span>
                     <h3>{module.title}</h3>
@@ -606,51 +478,30 @@ export default function App() {
         </>
       ) : page === "evaluate" ? (
         <section className="evaluation-panel">
-          <button className="secondary-button" onClick={() => setPage("home")}>
-            Volver al inicio
-          </button>
+          <button className="secondary-button" onClick={() => setPage("home")}>Volver al inicio</button>
           <div className="section-heading compact">
             <span className="eyebrow">Disponible</span>
             <h1>Pre-evaluación financiera</h1>
-            <p>
-              Completa todos los campos para calcular un score orientativo. El
-              resultado no equivale a aprobación bancaria.
-            </p>
+            <p>Completa todos los campos para calcular un score orientativo. El resultado no equivale a aprobación bancaria.</p>
           </div>
           {userOnboarding && (
             <div className="context-summary">
               <strong>Contexto inicial</strong>
-              <span>
-                {userOnboarding.comuna_interes} ·{" "}
-                {plazoLabels[userOnboarding.plazo_compra] ||
-                  userOnboarding.plazo_compra}
-              </span>
-              <button
-                className="secondary-button compact-button"
-                type="button"
-                onClick={() => setPage("onboarding")}
-              >
+              <span>{userOnboarding.comuna_interes} · {plazoLabels[userOnboarding.plazo_compra] || userOnboarding.plazo_compra}</span>
+              <button className="secondary-button compact-button" type="button" onClick={() => setPage("onboarding")}>
                 Editar contexto
               </button>
             </div>
           )}
-          <ScoreForm
-            targetCommune={userOnboarding?.comuna_interes}
-            objective={userOnboarding?.objetivo_principal}
-            birthDate={profile?.birth_date}
-            profile={profile}
-            onResult={handleResult}
-          />
+          <ScoreForm targetCommune={userOnboarding?.comuna_interes} onResult={handleResult} />
         </section>
       ) : page === "profile" && profile.role === roles.user ? (
         <ProfilePage
           profile={profile}
           onboarding={userOnboarding}
           evaluations={userEvaluations}
-          scoringHistory={scoringHistory}
           onSaveOnboarding={handleProfileOnboardingSave}
           onDeleteEvaluation={deleteEvaluation}
-          onProfileUpdate={handleProfileUpdate}
         />
       ) : page === "tracking" && profile.role === roles.user ? (
         <FinancialTracking
@@ -669,15 +520,9 @@ export default function App() {
           onSaveProgress={handleSaveGoalProgress}
         />
       ) : page === "objective-review" && profile.role === roles.user ? (
-        <ObjectiveReview
-          evaluation={currentEvaluation}
-          onBack={() => setPage("tracking")}
-        />
+        <ObjectiveReview evaluation={currentEvaluation} onBack={() => setPage("tracking")} />
       ) : page === "recommendations" && profile.role === roles.user ? (
-        <Recommendations
-          evaluation={currentEvaluation}
-          onStartEvaluation={startEvaluation}
-        />
+        <Recommendations evaluation={currentEvaluation} onStartEvaluation={startEvaluation} />
       ) : page === "leads" && profile.role === roles.sales ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (
@@ -686,7 +531,7 @@ export default function App() {
         <section className="section-block">
           <div className="section-heading">
             <span className="eyebrow">Vista no disponible</span>
-            <h1>Revisa tu navegacion</h1>
+            <h1>Revisa tu navegación</h1>
             <p>Tu rol actual no tiene acceso a esta vista.</p>
           </div>
         </section>

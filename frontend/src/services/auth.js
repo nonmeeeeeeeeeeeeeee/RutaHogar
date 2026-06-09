@@ -1,11 +1,16 @@
 import { supabase } from "../utils/supabase";
-import { ensureUserProfile, getCurrentProfile, normalizeRole } from "./profileService";
+import {
+  ensureUserProfile,
+  getCurrentProfile,
+  logSupabaseError,
+  normalizeBirthDateForStorage,
+  normalizePhoneForStorage,
+  normalizeRole,
+  isSupabaseDataConfigured,
+} from "./profileService";
 
 const PROFILE_KEY = "scoreleads_profile";
 const SESSION_KEY = "scoreleads_session";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export const roles = {
   user: "usuario",
@@ -18,8 +23,6 @@ export const roleLabels = {
   ejecutivo: "Ejecutivo comercial",
   admin: "Admin",
 };
-
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 function readStored(key) {
   try {
@@ -39,17 +42,21 @@ function saveSession(session, profile) {
 
 function buildProfile(user, preferredRole = roles.user, persistedProfile = null) {
   if (!user?.id) {
-    throw new Error("No se pudo obtener la informacion del usuario.");
+    throw new Error("No se pudo obtener la información del usuario.");
   }
 
   const fullName = persistedProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
   const role = normalizeRole(persistedProfile?.role || user.user_metadata?.role || preferredRole);
+  const phone = persistedProfile?.phone || user.user_metadata?.phone || "";
+  const birthDate = persistedProfile?.birth_date || user.user_metadata?.birth_date || "";
 
   return {
     id: user.id,
     user_id: user.id,
     email: user.email,
     full_name: fullName,
+    phone,
+    birth_date: birthDate,
     role,
     onboarding_data: persistedProfile?.onboarding_data || null,
     last_lead_seen_at: persistedProfile?.last_lead_seen_at || null,
@@ -58,7 +65,7 @@ function buildProfile(user, preferredRole = roles.user, persistedProfile = null)
   };
 }
 
-async function getOrCreateProfile(user, preferredRole) {
+async function getOrCreateProfile(user, preferredRole, { strict = false } = {}) {
   const fallbackProfile = buildProfile(user, preferredRole);
 
   try {
@@ -70,24 +77,41 @@ async function getOrCreateProfile(user, preferredRole) {
     const createdProfile = await ensureUserProfile(user);
     return buildProfile(user, preferredRole, createdProfile);
   } catch (err) {
-    console.error("CRÍTICO: Error al crear perfil en Supabase:", err);
+    console.error("Supabase Auth/Profile error:", {
+      message: err?.message,
+      details: err?.details,
+      hint: err?.hint,
+      code: err?.code,
+    });
+    if (strict) {
+      throw new Error("La cuenta fue creada, pero no se pudo guardar el perfil.");
+    }
     return fallbackProfile;
   }
 }
 
+function isExistingUserError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  return error?.code === "user_already_exists" || message.includes("already registered") || message.includes("already exists");
+}
+
+function authUserAlreadyExists(data) {
+  return data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+}
+
 export async function signIn({ email, password, role = roles.user }) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
       throw new Error("Supabase no esta configurado correctamente.");
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      throw new Error("No se pudo iniciar sesion. Revisa tu correo y contrasena.");
+      throw new Error("No se pudo iniciar sesión. Revisa tu correo y contraseña.");
     }
 
     if (!data?.user) {
-      throw new Error("No se pudo obtener la informacion del usuario.");
+      throw new Error("No se pudo obtener la información del usuario.");
     }
 
     return saveSession(data.session, await getOrCreateProfile(data.user, role));
@@ -97,8 +121,12 @@ export async function signIn({ email, password, role = roles.user }) {
   return saveSession({ user, access_token: "local-mvp-session" }, buildProfile(user, role));
 }
 
-export async function signUp({ email, password, role = roles.user, full_name = "" }) {
-  if (isSupabaseConfigured) {
+export async function signUp({ email, password, role = roles.user, full_name = "", phone = "", birth_date = "" }) {
+  const normalizedRole = normalizeRole(role || roles.user);
+  const normalizedPhone = normalizePhoneForStorage(phone);
+  const normalizedBirthDate = normalizeBirthDateForStorage(birth_date);
+
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
       throw new Error("Supabase no esta configurado correctamente.");
     }
@@ -106,21 +134,40 @@ export async function signUp({ email, password, role = roles.user, full_name = "
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { role: normalizeRole(role), full_name } },
+      options: { data: { role: normalizedRole, full_name, phone: normalizedPhone, birth_date: normalizedBirthDate } },
     });
     if (error) {
-      throw new Error("No se pudo crear la cuenta. Revisa los datos ingresados.");
+      logSupabaseError(error);
+      if (isExistingUserError(error)) {
+        throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
+      }
+      throw new Error("No se pudo crear la cuenta.");
+    }
+
+    if (authUserAlreadyExists(data)) {
+      console.error("Supabase Auth/Profile error:", {
+        message: "User already registered",
+        details: "Supabase returned a user without new identities during signUp.",
+        hint: "Ask the user to sign in instead of creating a duplicate account.",
+        code: "user_already_exists",
+      });
+      throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
     }
 
     if (!data?.user) {
-      throw new Error("Cuenta creada, pero no se pudo obtener el usuario. Revisa tu correo si Supabase requiere confirmacion.");
+      throw new Error("Cuenta creada, pero no se pudo obtener el usuario. Revisa tu correo si Supabase requiere confirmación.");
     }
 
-    return saveSession(data.session, await getOrCreateProfile(data.user, role));
+    return saveSession(data.session, await getOrCreateProfile(data.user, normalizedRole, { strict: true }));
   }
 
-  const user = { id: `local-${email}`, email, created_at: new Date().toISOString(), user_metadata: { role, full_name } };
-  return saveSession({ user, access_token: "local-mvp-session" }, buildProfile(user, role));
+  const user = {
+    id: `local-${email}`,
+    email,
+    created_at: new Date().toISOString(),
+    user_metadata: { role: normalizedRole, full_name, phone: normalizedPhone, birth_date: normalizedBirthDate },
+  };
+  return saveSession({ user, access_token: "local-mvp-session" }, buildProfile(user, normalizedRole));
 }
 
 export function getStoredAuth() {
@@ -138,7 +185,7 @@ export function updateStoredProfile(profile) {
 }
 
 export async function signOut() {
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseDataConfigured) {
     await supabase.auth.signOut();
   }
   localStorage.removeItem(SESSION_KEY);
