@@ -108,8 +108,8 @@ function getPasswordStrength(password) {
   ];
   const score = checks.filter(Boolean).length;
 
-  if (!password) return { label: "Debil", level: "weak", percent: 0, score };
-  if (score <= 2) return { label: "Debil", level: "weak", percent: 25, score };
+  if (!password) return { label: "Débil", level: "weak", percent: 0, score };
+  if (score <= 2) return { label: "Débil", level: "weak", percent: 25, score };
   if (score === 3) return { label: "Media", level: "medium", percent: 50, score };
   if (score === 4) return { label: "Segura", level: "strong", percent: 75, score };
   return { label: "Muy segura", level: "very-strong", percent: 100, score };
@@ -246,7 +246,7 @@ export default function AuthPanel({ onAuth }) {
         return;
       }
       if (form.password.length < 6) {
-        setError("La contrasena debe tener al menos 6 caracteres para crear la cuenta.");
+        setError("La contraseña debe tener al menos 6 caracteres para crear la cuenta.");
         return;
       }
       if (passwordStrength.level === "weak" && !weakPasswordConfirmedRef.current) {
@@ -266,13 +266,13 @@ export default function AuthPanel({ onAuth }) {
     } catch (err) {
       const fallback =
         mode === "signin"
-          ? "No se pudo iniciar sesion. Revisa tu correo y contrasena."
+          ? "No se pudo iniciar sesión. Revisa tu correo y contraseña."
           : "No se pudo crear la cuenta.";
       const message = err?.message || fallback;
       const safeSignupMessages = new Set([
         "No se pudo crear la cuenta.",
         "La cuenta fue creada, pero no se pudo guardar el perfil.",
-        "Este correo ya esta registrado. Intenta iniciar sesion.",
+        "Este correo ya esta registrado. Intenta iniciar sesión.",
       ]);
       setError(
         mode === "signup"
@@ -289,13 +289,13 @@ export default function AuthPanel({ onAuth }) {
       <div className="auth-copy">
         <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
         <span className="eyebrow">Acceso a ScoreLeads</span>
-        <h1>Ingresa a tu pre-evaluacion</h1>
+        <h1>Ingresa a tu pre-evaluación</h1>
         <p>
-          Este acceso separa vistas por rol y protege la informacion del flujo. Con Supabase configurado se usa
-          autenticacion segura para gestionar las cuentas.
+          Este acceso separa vistas por rol y protege la información del flujo. Con Supabase configurado se usa
+          autenticación segura para gestionar las cuentas.
         </p>
         {!isSupabaseConfigured && (
-          <p className="inline-note">Autenticacion de respaldo activa: configura VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY para usar Supabase.</p>
+          <p className="inline-note">Autenticación de respaldo activa: configura VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY para usar Supabase.</p>
         )}
       </div>
 
@@ -331,7 +331,8 @@ export default function AuthPanel({ onAuth }) {
                   aria-label="8 digitos restantes del telefono"
                 />
               </div>
-              <span className="field-help">Escribe solo los 8 digitos restantes. Se guardara como +56912345678.</span>
+              
+          
             </label>
 
             <label>
@@ -351,7 +352,7 @@ export default function AuthPanel({ onAuth }) {
                   onBlur={() => normalizeBirthDatePart("birth_day")}
                   maxLength="2"
                   placeholder="DD"
-                  ariaLabel="Dia de nacimiento"
+                  ariaLabel="Día de nacimiento"
                   options={dayOptions}
                   activeDropdown={activeDateDropdown}
                 />
@@ -378,7 +379,7 @@ export default function AuthPanel({ onAuth }) {
                   onSelect={handleBirthDateSelect}
                   maxLength="4"
                   placeholder="AAAA"
-                  ariaLabel="Ano de nacimiento"
+                  ariaLabel="Año de nacimiento"
                   options={yearOptions}
                   activeDropdown={activeDateDropdown}
                 />
@@ -393,32 +394,32 @@ export default function AuthPanel({ onAuth }) {
         </label>
 
         <label>
-          Contrasena
+          Contraseña
           <input
             ref={passwordRef}
             type="password"
             name="password"
             value={form.password}
             onChange={handleChange}
-            placeholder="Minimo 6 caracteres"
+            placeholder="Mínimo 6 caracteres"
           />
         </label>
         {mode === "signup" && (
           <div className={`password-meter ${passwordStrength.level}`}>
             <div className="password-meter-header">
-              <span>Seguridad de contrasena</span>
+              <span>Seguridad de contraseña</span>
               <strong>{passwordStrength.label}</strong>
             </div>
             <div className="password-meter-track" aria-hidden="true">
               <span style={{ width: `${passwordStrength.percent}%` }} />
             </div>
-            <p>8 o mas caracteres, mayuscula, minuscula, numero y caracter especial mejoran la seguridad.</p>
+            <p>Se recomiendan 8 o más caracteres y hacer uso de mayúsculas, minúsculas, números y caracteres especiales para una mayor seguridad.</p>
           </div>
         )}
 
         {showWeakPasswordConfirm && (
           <div className="password-confirmation" role="alert">
-            <strong>Tu contrasena es debil. Deseas continuar de todas formas?</strong>
+            <strong>Tu contraseña es débil. ¿Deseas continuar de todas formas?</strong>
             <div className="form-actions">
               <button
                 type="button"
@@ -439,12 +440,13 @@ export default function AuthPanel({ onAuth }) {
                   passwordRef.current?.focus();
                 }}
               >
-                No, mejorar contrasena
+                No, mejorar contraseña
               </button>
             </div>
           </div>
         )}
 
+        {mode === "signup" && (
         <label>
           Tipo de usuario
           <select name="role" value={form.role} onChange={handleChange}>
@@ -453,6 +455,7 @@ export default function AuthPanel({ onAuth }) {
             <option value={roles.admin}>{roleLabels[roles.admin]}</option>
           </select>
         </label>
+        )}
 
         <button type="submit" disabled={loading}>{loading ? "Validando..." : "Continuar"}</button>
         {error && <div className="error-message">{error}</div>}

@@ -4,13 +4,13 @@ const timelineLabels = {
   "0_3_meses": "0 a 3 meses",
   "3_6_meses": "3 a 6 meses",
   "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Mas de 12 meses",
+  mas_12_meses: "Más de 12 meses",
 };
 
 const propertyLabels = {
   departamento: "Departamento",
   casa: "Casa",
-  aun_no_lo_se: "Aun no lo se",
+  aun_no_lo_se: "Aun no lo sé",
   indiferente: "Indiferente",
 };
 
@@ -23,7 +23,7 @@ export default function ObjectiveReview({ evaluation, onBack }) {
       <button className="secondary-button compact-button" type="button" onClick={onBack}>Volver al seguimiento</button>
 
       <div className="section-heading compact">
-        <span className="eyebrow">Revision de objetivo</span>
+        <span className="eyebrow">Revisión de objetivo</span>
         <h1>Revisar alternativas</h1>
         <p>Si el objetivo se ve exigente, considera ajustar plazo, comuna, tipo de propiedad o dividendo esperado.</p>
       </div>
@@ -58,8 +58,8 @@ export default function ObjectiveReview({ evaluation, onBack }) {
         <section className="profile-card">
           <strong>Orientacion</strong>
           <p>
-            No es necesario cambiar tu objetivo de inmediato. Usa esta revision para comparar alternativas
-            antes de repetir una preevaluacion o iniciar una evaluacion bancaria formal.
+            No es necesario cambiar tu objetivo de inmediato. Usa esta revisión para comparar alternativas
+            antes de repetir una preevaluación o iniciar una evaluación bancaria formal.
           </p>
           <ul>
             <li>Revisar si el plazo declarado da espacio suficiente para ahorrar.</li>

@@ -1,18 +1,19 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { comunasMvp } from "../constants/comunas";
-import { roleLabels } from "../services/auth";
+import { roleLabels, updateStoredProfile } from "../services/auth";
+import { normalizePhoneForStorage, upsertProfile } from "../services/profileService";
 
 const objetivoLabels = {
   comprar_ahora: "Comprar ahora",
-  prepararme: "Prepararme para comprar mas adelante",
+  prepararme: "Prepararme para comprar más adelante",
   evaluar_capacidad: "Evaluar mi capacidad de compra",
-  conocer_propiedad: "Conocer que tipo de propiedad podria buscar",
+  conocer_propiedad: "Conocer que tipo de propiedad podría buscar",
 };
 
 const propertyLabels = {
   departamento: "Departamento",
   casa: "Casa",
-  aun_no_lo_se: "Aun no lo se",
+  aun_no_lo_se: "Aun no lo sé",
   indiferente: "Indiferente",
 };
 
@@ -20,7 +21,7 @@ const plazoLabels = {
   "0_3_meses": "0 a 3 meses",
   "3_6_meses": "3 a 6 meses",
   "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Mas de 12 meses",
+  mas_12_meses: "Más de 12 meses",
 };
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
@@ -33,11 +34,30 @@ const normalizeOnboarding = (data) => ({
   comuna_alternativa: data?.comuna_alternativa || "",
 });
 
-export default function ProfilePage({ profile, onboarding, evaluations, onSaveOnboarding, onDeleteEvaluation }) {
+// Formatea un teléfono para mostrarlo de forma legible: +56 9 XXXX XXXX
+function formatPhoneDisplay(phone) {
+  if (!phone) return "";
+  const digits = String(phone).replace(/\D/g, "");
+  const local = digits.startsWith("56") ? digits.slice(2) : digits;
+  if (local.length === 9) {
+    return `+56 ${local[0]} ${local.slice(1, 5)} ${local.slice(5)}`;
+  }
+  return phone;
+}
+
+export default function ProfilePage({ profile, onboarding, evaluations, onSaveOnboarding, onDeleteEvaluation, onProfileUpdate }) {
   const savedOnboarding = useMemo(() => normalizeOnboarding(onboarding), [onboarding]);
   const [form, setForm] = useState(savedOnboarding);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Estado para edición de contacto
+  const [contactEditing, setContactEditing] = useState(false);
+  const [contactForm, setContactForm] = useState({ phone: "", email: "" });
+  const [contactError, setContactError] = useState("");
+  const [contactSuccess, setContactSuccess] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+
   const alternativeCommunes = form.comuna_interes
     ? comunasMvp.filter((comuna) => comuna !== form.comuna_interes)
     : [];
@@ -50,6 +70,17 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
     setForm(savedOnboarding);
   }, [savedOnboarding]);
 
+  // Al abrir el formulario de contacto, cargar los valores actuales del perfil
+  const openContactEdit = () => {
+    setContactForm({
+      phone: profile?.phone ? formatPhoneDisplay(profile.phone) : "",
+      email: profile?.email || "",
+    });
+    setContactError("");
+    setContactSuccess("");
+    setContactEditing(true);
+  };
+
   const handleChange = (event) => {
     const { name, value } = event.target;
     setForm((prev) => {
@@ -59,6 +90,11 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
       }
       return next;
     });
+  };
+
+  const handleContactChange = (event) => {
+    const { name, value } = event.target;
+    setContactForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const submit = async (event) => {
@@ -87,7 +123,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
     }
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
-      setError("Selecciona una comuna alternativa desde la lista o dejala vacia.");
+      setError("Selecciona una comuna alternativa desde la lista o dejala vacía.");
       return;
     }
 
@@ -104,6 +140,57 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
     }
   };
 
+  const submitContact = async (event) => {
+    event.preventDefault();
+    setContactError("");
+    setContactSuccess("");
+
+    const trimmedPhone = contactForm.phone.trim();
+    const trimmedEmail = contactForm.email.trim();
+
+    if (!trimmedEmail) {
+      setContactError("El correo no puede estar vacío.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setContactError("Ingresa un correo electrónico válido.");
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneForStorage(trimmedPhone);
+    if (trimmedPhone && !normalizedPhone) {
+      setContactError("El teléfono ingresado no es válido. Usa formato +569XXXXXXXX o 9XXXXXXXX.");
+      return;
+    }
+
+    setContactLoading(true);
+    try {
+      const updatedProfile = await upsertProfile(
+        profile.id,
+        profile.full_name,
+        profile.role,
+        onboarding,
+        { phone: normalizedPhone, birth_date: profile.birth_date },
+      );
+
+      // Actualizar el perfil en auth/localStorage con los nuevos datos de contacto
+      if (onProfileUpdate) {
+        onProfileUpdate({
+          ...profile,
+          phone: updatedProfile?.phone || normalizedPhone,
+          email: trimmedEmail,
+        });
+      }
+
+      setContactSuccess("Datos de contacto actualizados.");
+      setContactEditing(false);
+    } catch {
+      setContactError("No se pudieron guardar los datos de contacto. Intenta nuevamente.");
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
   return (
     <section className="section-block profile-page">
       <div className="section-heading">
@@ -114,29 +201,82 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
 
       <div className="profile-grid">
         <section className="profile-card">
-          <strong>Datos del usuario</strong>
-          <dl className="profile-details">
-            <div>
-              <dt>Nombre</dt>
-              <dd>{profile?.full_name || "Sin nombre"}</dd>
-            </div>
-            <div>
-              <dt>Correo</dt>
-              <dd>{profile?.email || "Sin correo"}</dd>
-            </div>
-            <div>
-              <dt>Telefono</dt>
-              <dd>{profile?.phone || "Sin telefono"}</dd>
-            </div>
-            <div>
-              <dt>Fecha nacimiento</dt>
-              <dd>{profile?.birth_date ? new Date(`${profile.birth_date}T00:00:00`).toLocaleDateString("es-CL") : "No declarada"}</dd>
-            </div>
-            <div>
-              <dt>Rol</dt>
-              <dd>{roleLabels[profile?.role] || profile?.role || "Usuario"}</dd>
-            </div>
-          </dl>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+            <strong>Datos del usuario</strong>
+            {!contactEditing && (
+              <button type="button" className="secondary-button compact-button" onClick={openContactEdit}>
+                Editar contacto
+              </button>
+            )}
+          </div>
+
+          {contactEditing ? (
+            <form className="score-form profile-form" onSubmit={submitContact}>
+              <div className="form-grid">
+                <label>
+                  Teléfono
+                  <input
+                    type="tel"
+                    inputMode="tel"
+                    name="phone"
+                    value={contactForm.phone}
+                    onChange={handleContactChange}
+                    placeholder="+56 9 XXXX XXXX"
+                    autoComplete="tel"
+                  />
+                </label>
+                <label>
+                  Correo electrónico
+                  <input
+                    type="email"
+                    name="email"
+                    value={contactForm.email}
+                    onChange={handleContactChange}
+                    placeholder="tu@correo.cl"
+                    autoComplete="email"
+                  />
+                </label>
+              </div>
+              {contactError && <div className="error-message">{contactError}</div>}
+              <div className="form-actions">
+                <button type="submit" disabled={contactLoading}>
+                  {contactLoading ? "Guardando..." : "Guardar"}
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => setContactEditing(false)}
+                  disabled={contactLoading}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          ) : (
+            <dl className="profile-details">
+              <div>
+                <dt>Nombre</dt>
+                <dd>{profile?.full_name || "Sin nombre"}</dd>
+              </div>
+              <div>
+                <dt>Correo</dt>
+                <dd>{profile?.email || "Sin correo"}</dd>
+              </div>
+              <div>
+                <dt>Teléfono</dt>
+                <dd>{profile?.phone ? formatPhoneDisplay(profile.phone) : "Sin teléfono"}</dd>
+              </div>
+              <div>
+                <dt>Fecha nacimiento</dt>
+                <dd>{profile?.birth_date ? new Date(`${profile.birth_date}T00:00:00`).toLocaleDateString("es-CL") : "No declarada"}</dd>
+              </div>
+              <div>
+                <dt>Rol</dt>
+                <dd>{roleLabels[profile?.role] || profile?.role || "Usuario"}</dd>
+              </div>
+            </dl>
+          )}
+          {contactSuccess && <div className="success-message" style={{ marginTop: "0.75rem" }}>{contactSuccess}</div>}
         </section>
 
         <section className="profile-card">
@@ -173,21 +313,21 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
             <label>
               Objetivo inmobiliario
               <select name="objetivo_principal" value={form.objetivo_principal} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="comprar_ahora">Comprar ahora</option>
-                <option value="prepararme">Prepararme para comprar mas adelante</option>
+                <option value="prepararme">Prepararme para comprar más adelante</option>
                 <option value="evaluar_capacidad">Evaluar mi capacidad de compra</option>
-                <option value="conocer_propiedad">Conocer que tipo de propiedad podria buscar</option>
+                <option value="conocer_propiedad">Conocer que tipo de propiedad podría buscar</option>
               </select>
             </label>
 
             <label>
               Tipo de propiedad
               <select name="tipo_propiedad" value={form.tipo_propiedad} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="casa">Casa</option>
                 <option value="departamento">Departamento</option>
-                <option value="aun_no_lo_se">Aun no lo se</option>
+                <option value="aun_no_lo_se">Aun no lo sé</option>
               </select>
             </label>
 
@@ -204,11 +344,11 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
             <label>
               Plazo estimado de compra
               <select name="plazo_compra" value={form.plazo_compra} onChange={handleChange}>
-                <option value="">Selecciona una opcion</option>
+                <option value="">Selecciona una opción</option>
                 <option value="0_3_meses">0 a 3 meses</option>
                 <option value="3_6_meses">3 a 6 meses</option>
                 <option value="6_12_meses">6 a 12 meses</option>
-                <option value="mas_12_meses">Mas de 12 meses</option>
+                <option value="mas_12_meses">Más de 12 meses</option>
               </select>
             </label>
 
@@ -258,7 +398,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                 </dl>
                 {item.result.ai_explanation ? (
                   <>
-                    <strong>Explicacion mejorada con IA</strong>
+                    <strong>Explicación mejorada con IA</strong>
                     <p>{item.result.ai_explanation}</p>
                   </>
                 ) : null}
@@ -268,7 +408,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
         ) : (
           <div className="empty-state">
             <strong>Aun no tienes precalificaciones guardadas.</strong>
-            <p>Cuando completes una evaluacion, aparecera aqui como registro independiente.</p>
+            <p>Cuando completes una evaluación, aparecerá aqui como registro independiente.</p>
           </div>
         )}
       </section>

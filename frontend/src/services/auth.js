@@ -46,7 +46,7 @@ function saveSession(session, profile) {
 
 function buildProfile(user, preferredRole = roles.user, persistedProfile = null) {
   if (!user?.id) {
-    throw new Error("No se pudo obtener la informacion del usuario.");
+    throw new Error("No se pudo obtener la información del usuario.");
   }
 
   const fullName = persistedProfile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || user.email || "";
@@ -111,11 +111,11 @@ export async function signIn({ email, password, role = roles.user }) {
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      throw new Error("No se pudo iniciar sesion. Revisa tu correo y contrasena.");
+      throw new Error("No se pudo iniciar sesión. Revisa tu correo y contraseña.");
     }
 
     if (!data?.user) {
-      throw new Error("No se pudo obtener la informacion del usuario.");
+      throw new Error("No se pudo obtener la información del usuario.");
     }
 
     return saveSession(data.session, await getOrCreateProfile(data.user, role));
@@ -143,7 +143,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
     if (error) {
       logSupabaseError(error);
       if (isExistingUserError(error)) {
-        throw new Error("Este correo ya esta registrado. Intenta iniciar sesion.");
+        throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
       }
       throw new Error("No se pudo crear la cuenta.");
     }
@@ -155,11 +155,11 @@ export async function signUp({ email, password, role = roles.user, full_name = "
         hint: "Ask the user to sign in instead of creating a duplicate account.",
         code: "user_already_exists",
       });
-      throw new Error("Este correo ya esta registrado. Intenta iniciar sesion.");
+      throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
     }
 
     if (!data?.user) {
-      throw new Error("Cuenta creada, pero no se pudo obtener el usuario. Revisa tu correo si Supabase requiere confirmacion.");
+      throw new Error("Cuenta creada, pero no se pudo obtener el usuario. Revisa tu correo si Supabase requiere confirmación.");
     }
 
     return saveSession(data.session, await getOrCreateProfile(data.user, normalizedRole, { strict: true }));

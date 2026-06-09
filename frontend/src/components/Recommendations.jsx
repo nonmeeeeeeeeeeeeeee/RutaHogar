@@ -11,12 +11,12 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       <section className="section-block recommendations-panel">
         <div className="section-heading">
           <span className="eyebrow">Recomendaciones inteligentes</span>
-          <h1>Orientacion personalizada</h1>
+          <h1>Orientación personalizada</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluacion.</strong>
+          <strong>Aun no tienes una preevaluación.</strong>
           <p>Realiza una preevaluacion para generar recomendaciones personalizadas.</p>
-          <button type="button" onClick={onStartEvaluation}>Ir a precalificacion</button>
+          <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       </section>
     );
@@ -26,8 +26,8 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
     <section className="section-block recommendations-panel">
       <div className="section-heading">
         <span className="eyebrow">Recomendaciones inteligentes</span>
-        <h1>Orientacion personalizada</h1>
-        <p>Recomendaciones generales basadas en tu ultima preevaluacion, sin exponer reglas internas del score.</p>
+        <h1>Orientación personalizada</h1>
+        <p>Recomendaciones generales basadas en tu última preevaluación, sin exponer reglas internas del score.</p>
       </div>
 
       <div className="recommendation-summary">
@@ -60,7 +60,7 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       </div>
 
       <div className="warning-note">
-        Esta orientacion no reemplaza una evaluacion bancaria formal.
+        Esta orientación no reemplaza una evaluación bancaria formal.
       </div>
     </section>
   );

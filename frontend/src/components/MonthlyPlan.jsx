@@ -50,7 +50,7 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
       ) : !plan.hasValidTarget ? (
         <div className="empty-state">
           <strong>Plan sin metas monetarias calculadas.</strong>
-          <p>No hay una meta adicional de ahorro o reduccion mensual para esta evaluacion. Mantén estabilidad y revisa tus avances antes de volver a evaluar.</p>
+          <p>No hay una meta adicional de ahorro o reduccion mensual para esta evaluación. Mantén estabilidad y revisa tus avances antes de volver a evaluar.</p>
         </div>
       ) : (
         <>
@@ -85,7 +85,7 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
                 </div>
 
                 <label>
-                  Cuanto lograste ahorrar este mes?
+                  ¿Cuánto lograste ahorrar este mes?
                   <input
                     type="number"
                     min="0"
