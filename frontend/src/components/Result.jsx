@@ -1,10 +1,12 @@
 import React from "react";
+import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
 
 export default function Result({ data }) {
   const { score, classification, risks = [], recommendations = [], ai_explanation } = data;
   const visibleScore = Number.isFinite(Number(score)) ? Math.round(Number(score)) : score;
   const tone = classification === "Alto" ? "high" : classification === "Medio" ? "medium" : "low";
-  const briefRecommendations = recommendations.slice(0, 3);
+  const visibleRisks = normalizeDisplayList(risks);
+  const briefRecommendations = normalizeDisplayList(recommendations).slice(0, 3);
 
   return (
     <div className="result-panel">
@@ -23,13 +25,13 @@ export default function Result({ data }) {
       <div className="result-grid">
         <section>
           <strong>Explicación mejorada con IA</strong>
-          <p>{ai_explanation}</p>
+          <p>{normalizeDisplayText(ai_explanation)}</p>
         </section>
 
         <section>
           <strong>Puntos a revisar</strong>
           <ul>
-            {risks.length ? risks.map((risk, i) => <li key={i}>{risk}</li>) : <li>No se detectan riesgos principales declarados.</li>}
+            {visibleRisks.length ? visibleRisks.map((risk, i) => <li key={i}>{risk}</li>) : <li>No se detectan riesgos principales declarados.</li>}
           </ul>
         </section>
 

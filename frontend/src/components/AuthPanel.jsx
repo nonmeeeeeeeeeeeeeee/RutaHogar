@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from "react";
 import { isSupabaseConfigured, roleLabels, roles, signIn, signUp } from "../services/auth";
+import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 const currentYear = new Date().getFullYear();
 const dayOptions = Array.from({ length: 31 }, (_, index) => {
@@ -27,18 +28,6 @@ const yearOptions = Array.from({ length: currentYear - 18 - 1900 + 1 }, (_, inde
 
 function onlyDigits(value, maxLength) {
   return value.replace(/\D/g, "").slice(0, maxLength);
-}
-
-function formatPhoneDigits(value) {
-  const digits = onlyDigits(value, 8);
-  const firstBlock = digits.slice(0, 4);
-  const secondBlock = digits.slice(4, 8);
-  return [firstBlock, secondBlock].filter(Boolean).join(" ");
-}
-
-function getNormalizedPhone(value) {
-  const digits = onlyDigits(value, 8);
-  return digits.length === 8 ? `+569${digits}` : "";
 }
 
 function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
@@ -184,7 +173,7 @@ export default function AuthPanel({ onAuth }) {
     setForm((prev) => {
       const nextValue =
         name === "phone"
-          ? onlyDigits(value, 8)
+          ? onlyPhoneDigits(value, 8)
           : name === "birth_day" || name === "birth_month"
             ? onlyDigits(value, 2)
             : name === "birth_year"
@@ -226,16 +215,16 @@ export default function AuthPanel({ onAuth }) {
       return;
     }
 
-    const normalizedPhone = getNormalizedPhone(form.phone);
+    const normalizedPhone = normalizePhone(form.phone);
     const birthDate = buildBirthDateIso(form);
 
     if (mode === "signup" && !form.phone.trim()) {
-      setError("Ingresa tu telefono para crear la cuenta.");
+      setError("Ingresa tu teléfono para crear la cuenta.");
       return;
     }
 
     if (mode === "signup" && !normalizedPhone) {
-      setError("Ingresa exactamente 8 digitos despues de +56 9. Ej: +56 9 1234 5678.");
+      setError(PHONE_ERROR_MESSAGE);
       return;
     }
 
@@ -317,18 +306,18 @@ export default function AuthPanel({ onAuth }) {
             </label>
 
             <label>
-              Telefono
+              Teléfono
               <div className="phone-input">
                 <span>+56 9</span>
                 <input
                   type="tel"
                   name="phone"
-                  value={formatPhoneDigits(form.phone)}
+                  value={formatPhone(form.phone)}
                   onChange={handleChange}
                   inputMode="numeric"
                   maxLength="9"
                   placeholder="1234 5678"
-                  aria-label="8 digitos restantes del telefono"
+                  aria-label="8 dígitos restantes del teléfono"
                 />
               </div>
               

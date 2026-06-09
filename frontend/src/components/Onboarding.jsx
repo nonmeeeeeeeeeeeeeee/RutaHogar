@@ -50,7 +50,7 @@ export default function Onboarding({ initialData, onComplete }) {
     }
 
     if (form.comuna_alternativa && !comunasMvp.includes(form.comuna_alternativa)) {
-      setError("Selecciona una comuna alternativa desde la lista o dejala vacía.");
+      setError("Selecciona una comuna alternativa desde la lista o déjala vacía.");
       return;
     }
 
@@ -82,7 +82,7 @@ export default function Onboarding({ initialData, onComplete }) {
               <option value="comprar_ahora">Comprar ahora</option>
               <option value="prepararme">Prepararme para comprar más adelante</option>
               <option value="evaluar_capacidad">Evaluar mi capacidad de compra</option>
-              <option value="conocer_propiedad">Conocer que tipo de propiedad podría buscar</option>
+              <option value="conocer_propiedad">Conocer qué tipo de propiedad podría buscar</option>
             </select>
           </label>
 
@@ -92,7 +92,7 @@ export default function Onboarding({ initialData, onComplete }) {
               <option value="">Selecciona una opción</option>
               <option value="casa">Casa</option>
               <option value="departamento">Departamento</option>
-              <option value="aun_no_lo_se">Aun no lo sé</option>
+              <option value="aun_no_lo_se">Aún no lo sé</option>
             </select>
           </label>
 

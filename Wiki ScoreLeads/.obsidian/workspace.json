@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "diagramaDeContexto.md",
-                "mode": "source",
+                "file": "Wiki Score Leads.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "diagramaDeContexto"
+              "title": "Wiki Score Leads"
             }
           }
         ]
@@ -44,7 +44,7 @@
                 "autoReveal": false
               },
               "icon": "lucide-folder-closed",
-              "title": "Files"
+              "title": "Explorador de archivos"
             }
           },
           {
@@ -174,27 +174,50 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "switcher:Open quick switcher": false,
-      "graph:Open graph view": false,
-      "canvas:Create new canvas": false,
-      "daily-notes:Open today's daily note": false,
-      "templates:Insert template": false,
-      "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "switcher:Abrir selector rápido": false,
+      "graph:Abrir vista gráfica": false,
+      "canvas:Crear nuevo lienzo": false,
+      "daily-notes:Abrir la nota de hoy": false,
+      "templates:Insertar plantilla": false,
+      "command-palette:Abrir paleta de comandos": false,
+      "bases:Crear nueva base": false
     }
   },
   "active": "47172dfeced4ff5c",
   "lastOpenFiles": [
-    "Wiki Score Leads.md",
-    "diagramaDeContexto.md.tmp.20452.5d2507e4847f",
-    "diagramaDeContexto.md",
     "Tech Stack.md",
-    "HUs",
+    "diagramaDeContexto.md",
+    "deuda-tecnica.md",
+    "UserStories/index.md",
+    "UserStories/HdU2-LeadPrioritization.md",
+    "UserStories/HdU1-FinancialDataEntry.md",
+    "Functionalities/notificacion-leads-alto.md",
+    "Functionalities/index.md",
+    "Functionalities/evaluaciones-staff-visibility.md",
+    "Functionalities/e6-score-redirect.md",
+    "Functionalities/dashboard-count-badges.md",
+    "implementation_plans/plan-C-leads-hook.md",
+    "implementation_plans/plan-B-service-layer.md",
+    "implementation_plans/plan-A-surgical.md",
+    "implementation_plans/fix-rls-infinite-recursion.md",
     "informes_entregas/E2 - GPI 2026 - ScoreLeads.md",
-    "Tech Stack.md.tmp.9392.d64633bd857e",
+    "UserStories/HdU5-CRMIntegration.md",
+    "UserStories/HdU4-ImprovementPlan.md",
+    "UserStories/HdU3-HybridScoring.md",
     "informes_entregas/Informe ScoreLeads.md",
-    "informes_entregas/E2 - GPI 2026 - ScoreLeads (1).md",
-    "informes_entregas/Untitled.md",
+    "Wiki Score Leads.md",
+    "testing-users.md",
+    "implementation_plans",
+    "UserStories/HdU6-StressAlgorithm.md",
+    "UserStories",
+    "Functionalities",
+    "Database/profiles.md",
+    "Database/improvement_goals.md",
+    "Database/README.md",
+    "Database",
+    "diagramaDeContexto.md.tmp.20452.5d2507e4847f",
+    "HUs",
+    "Tech Stack.md.tmp.9392.d64633bd857e",
     "informes_entregas",
     "User Stories"
   ]

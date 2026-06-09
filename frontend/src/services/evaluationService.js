@@ -1,11 +1,12 @@
 import { supabase } from "../utils/supabase";
+import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 
 const EVALUATIONS_KEY = "scoreleads_evaluations";
 
 function readLocalEvaluations() {
   try {
-    return JSON.parse(localStorage.getItem(EVALUATIONS_KEY)) || [];
+    return (JSON.parse(localStorage.getItem(EVALUATIONS_KEY)) || []).map(normalizeLocalEvaluation);
   } catch {
     return [];
   }
@@ -43,13 +44,32 @@ export function normalizeEvaluation(row, profilesMap = {}) {
     result: {
       score: row.score,
       classification: row.classification,
-      risks: Array.isArray(recommendationData.risks) ? recommendationData.risks : [],
-      recommendations,
-      ai_explanation: row.explanation || "",
-      improvement_plan: Array.isArray(recommendationData.improvement_plan) ? recommendationData.improvement_plan : [],
-      positive_indicators: Array.isArray(recommendationData.positive_indicators) ? recommendationData.positive_indicators : [],
-      executive_summary: row.executive_summary || "",
-      commercial_guidance: row.commercial_guidance || "",
+      risks: normalizeDisplayList(recommendationData.risks),
+      recommendations: normalizeDisplayList(recommendations),
+      ai_explanation: normalizeDisplayText(row.explanation || ""),
+      improvement_plan: normalizeDisplayList(recommendationData.improvement_plan),
+      positive_indicators: normalizeDisplayList(recommendationData.positive_indicators),
+      executive_summary: normalizeDisplayText(row.executive_summary || ""),
+      commercial_guidance: normalizeDisplayText(row.commercial_guidance || ""),
+    },
+  };
+}
+
+function normalizeLocalEvaluation(entry) {
+  if (!entry) return null;
+  const result = entry.result || {};
+
+  return {
+    ...entry,
+    result: {
+      ...result,
+      risks: normalizeDisplayList(result.risks),
+      recommendations: normalizeDisplayList(result.recommendations),
+      ai_explanation: normalizeDisplayText(result.ai_explanation || ""),
+      improvement_plan: normalizeDisplayList(result.improvement_plan),
+      positive_indicators: normalizeDisplayList(result.positive_indicators),
+      executive_summary: normalizeDisplayText(result.executive_summary || ""),
+      commercial_guidance: normalizeDisplayText(result.commercial_guidance || ""),
     },
   };
 }
@@ -102,7 +122,7 @@ export async function createEvaluation(userId, evaluationPayload) {
     };
     const next = [entry, ...readLocalEvaluations()].slice(0, 25);
     writeLocalEvaluations(next);
-    return entry;
+    return normalizeLocalEvaluation(entry);
   }
 
   const user = await getAuthenticatedUser();
@@ -210,7 +230,7 @@ export async function acceptEvaluationPlan(evaluationId, userId) {
       item.id === evaluationId ? { ...item, plan_accepted_at: acceptedAt } : item,
     );
     writeLocalEvaluations(next);
-    return next.find((item) => item.id === evaluationId) || null;
+    return normalizeLocalEvaluation(next.find((item) => item.id === evaluationId) || null);
   }
 
   return null;
