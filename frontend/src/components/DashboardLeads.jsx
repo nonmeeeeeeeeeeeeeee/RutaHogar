@@ -137,7 +137,7 @@ export default function DashboardLeads({ evaluations }) {
                 </td>
                 <td>
                   {item.result.risks?.length
-                    ? item.result.risks.slice(0, 2).join(", ")
+                    ? item.result.risks.slice(0, 2).join(" ")
                     : "Sin riesgos relevantes"}
                 </td>
                 <td>
