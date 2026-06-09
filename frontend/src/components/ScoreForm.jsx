@@ -159,7 +159,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
         if (!response.ok) throw new Error("No se pudo obtener la UF.");
         const data = await response.json();
         const latestUf = Number(data?.serie?.[0]?.valor);
-        if (!Number.isFinite(latestUf) || latestUf <= 0) throw new Error("UF invalida.");
+        if (!Number.isFinite(latestUf) || latestUf <= 0) throw new Error("UF inválida.");
         setUfValueClp(Math.round(latestUf));
         setUfStatus("live");
       } catch {
@@ -283,10 +283,10 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
     if (!form.plazo_credito_hipotecario) missing.push("Plazo estimado del crédito hipotecario");
     if (!form.tipo_contrato) missing.push("Tipo de contrato");
     if (!form.continuidad_laboral) missing.push("Continuidad laboral");
-    if (!form.morosidad_actual) missing.push("Situacion de morosidad");
+    if (!form.morosidad_actual) missing.push("Situación de morosidad");
     if (form.morosidad_actual === "si") {
       if (form.monto_morosidad === "") missing.push("Monto de morosidad");
-      if (!form.antiguedad_morosidad) missing.push("Antiguedad de morosidad");
+      if (!form.antiguedad_morosidad) missing.push("Antigüedad de morosidad");
     }
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
     if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
@@ -301,7 +301,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
       ["Edad declarada", declaredAge, (value) => value >= 18 && value <= 100, "debe estar entre 18 y 100."],
       ["Ahorro disponible", form.ahorro_disponible, (value) => value >= 0, "no puede ser negativo."],
       ["Dividendo estimado", form.dividendo_estimado, (value) => value >= 0, "no puede ser negativo."],
-      ["Plazo estimado del crédito hipotecario", form.plazo_credito_hipotecario, (value) => mortgageTerms.includes(value), "es invalido."],
+      ["Plazo estimado del crédito hipotecario", form.plazo_credito_hipotecario, (value) => mortgageTerms.includes(value), "es inválido."],
     ];
 
     if (asksPropertyValue) {
@@ -325,7 +325,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
 
     if (form.declara_patrimonio) {
       [
-        ["Valor de vehiculos", form.valor_vehiculos],
+        ["Valor de vehículos", form.valor_vehiculos],
         ["Valor de inmuebles", form.valor_inmuebles],
       ].forEach(([label, value]) => {
         if (value !== "") {
@@ -499,7 +499,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
           </label>
 
           <label className={showMortgageAgeWarning ? "field-with-warning" : undefined}>
-            Plazo estimado del credito hipotecario
+            Plazo estimado del crédito hipotecario
             <select name="plazo_credito_hipotecario" value={form.plazo_credito_hipotecario} onChange={handleChange}>
               <option value="">Selecciona una opción</option>
               {mortgageTerms.map((term) => (
@@ -508,7 +508,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
             </select>
             {showMortgageAgeWarning && (
               <span className="field-warning">
-                Por tu edad declarada, el plazo hipotecario solicitado podria verse limitado por condiciones asociadas al seguro de desgravamen. Esto puede aumentar el dividendo mensual estimado.
+                Por tu edad declarada, el plazo hipotecario solicitado podría verse limitado por condiciones asociadas al seguro de desgravamen. Esto puede aumentar el dividendo mensual estimado.
               </span>
             )}
           </label>
@@ -567,7 +567,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
               </label>
 
               <label>
-                Antiguedad de morosidad
+                Antigüedad de morosidad
                 <select name="antiguedad_morosidad" value={form.antiguedad_morosidad} onChange={handleChange}>
                   <option value="">Selecciona una opción</option>
                   <option value="menos_3_meses">Menos de 3 meses</option>
@@ -649,7 +649,7 @@ export default function ScoreForm({ targetCommune, objective, birthDate, profile
               Relación complementaria
               <select name="relacion_complementario" value={form.relacion_complementario} onChange={handleChange}>
                 <option value="">Selecciona una relación</option>
-                <option value="conyuge">Conyuge</option>
+                <option value="conyuge">Cónyuge</option>
                 <option value="pareja_conviviente">Pareja conviviente</option>
                 <option value="pareja_hijos_comun">Pareja con hijos en común</option>
                 <option value="padre_madre">Padre/Madre</option>

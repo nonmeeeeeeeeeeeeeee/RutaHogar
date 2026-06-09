@@ -1,4 +1,5 @@
 import os
+import re
 from pathlib import Path
 
 try:
@@ -38,6 +39,40 @@ def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
         return f"ERROR IA: {str(e)}"
 
 
+def _clean_generated_text(text: str) -> str:
+    replacements = {
+        "preevaluacion": "preevaluación",
+        "evaluacion": "evaluación",
+        "situacion": "situación",
+        "informacion": "información",
+        "antiguedad": "antigüedad",
+        "podria": "podría",
+        "proximos": "próximos",
+        "credito": "crédito",
+        "mas": "más",
+        "solida": "sólida",
+        "seria": "sería",
+    }
+    cleaned = re.sub(r"\s+", " ", text or "").strip()
+    cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
+    cleaned = re.sub(r"([.!?])\s*[,;:]+\s*", r"\1 ", cleaned)
+    cleaned = re.sub(r"[,;:]+\s*([.!?])", r"\1", cleaned)
+    cleaned = re.sub(r",\s*\.", ".", cleaned)
+    cleaned = re.sub(r"\.\s*,", ".", cleaned)
+    cleaned = re.sub(r"([,;:])\s*([,.;:!?])", r"\2", cleaned)
+    cleaned = re.sub(r"([.!?])\s*\1+", r"\1", cleaned)
+    cleaned = re.sub(r"([,;:])\s*\1+", r"\1", cleaned)
+    cleaned = re.sub(r"([.!?])(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])", r"\1 ", cleaned)
+    for source, target in replacements.items():
+        cleaned = re.sub(
+            rf"\b{source}\b",
+            lambda match: target.capitalize() if match.group(0)[:1].isupper() else target,
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+    return cleaned
+
+
 def generate_executive_summary(
     classification: str,
     score: float,
@@ -73,7 +108,7 @@ NO debes:
 1. Hablar en primera persona por ningún motivo
 Responde solo el resumen, sin títulos ni encabezados."""
 
-    return _ask_groq(prompt, max_tokens=200)
+    return _clean_generated_text(_ask_groq(prompt, max_tokens=200))
 
 
 def generate_commercial_guidance(
@@ -119,7 +154,7 @@ NO debes:
 1. Hablar en primera persona por ningún motivo
 """
 
-    return _ask_groq(prompt, max_tokens=120)
+    return _clean_generated_text(_ask_groq(prompt, max_tokens=120))
 
 
 def generate_user_explanation(
@@ -147,14 +182,15 @@ Factores de riesgo:
 El párrafo debe:
 1. Mencionar brevemente lo que jugó a su favor.
 2. Explicar de manera constructiva los factores de riesgo.
-3. Usar un tono empático e informativo, sin tecnicismos ni fórmulas.
-4. Hablar directamente al usuario en segunda persona (tú).
-5. No mencionar el puntaje exacto ni los umbrales del sistema.
+3. Considerar, cuando aparezcan en los datos, ingreso y deuda, dividendo esperado, ahorro o pie, contrato y continuidad, morosidad, edad y plazo, complemento de renta, patrimonio y objetivo de vivienda.
+4. Usar un tono empático e informativo, sin tecnicismos ni fórmulas.
+5. Hablar directamente al usuario en segunda persona (tú).
+6. No mencionar el puntaje exacto ni los umbrales del sistema.
 
 Responde solo el párrafo, sin títulos ni encabezados."""
 
-    explanation = _ask_groq(prompt, max_tokens=250)
-    disclaimer = "Este resultado es orientativo y no reemplaza una evaluación bancaria formal."
+    explanation = _clean_generated_text(_ask_groq(prompt, max_tokens=250))
+    disclaimer = "Esta preevaluación es orientativa y no reemplaza una evaluación bancaria formal."
     if disclaimer not in explanation:
         explanation = f"{explanation}\n\n{disclaimer}"
     return explanation

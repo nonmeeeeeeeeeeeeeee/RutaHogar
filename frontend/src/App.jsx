@@ -14,6 +14,7 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import { useLeads } from "./hooks/useLeads";
+import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
 import {
   acceptEvaluationPlan,
   createEvaluation,
@@ -52,6 +53,47 @@ const plazoLabels = {
 const formatScore = (score) =>
   Number.isFinite(Number(score)) ? Math.round(Number(score)) : null;
 
+const isUuidValue = (id) =>
+  typeof id === "string" &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+const getStoredOnboardingForProfile = (profile) => {
+  if (!profile) return null;
+
+  try {
+    const stored = JSON.parse(localStorage.getItem(ONBOARDING_KEY)) || {};
+    return stored[profile.id] || stored[profile.user_id] || stored[profile.email] || null;
+  } catch {
+    return null;
+  }
+};
+
+const isRemoteProfile = (profile) =>
+  isSupabaseDataConfigured && (isUuidValue(profile?.id) || isUuidValue(profile?.user_id));
+
+const getOnboardingData = (profile) => {
+  if (!profile) return null;
+  if (isRemoteProfile(profile)) return profile.onboarding_data || null;
+  return profile.onboarding_data || getStoredOnboardingForProfile(profile) || null;
+};
+
+const hasCompletedOnboarding = (data) => {
+  if (!data || typeof data !== "object") return false;
+
+  return Boolean(
+    data.objetivo_principal &&
+      data.tipo_propiedad &&
+      data.comuna_interes &&
+      data.plazo_compra,
+  );
+};
+
+const getInitialPageForProfile = (profile) => {
+  if (!profile) return "home";
+  if (profile.role !== roles.user) return "home";
+  return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
+};
+
 const futureModules = [
   {
     title: "Objetivo inmobiliario",
@@ -63,13 +105,13 @@ const futureModules = [
     title: "Pre-evaluación financiera",
     status: "Disponible",
     description:
-      "Formulario guiado, score preliminar, clasificacion y recomendaciones básicas para el usuario.",
+      "Formulario guiado, score preliminar, clasificación y recomendaciones básicas para el usuario.",
   },
   {
     title: "Recomendaciones inteligentes",
     status: "Disponible",
     description:
-      "Entrega recomendaciones orientativas basadas en la ultima preevaluación, sin reemplazar una evaluación bancaria formal.",
+      "Entrega recomendaciones orientativas basadas en la última preevaluación, sin reemplazar una evaluación bancaria formal.",
   },
   {
     title: "Priorización comercial",
@@ -81,22 +123,20 @@ const futureModules = [
     title: "Seguimiento financiero",
     status: "Futuro",
     description:
-      "Plan de preparación para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
+      "Plan de preparación para leads aún no aptos, con metas de ahorro, deuda y continuidad laboral.",
   },
   {
     title: "Integraciones",
     status: "Futuro",
     description:
-      "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración este disponible.",
+      "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración esté disponible.",
   },
 ];
 
 export default function App() {
   const storedAuth = useMemo(() => getStoredAuth(), []);
   const [auth, setAuth] = useState(storedAuth);
-  const [page, setPage] = useState(() =>
-    storedAuth.profile?.role === roles.user ? "onboarding" : "home",
-  );
+  const [page, setPage] = useState(() => getInitialPageForProfile(storedAuth.profile));
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
@@ -141,13 +181,16 @@ export default function App() {
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
-  const userOnboarding = userId
-    ? profile?.onboarding_data ||
-      onboarding[userId] ||
-      onboarding[profile?.email] ||
-      currentEvaluation?.onboarding ||
-      null
-    : null;
+  const userOnboarding = isRemoteProfile(profile)
+    ? profile?.onboarding_data || null
+    : profile
+      ? profile.onboarding_data ||
+        onboarding[userId] ||
+        onboarding[profile?.id] ||
+        onboarding[profile?.email] ||
+        null
+      : null;
+  const onboardingCompleted = hasCompletedOnboarding(userOnboarding);
   const currentScoreNumber = currentEvaluation
     ? formatScore(currentEvaluation.result?.score)
     : null;
@@ -236,7 +279,7 @@ export default function App() {
   const startEvaluation = () => {
     setResult(null);
     setResultSaved(null);
-    setPage(userOnboarding ? "evaluate" : "onboarding");
+    setPage(onboardingCompleted ? "evaluate" : "onboarding");
   };
 
   const handleAuth = (nextAuth) => {
@@ -245,7 +288,7 @@ export default function App() {
     setResultSaved(null);
     setDataError("");
     setTrackingGoals([]);
-    setPage(nextAuth.profile?.role === roles.user ? "onboarding" : "home");
+    setPage(getInitialPageForProfile(nextAuth.profile));
   };
 
   const saveOnboardingAnswers = async (answers) => {
@@ -285,11 +328,7 @@ export default function App() {
       );
     }
     setResult(null);
-    if (consentGranted) {
-      setPage("evaluate");
-    } else {
-      setPage("dataconsent");
-    }
+    setPage("home");
   };
 
   const handleProfileOnboardingSave = async (answers) => {
@@ -314,13 +353,13 @@ export default function App() {
     const resultSnapshot = {
       score: scoreResult.score,
       classification: scoreResult.classification,
-      risks: [...(scoreResult.risks || [])],
-      recommendations: [...(scoreResult.recommendations || [])],
-      ai_explanation: scoreResult.ai_explanation,
-      improvement_plan: [...(scoreResult.improvement_plan || [])],
-      positive_indicators: [...(scoreResult.positive_indicators || [])],
-      executive_summary: scoreResult.executive_summary || "",
-      commercial_guidance: scoreResult.commercial_guidance || "",
+      risks: normalizeDisplayList(scoreResult.risks),
+      recommendations: normalizeDisplayList(scoreResult.recommendations),
+      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
+      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
+      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
+      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
     };
 
     const financialInput = {
@@ -348,6 +387,11 @@ export default function App() {
         input.continuidad_laboral_complementario,
       morosidad_complementario: input.morosidad_complementario,
       relacion_complementario: input.relacion_complementario,
+      declara_patrimonio: input.declara_patrimonio,
+      valor_vehiculos: input.valor_vehiculos,
+      valor_inmuebles: input.valor_inmuebles,
+      patrimonio_unit: input.patrimonio_unit,
+      uf_value_clp: input.uf_value_clp,
     };
 
     try {
@@ -385,7 +429,7 @@ export default function App() {
       console.error(err);
       setResultSaved(false);
       setDataError(
-        "El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesion siga activa y que Supabase permita insertar evaluaciones.",
+        "El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesión siga activa y que Supabase permita insertar evaluaciones.",
       );
     }
   };
@@ -540,7 +584,7 @@ export default function App() {
         <>
           <section className="hero">
             <div className="hero-copy">
-              <span className="eyebrow">Solucion inmobiliaria</span>
+              <span className="eyebrow">Solución inmobiliaria</span>
               <h1>ScoreLeads</h1>
               {result && (
                 <div
@@ -551,14 +595,14 @@ export default function App() {
                   {resultSaved === false
                     ? `Score calculado: ${formatScore(result.score)} / ${result.classification}. No se pudo guardar en historial.`
                     : resultSaved === true
-                      ? `Precalificacion guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
+                      ? `Precalificación guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
                       : `Score calculado: ${formatScore(result.score)} / ${result.classification}. Guardando historial...`}
                 </div>
               )}
               <p>
                 Plataforma para preevaluar leads inmobiliarios antes de iniciar
                 una evaluación bancaria formal. El foco del producto es entregar
-                una pre-evaluación financiera clara, rapida y orientativa.
+                una pre-evaluación financiera clara, rápida y orientativa.
               </p>
               <p className="hero-note">
                 Sin documentos, sin claves bancarias y sin aprobación bancaria.
@@ -580,7 +624,7 @@ export default function App() {
               <h2>Implementaciones planificadas</h2>
               <p>
                 Estas tarjetas muestran la visión completa de ScoreLeads.
-                Actualmente estan habilitados el objetivo inmobiliario y la
+                Actualmente están habilitados el objetivo inmobiliario y la
                 pre-evaluación financiera.
               </p>
             </div>

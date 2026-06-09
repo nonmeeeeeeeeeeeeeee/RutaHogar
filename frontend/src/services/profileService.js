@@ -1,4 +1,5 @@
 import { supabase } from "../utils/supabase";
+import { normalizePhone } from "../utils/phone";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -50,11 +51,7 @@ export function logSupabaseError(error) {
 }
 
 export function normalizePhoneForStorage(phone = "") {
-  const digits = String(phone).replace(/\D/g, "");
-  if (!digits) return "";
-  const withoutCountry = digits.startsWith("56") ? digits.slice(2) : digits;
-  const mobileDigits = withoutCountry.startsWith("9") ? withoutCountry : `9${withoutCountry}`;
-  return `+56${mobileDigits.slice(0, 9)}`;
+  return normalizePhone(phone);
 }
 
 export function normalizeBirthDateForStorage(birthDate = "") {

@@ -106,7 +106,7 @@ function authUserAlreadyExists(data) {
 export async function signIn({ email, password, role = roles.user }) {
   if (isSupabaseConfigured) {
     if (!supabase) {
-      throw new Error("Supabase no esta configurado correctamente.");
+      throw new Error("Supabase no está configurado correctamente.");
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -143,7 +143,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
     if (error) {
       logSupabaseError(error);
       if (isExistingUserError(error)) {
-        throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
+        throw new Error("Este correo ya está registrado. Intenta iniciar sesión.");
       }
       throw new Error("No se pudo crear la cuenta.");
     }
@@ -155,7 +155,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
         hint: "Ask the user to sign in instead of creating a duplicate account.",
         code: "user_already_exists",
       });
-      throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
+      throw new Error("Este correo ya está registrado. Intenta iniciar sesión.");
     }
 
     if (!data?.user) {
