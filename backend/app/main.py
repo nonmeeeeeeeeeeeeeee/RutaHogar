@@ -4,7 +4,7 @@ from pydantic import BaseModel, field_validator, model_validator
 from fastapi.middleware.cors import CORSMiddleware
 from .scoring import calculate_score
 
-app = FastAPI(title="ScoreLeads MVP")
+app = FastAPI(title="ScoreLeads")
 
 app.add_middleware(
     CORSMiddleware,
@@ -84,7 +84,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_mortgage_term(cls, value):
         if value not in {10, 15, 20, 25, 30}:
-            raise ValueError("Plazo de credito hipotecario invalido")
+            raise ValueError("Plazo de credito hipotecario inválido")
         return value
 
     @field_validator("tipo_contrato")
@@ -92,7 +92,7 @@ class ScoreRequest(BaseModel):
     def validate_contract_type(cls, value):
         allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
         if value not in allowed:
-            raise ValueError("Tipo de contrato invalido")
+            raise ValueError("Tipo de contrato inválido")
         return value
 
     @field_validator("continuidad_laboral")
@@ -100,7 +100,7 @@ class ScoreRequest(BaseModel):
     def validate_work_continuity(cls, value):
         allowed = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
         if value not in allowed:
-            raise ValueError("Continuidad laboral invalida")
+            raise ValueError("Continuidad laboral inválida")
         return value
 
     @field_validator("morosidad_actual")
@@ -108,7 +108,7 @@ class ScoreRequest(BaseModel):
     def validate_current_delinquency(cls, value):
         allowed = {"si", "no"}
         if value not in allowed:
-            raise ValueError("Morosidad actual invalida")
+            raise ValueError("Morosidad actual inválida")
         return value
 
     @field_validator("antiguedad_morosidad")
@@ -117,14 +117,14 @@ class ScoreRequest(BaseModel):
         if value is not None:
             allowed = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
             if value not in allowed:
-                raise ValueError("Antiguedad de morosidad invalida")
+                raise ValueError("Antiguedad de morosidad inválida")
         return value
 
     @field_validator("property_value_unit")
     @classmethod
     def validate_property_value_unit(cls, value):
         if value is not None and value not in {"uf", "clp"}:
-            raise ValueError("Unidad de monto de vivienda invalida")
+            raise ValueError("Unidad de monto de vivienda inválida")
         return value
 
     @field_validator("consentimiento")
@@ -147,7 +147,7 @@ class ScoreRequest(BaseModel):
         if value is not None:
             allowed = {"si", "no"}
             if value not in allowed:
-                raise ValueError("Morosidad del co-deudor invalida")
+                raise ValueError("Morosidad del co-deudor inválida")
         return value
 
     @field_validator("tipo_contrato_complementario")
@@ -156,7 +156,7 @@ class ScoreRequest(BaseModel):
         if value is not None:
             allowed = {"indefinido", "plazo_fijo", "independiente", "honorarios_variable"}
             if value not in allowed:
-                raise ValueError("Tipo de contrato del co-deudor invalido")
+                raise ValueError("Tipo de contrato del co-deudor inválido")
         return value
 
     @field_validator("continuidad_laboral_complementario")
@@ -165,7 +165,7 @@ class ScoreRequest(BaseModel):
         if value is not None:
             allowed = {"menos_6_meses", "entre_6_y_12_meses", "entre_1_y_3_anios", "mas_3_anios"}
             if value not in allowed:
-                raise ValueError("Continuidad laboral del co-deudor invalida")
+                raise ValueError("Continuidad laboral del co-deudor inválida")
         return value
 
     @field_validator("relacion_complementario")
@@ -177,7 +177,7 @@ class ScoreRequest(BaseModel):
                 "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
             }
             if value not in allowed:
-                raise ValueError("Relacion del complemento de renta invalida")
+                raise ValueError("Relacion del complemento de renta inválida")
         return value
 
     @model_validator(mode="after")

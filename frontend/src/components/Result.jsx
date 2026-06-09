@@ -12,7 +12,7 @@ export default function Result({ data }) {
         <div>
           <span className="eyebrow">Resultado</span>
           <h2>Score financiero preliminar</h2>
-          <p>Resultado orientativo. No corresponde a una aprobacion bancaria ni reemplaza una evaluacion formal.</p>
+          <p>Resultado orientativo. No corresponde a una aprobación bancaria ni reemplaza una evaluación formal.</p>
         </div>
         <div className={`score-badge ${tone}`}>
           <strong>{visibleScore}</strong>
@@ -22,7 +22,7 @@ export default function Result({ data }) {
 
       <div className="result-grid">
         <section>
-          <strong>Explicacion mejorada con IA</strong>
+          <strong>Explicación mejorada con IA</strong>
           <p>{ai_explanation}</p>
         </section>
 
@@ -39,7 +39,7 @@ export default function Result({ data }) {
             {briefRecommendations.length ? (
               briefRecommendations.map((step, i) => <li key={i}>{step}</li>)
             ) : (
-              <li>Revisa tu situacion con antecedentes formales antes de tomar una decision.</li>
+              <li>Revisa tu situación con antecedentes formales antes de tomar una decisión.</li>
             )}
           </ul>
         </section>

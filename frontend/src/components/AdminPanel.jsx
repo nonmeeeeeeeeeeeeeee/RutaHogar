@@ -20,9 +20,9 @@ export default function AdminPanel({ evaluations, profile }) {
   return (
     <section className="section-block">
       <div className="section-heading">
-        <span className="eyebrow">Administracion MVP</span>
+        <span className="eyebrow">Administración</span>
         <h1>Panel Admin</h1>
-        <p>Metricas generales y estructura simple de perfiles para preparar la conexion con Supabase.</p>
+        <p>Metricas generales y estructura simple de perfiles para preparar la conexión con Supabase.</p>
       </div>
 
       <div className="metrics-grid">
@@ -49,7 +49,7 @@ export default function AdminPanel({ evaluations, profile }) {
         <section>
           <strong>Evaluaciones generales</strong>
           <p className="small-text">
-            No se muestran claves bancarias, documentos ni reglas internas. Solo informacion necesaria para el MVP.
+            No se muestran claves bancarias, documentos ni reglas internas. Solo información necesaria para la gestión.
           </p>
           <ul className="plain-list">
             {evaluations.slice(0, 5).map((item) => (
