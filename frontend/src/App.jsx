@@ -13,12 +13,9 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, getScoringHistory } from "./services/evaluationService";
-import { useLeads } from "./hooks/useLeads";
-<<<<<<< HEAD
-=======
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
->>>>>>> b746682e72b1df54369f908918a47c57ca69d24e
+import { getScoringHistory } from "./services/getScoringHistory";
+import { useLeads } from "./hooks/useLeads";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";

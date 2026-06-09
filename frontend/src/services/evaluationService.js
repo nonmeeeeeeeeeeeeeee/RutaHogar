@@ -1,20 +1,8 @@
 import { supabase } from "../utils/supabase";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
+import { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory } from "./getScoringHistory";
 
 const EVALUATIONS_KEY = "scoreleads_evaluations";
-const SCORING_HISTORY_KEY = "scoreleads_scoring_history";
-
-function readLocalScoringHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(SCORING_HISTORY_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-function writeLocalScoringHistory(history) {
-  localStorage.setItem(SCORING_HISTORY_KEY, JSON.stringify(history));
-}
 
 function readLocalEvaluations() {
   try {
@@ -95,21 +83,6 @@ function buildRow(userId, evaluationPayload) {
   };
 }
 
-<<<<<<< HEAD
-function buildScoringHistoryRow(userId, evaluationId, evaluationPayload) {
-  const result = evaluationPayload.result || {};
-  return {
-    evaluation_id: evaluationId,
-    user_id: userId,
-    score: Math.round(Number(result.score) || 0),
-    classification: result.classification,
-    snapshot: JSON.parse(JSON.stringify(evaluationPayload.input || {})),
-    component_scores: result.component_scores || {},
-    algorithm_version: result.algorithm_version || "",
-    channel: evaluationPayload.channel || "web",
-  };
-}
-
 const evaluationSelectColumns = [
   "id",
   "user_id",
@@ -124,14 +97,9 @@ const evaluationSelectColumns = [
   "financial_data",
   "explanation",
   "recommendations",
+  "executive_summary",
+  "commercial_guidance",
   "created_at",
-=======
-const selectColumns = [
-  "id", "user_id", "email", "score", "classification",
-  "objective", "property_type", "target_commune", "alternative_commune",
-  "purchase_timeline", "financial_data", "explanation", "recommendations",
-  "executive_summary", "commercial_guidance", "created_at",
->>>>>>> b746682e72b1df54369f908918a47c57ca69d24e
 ].join(", ");
 
 export async function createEvaluation(userId, evaluationPayload) {
@@ -170,24 +138,7 @@ export async function createEvaluation(userId, evaluationPayload) {
     .select(selectColumns)
     .single();
 
-<<<<<<< HEAD
-  if (error) {
-    logSupabaseError(error);
-    throw error;
-  }
-
-  const historyRow = buildScoringHistoryRow(user.id, data.id, evaluationPayload);
-  const { error: historyError } = await supabase
-    .from("scoring_history")
-    .insert(historyRow);
-
-  if (historyError) {
-    logSupabaseError(historyError);
-  }
-
-=======
   if (error) { logSupabaseError(error); throw error; }
->>>>>>> b746682e72b1df54369f908918a47c57ca69d24e
   return normalizeEvaluation(data);
 }
 
@@ -254,43 +205,6 @@ export async function getLatestEvaluation(userId) {
 
   if (error) { logSupabaseError(error); throw error; }
   return normalizeEvaluation(data);
-}
-
-const scoringHistorySelectColumns = [
-  "id",
-  "evaluation_id",
-  "user_id",
-  "score",
-  "classification",
-  "snapshot",
-  "component_scores",
-  "algorithm_version",
-  "channel",
-  "created_at",
-].join(", ");
-
-export async function getScoringHistory(userId) {
-  if (!isSupabaseDataConfigured) {
-    return readLocalScoringHistory().filter((item) => item.user_id === userId || item.email === userId);
-  }
-
-  const user = await getAuthenticatedUser();
-  if (!user?.id) {
-    throw new Error("No hay usuario autenticado para cargar el historial.");
-  }
-  await ensureUserProfile(user);
-
-  const { data, error } = await supabase
-    .from("scoring_history")
-    .select(scoringHistorySelectColumns)
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    logSupabaseError(error);
-    throw error;
-  }
-  return data || [];
 }
 
 export async function deleteEvaluation(evaluationId, userId) {
