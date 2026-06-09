@@ -1,53 +1,86 @@
 # QA — ScoreLeads MVP
 
-No hay test suite automatizada. Toda validación es manual.
+Validación 100% manual (sin test suite).
 
-## Escenarios de prueba
+## Smoke test
 
-### Smoke test
 1. `cd backend && .venv\Scripts\uvicorn app.main:app --reload --port 8000`
 2. `cd frontend && npm run dev`
-3. Abrir `http://localhost:5173` y verificar que carga sin errores en consola.
+3. Abrir `http://localhost:5173`, verificar carga sin errores en consola.
 
-### Flujo completo sin auth (localStorage)
-1. Ir directo al formulario (si hay auth, omitir login con datos locales).
-2. Completar Onboarding con comuna + plazo.
-3. Aceptar consentimiento en DataConsent.
-4. Llenar ScoreForm con datos válidos y enviar.
-5. Verificar que aparece Result con score, clasificación, riesgos y recomendaciones.
+## Flujo completo offline (sin Supabase)
 
-### Casos de clasificación
+1. Registrarse en AuthPanel (modo localStorage)
+2. Completar Onboarding (comuna + plazo + tipo propiedad)
+3. Aceptar DataConsent
+4. Llenar ScoreForm con datos válidos → enviar
+5. Verificar Result + Recommendations
+6. Verificar ProfilePage: historial de evaluaciones + scoring_history
+
+## Casos de clasificación
 
 | Perfil | Score esperado |
 |--------|---------------|
-| Ingreso alto, sin deuda, ahorro alto, indefinido, sin morosidad | **Alto** (≥70) |
-| Ingreso medio, deuda moderada, ahorro medio, plazo fijo | **Medio** (40-69) |
-| Ingreso bajo, deuda alta, sin ahorro, morosidad sí | **Bajo** (<40) |
+| Ingreso alto (≥4× dividendo), sin deuda, ahorro alto, indefinido, sin morosidad | **Alto** (≥70) |
+| Ingreso medio, deuda moderada, plazo fijo | **Medio** (40-69) |
+| Ingreso bajo, deuda alta, sin ahorro, morosidad sí reciente (<12m) | **Bajo** (<40) |
 
-### Complemento de renta con co-deudor
+## Contrato y continuidad
 
-| Co-deudor | Impacto esperado en score |
-|-----------|--------------------------|
-| Sin morosidad, deuda ≤ 40% ingreso, indefinido, < 3 tarjetas | **+10** (perfil limpio) |
-| Morosidad "sí" | **-20** |
-| Deuda > 40% ingreso | **-15** |
-| ≥ 5 tarjetas activas | **-15** |
-| 3-4 tarjetas activas | **-8** |
-| Continuidad < 6 meses | **-10** |
-| Sin datos (todos vacíos) | **-5** |
+| Contrato | Impacto |
+|----------|---------|
+| indefinido | +10 |
+| plazo_fijo | **−18** |
+| honorarios_variable | **−10** |
+| independiente sin continuidad | −5 |
+| independiente con continuidad >1a | sin penalización |
 
-### Validaciones backend (POST /score directo)
-- `consentimiento: false` → 422 "El consentimiento es obligatorio"
-- `ingreso_mensual: -1` → 422 "El valor no puede ser negativo"
-- `tipo_contrato: "otro"` → 422 "Tipo de contrato invalido"
-- `complemento_renta: true` sin campos obligatorios del co-deudor → 422
-- Payload completo y válido → 200 con score
+## Morosidad con antigüedad
 
-### Supabase
-- Si Supabase no está configurado, todo debe funcionar con localStorage (verificar que no haya errores en consola).
-- Con Supabase configurado, verificar que evaluaciones se guardan y aparecen en ProfilePage.
-- Verificar RLS: usuario A no debe ver evaluaciones del usuario B.
+| Morosidad | Antigüedad | Impacto |
+|-----------|-----------|---------|
+| sí | <12 meses | **−35** |
+| sí | ≥12 meses | **−25** |
+| no_lo_se | — | −12 |
 
-### Regresión
-- Probar que cambios en `scoring.py` producen resultados esperados sin romper casos existentes.
-- Verificar que nuevos campos opcionales no rompen requests sin complemento_renta.
+## Complemento de renta con co-deudor
+
+| Situación | Impacto |
+|-----------|---------|
+| Perfil limpio (sin morosidad, deuda ≤ 40%, indefinido, continuidad >1a, relación no débil) | **+10** |
+| Morosidad "sí" | −20 |
+| Deuda > 40% ingreso | −15 |
+| Plazo fijo | −10 |
+| Continuidad < 6m | −10 |
+| Honorarios/independiente sin continuidad | −5 |
+| Relación débil (`amigo` / `otro`) | **−5**, no suma a capacidad |
+| Sin datos (todos vacíos) | −5 |
+
+## ARCO requests
+
+- Probar crear solicitudes de acceso, rectificación, cancelación.
+- Verificar que usuario ve solo sus propias solicitudes.
+- Admin puede ver y actualizar estado de todas.
+
+## Scoring history
+
+- Cada `createEvaluation()` debe crear un registro inmutable en `scoring_history`.
+- Verificar que aparecen en ProfilePage → "Historial inmutable (auditoría)".
+- Datos mostrados: score, clasificación, comuna, canal, versión algoritmo, desglose componentes.
+- La evaluación **no puede eliminarse** si tiene scoring_history asociado (FK con `on delete restrict`).
+
+## Validaciones backend (POST /score directo)
+
+- `consentimiento: false` → 422
+- `ingreso_mensual: -1` → 422
+- `tipo_contrato: "otro"` → 422
+- `tipo_contrato: "honorarios_variable"` → 200 (válido)
+- `morosidad_actual: "si"` sin `antiguedad_morosidad` → 422
+- `complemento_renta: true` sin campos → 422 (desde validator Pydantic)
+- Payload completo y válido → 200 con score + classification + ai_explanation
+
+## Supabase
+
+- Sin env vars: todo localStorage, sin errores en consola.
+- Con Supabase: evaluaciones y scoring_history se guardan y aparecen en ProfilePage.
+- RLS: usuario A no ve datos del usuario B. Ejecutivo ve todas.

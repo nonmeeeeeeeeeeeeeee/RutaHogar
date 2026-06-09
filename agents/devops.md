@@ -28,52 +28,45 @@ Makefile usa comandos bash: no funciona en PowerShell nativo.
 
 ## Variables de entorno
 
-`frontend/.env` (obligatorio):
+`frontend/.env` — **ninguna es obligatoria** (todo funciona offline con localStorage):
 ```
-VITE_SUPABASE_URL=https://adgnxtjkqedtvkwcizzn.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_Y8HX31lHegX7d37_uIngrQ_Osu7p3Cj
+VITE_SUPABASE_URL=https://...
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 VITE_API_URL=http://127.0.0.1:8000
 ```
 
-`frontend/.env.example` tiene template comentado.
+`backend/.env` (opcional, para AI):
+```
+GROQ_API_KEY=gsk_...
+```
 
 ## Deploy (Vercel)
 
-Dos configs de Vercel:
+1. **Root `vercel.json`** — build frontend + rewrite `/score` → `/api/score`
+2. **`backend/vercel.json`** — serverless Python para `/api/score`
 
-1. **Root `vercel.json`** — build del frontend + rewrite `/score` → `/api/score`:
-   ```json
-   { "buildCommand": "cd frontend && npm install && npm run build",
-     "outputDirectory": "frontend/dist",
-     "rewrites": [{ "source": "/score", "destination": "/api/score" },
-                  { "source": "/(.*)", "destination": "/index.html" }] }
-   ```
-
-2. **`backend/vercel.json`** — serverless Python para el endpoint `/api/score`:
-   ```json
-   { "builds": [{ "src": "api/index.py", "use": "@vercel/python" }],
-     "routes": [{ "src": "/(.*)", "dest": "api/index.py" }] }
-   ```
-
-Entrypoints:
-- `api/score.py` — shim que importa `app.main` (sys.path al backend)
-- `backend/api/index.py` — shim alternativo
+Entrypoints serverless: `api/score.py` y `backend/api/index.py` (shims que importan `app.main` con sys.path).
 
 ## Dependencias
 
-- Backend: `fastapi`, `uvicorn[standard]`, `pydantic` (3 paquetes).
-- Frontend: `react`, `react-dom`, `axios`, `@supabase/supabase-js`, `vite` (dev).
-- Root: `@supabase/supabase-js` (no se usa directamente, instalado por frontend).
+- Backend: `fastapi`, `uvicorn[standard]`, `pydantic`, `groq`.
+- Frontend: `react`, `react-dom`, `axios`, `@supabase/supabase-js`, `playwright`, `vite` (dev).
 
 ## Database (Supabase)
 
 Schema en `supabase/schema.sql`. Ejecutar en SQL Editor de Supabase.
-Tablas: `profiles`, `evaluations`, `improvement_goals`.
-Row Level Security activo con políticas por `auth.uid()`.
+
+Tablas: `profiles`, `evaluations`, `improvement_goals`, `scoring_history`, `arco_requests`.
+
+Row Level Security activo con políticas por `auth.uid()`. Helper `public.get_my_role()` para consultas cross-user (ejecutivos ven todas las evaluaciones).
+
+## Branch protection
+
+`ruleset.json` — protege `main` y `master`: requiere PR (sin reviewers obligatorios), no permite push directo ni delete.
 
 ## Notas
 
 - No hay Docker, no hay CI/CD configurado.
-- No hay tests configurados (ni pytest, ni vitest).
+- No hay tests automatizados (pese a que playwright está en package.json).
 - No hay linting ni typecheck.
 - El backend no requiere base de datos local (todo vía Supabase HTTP).
