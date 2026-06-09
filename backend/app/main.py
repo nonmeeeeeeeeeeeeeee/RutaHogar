@@ -35,6 +35,7 @@ class ScoreRequest(BaseModel):
     property_value_unit: Optional[str] = None
     property_value_uf: Optional[float] = None
     property_value_clp: Optional[float] = None
+    uf_value_clp: Optional[float] = None
     plazo_credito_hipotecario: int
     tipo_contrato: str  # 'indefinido', 'plazo_fijo', 'independiente'
     continuidad_laboral: str
@@ -74,6 +75,7 @@ class ScoreRequest(BaseModel):
         "property_value", 
         "property_value_uf", 
         "property_value_clp", 
+        "uf_value_clp",
         "monto_morosidad",
         "valor_vehiculos",
         "valor_inmuebles"
@@ -95,7 +97,7 @@ class ScoreRequest(BaseModel):
     @classmethod
     def validate_mortgage_term(cls, value):
         if value not in VALID_MORTGAGE_TERMS:
-            raise ValueError("Plazo de credito hipotecario inválido")
+            raise ValueError("Plazo de crédito hipotecario inválido")
         return value
 
     @field_validator("tipo_contrato")
@@ -124,7 +126,7 @@ class ScoreRequest(BaseModel):
     def validate_delinquency_age(cls, value):
         if value is not None:
             if value not in VALID_DELINQUENCY_AGE_VALUES:
-                raise ValueError("Antiguedad de morosidad inválida")
+                raise ValueError("Antigüedad de morosidad inválida")
         return value
 
     @field_validator("property_value_unit")
@@ -177,7 +179,7 @@ class ScoreRequest(BaseModel):
     def validate_complement_relation(cls, value):
         if value is not None:
             if value not in VALID_RELATION_TYPES:
-                raise ValueError("Relacion del complemento de renta inválida")
+                raise ValueError("Relación del complemento de renta inválida")
         return value
 
     @model_validator(mode="after")
@@ -186,7 +188,7 @@ class ScoreRequest(BaseModel):
             if self.monto_morosidad is None or self.monto_morosidad <= 0:
                 raise ValueError("Debe indicar el monto de morosidad")
             if not self.antiguedad_morosidad:
-                raise ValueError("Debe indicar la antiguedad de morosidad")
+                raise ValueError("Debe indicar la antigüedad de morosidad")
         return self
 
 

@@ -28,7 +28,7 @@ export default function FinancialTracking({
           <h1>Mi plan de mejora</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluación.</strong>
+          <strong>Aún no tienes una preevaluación.</strong>
           <p>Realiza una preevaluación para generar tu seguimiento financiero.</p>
           <button type="button" onClick={onStartEvaluation}>Iniciar pre-evaluación</button>
         </div>
@@ -48,7 +48,7 @@ export default function FinancialTracking({
       <div className="section-heading">
         <span className="eyebrow">Seguimiento financiero</span>
         <h1>Mi plan de mejora</h1>
-        <p>Metas accionables para preparar mejor tu situación financiera a partir de tu ultima preevaluación.</p>
+        <p>Metas accionables para preparar mejor tu situación financiera a partir de tu última preevaluación.</p>
       </div>
 
       <div className="tracking-summary">
@@ -74,7 +74,7 @@ export default function FinancialTracking({
         <div className="empty-state">
           <strong>No hay información suficiente para generar un plan detallado.</strong>
           <p>Realiza una preevaluación completa para generar metas mensuales y acciones sugeridas.</p>
-          <button type="button" onClick={onStartEvaluation}>Ir a precalificacion</button>
+          <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       ) : null}
 

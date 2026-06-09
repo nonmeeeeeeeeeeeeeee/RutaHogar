@@ -1,0 +1,56 @@
+function preserveCase(match, replacement) {
+  if (!match) return replacement;
+  return match[0] === match[0].toUpperCase()
+    ? `${replacement[0].toUpperCase()}${replacement.slice(1)}`
+    : replacement;
+}
+
+const WORD_FIXES = [
+  [/\bAun\b/g, "Aún"],
+  [/\baun\b/g, "aún"],
+  [/\bpreevaluacion(es)?\b/gi, (match) => preserveCase(match, match.toLowerCase().endsWith("es") ? "preevaluaciones" : "preevaluación")],
+  [/\bevaluacion(es)?\b/gi, (match) => preserveCase(match, match.toLowerCase().endsWith("es") ? "evaluaciones" : "evaluación")],
+  [/\bsituacion(es)?\b/gi, (match) => preserveCase(match, match.toLowerCase().endsWith("es") ? "situaciones" : "situación")],
+  [/\binformacion\b/gi, (match) => preserveCase(match, "información")],
+  [/\bantiguedad\b/gi, (match) => preserveCase(match, "antigüedad")],
+  [/\bpodria\b/gi, (match) => preserveCase(match, "podría")],
+  [/\bproximos\b/gi, (match) => preserveCase(match, "próximos")],
+  [/\bmas\b/gi, (match) => preserveCase(match, "más")],
+  [/\bsolida\b/gi, (match) => preserveCase(match, "sólida")],
+  [/\bseria\b/gi, (match) => preserveCase(match, "sería")],
+  [/\bmanten\b/gi, (match) => preserveCase(match, "mantén")],
+  [/\bevalua\b/gi, (match) => preserveCase(match, "evalúa")],
+  [/\benfocate\b/gi, (match) => preserveCase(match, "enfócate")],
+  [/\bcredito\b/gi, (match) => preserveCase(match, "crédito")],
+  [/\bdigitos\b/gi, (match) => preserveCase(match, "dígitos")],
+  [/\btelefono\b/gi, (match) => preserveCase(match, "teléfono")],
+  [/\bConyuge\b/g, "Cónyuge"],
+];
+
+export function normalizeDisplayText(value) {
+  if (value == null) return "";
+
+  let text = String(value)
+    .normalize("NFC")
+    .replace(/\s+/g, " ")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([.!?])\s*[,;:]+\s*/g, "$1 ")
+    .replace(/[,;:]+\s*([.!?])/g, "$1")
+    .replace(/,\s*\./g, ".")
+    .replace(/\.\s*,/g, ".")
+    .replace(/([,;:])\s*([,.;:!?])/g, "$2")
+    .replace(/([.!?])\s*\1+/g, "$1")
+    .replace(/([,;:])\s*\1+/g, "$1")
+    .replace(/([.!?])(?=[A-Za-zÁÉÍÓÚÜÑáéíóúüñ])/g, "$1 ")
+    .trim();
+
+  WORD_FIXES.forEach(([pattern, replacement]) => {
+    text = text.replace(pattern, replacement);
+  });
+
+  return text;
+}
+
+export function normalizeDisplayList(items) {
+  return (Array.isArray(items) ? items : []).map(normalizeDisplayText).filter(Boolean);
+}

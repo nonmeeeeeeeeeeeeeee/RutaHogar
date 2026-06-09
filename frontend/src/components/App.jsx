@@ -17,6 +17,7 @@ import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./se
 import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
 import { updateProfileOnboarding, isSupabaseDataConfigured } from "./services/profileService";
+import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
 const LAST_LEAD_CHECK_KEY = "scoreleads_last_lead_check";
@@ -25,7 +26,7 @@ const plazoLabels = {
   "0_3_meses": "0 a 3 meses",
   "3_6_meses": "3 a 6 meses",
   "6_12_meses": "6 a 12 meses",
-  "mas_12_meses": "Mas de 12 meses",
+  "mas_12_meses": "Más de 12 meses",
 };
 
 const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
@@ -54,12 +55,12 @@ const futureModules = [
   {
     title: "Seguimiento financiero",
     status: "Futuro",
-    description: "Plan de preparación para leads aun no aptos, con metas de ahorro, deuda y continuidad laboral.",
+    description: "Plan de preparación para leads aún no aptos, con metas de ahorro, deuda y continuidad laboral.",
   },
   {
     title: "Integraciones",
     status: "Futuro",
-    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración este disponible.",
+    description: "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración esté disponible.",
   },
 ];
 
@@ -260,26 +261,42 @@ export default function App() {
     const resultSnapshot = {
       score: scoreResult.score,
       classification: scoreResult.classification,
-      risks: [...(scoreResult.risks || [])],
-      recommendations: [...(scoreResult.recommendations || [])],
-      ai_explanation: scoreResult.ai_explanation,
-      improvement_plan: [...(scoreResult.improvement_plan || [])],
+      risks: normalizeDisplayList(scoreResult.risks),
+      recommendations: normalizeDisplayList(scoreResult.recommendations),
+      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
+      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
     };
 
     const financialInput = {
       ingreso_mensual: input.ingreso_mensual,
       deuda_mensual: input.deuda_mensual,
+      edad: input.edad,
       ahorro_disponible: input.ahorro_disponible,
+      property_value: input.property_value,
+      property_value_unit: input.property_value_unit,
+      property_value_uf: input.property_value_uf,
+      property_value_clp: input.property_value_clp,
+      plazo_credito_hipotecario: input.plazo_credito_hipotecario,
       dividendo_estimado: input.dividendo_estimado,
       comuna_objetivo: input.comuna_objetivo,
       tipo_contrato: input.tipo_contrato,
       continuidad_laboral: input.continuidad_laboral,
       morosidad_actual: input.morosidad_actual,
+      monto_morosidad: input.monto_morosidad,
+      antiguedad_morosidad: input.antiguedad_morosidad,
       complemento_renta: input.complemento_renta,
+      ingreso_mensual_complementario: input.ingreso_mensual_complementario,
+      deuda_mensual_complementario: input.deuda_mensual_complementario,
+      tipo_contrato_complementario: input.tipo_contrato_complementario,
+      continuidad_laboral_complementario:
+        input.continuidad_laboral_complementario,
+      morosidad_complementario: input.morosidad_complementario,
+      relacion_complementario: input.relacion_complementario,
       declara_patrimonio: input.declara_patrimonio,
       valor_vehiculos: input.valor_vehiculos,
       valor_inmuebles: input.valor_inmuebles,
       patrimonio_unit: input.patrimonio_unit,
+      uf_value_clp: input.uf_value_clp,
     };
 
     try {

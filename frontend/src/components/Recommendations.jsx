@@ -13,8 +13,8 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
           <h1>Orientación personalizada</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluación.</strong>
-          <p>Realiza una preevaluacion para generar recomendaciones personalizadas.</p>
+          <strong>Aún no tienes una preevaluación.</strong>
+          <p>Realiza una preevaluación para generar recomendaciones personalizadas.</p>
           <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       </section>

@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { comunasMvp } from "../constants/comunas";
 import { roleLabels, updateStoredProfile } from "../services/auth";
-import { normalizePhoneForStorage, upsertProfile } from "../services/profileService";
+import { upsertProfile } from "../services/profileService";
+import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 const objetivoLabels = {
   comprar_ahora: "Comprar ahora",
@@ -66,7 +67,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
   // Al abrir el formulario de contacto, cargar los valores actuales del perfil
   const openContactEdit = () => {
     setContactForm({
-      phone: profile?.phone ? formatPhoneDisplay(profile.phone) : "",
+      phone: profile?.phone ? formatPhone(profile.phone).replace(/\s/g, "") : "",
       email: profile?.email || "",
     });
     setContactError("");
@@ -87,7 +88,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
 
   const handleContactChange = (event) => {
     const { name, value } = event.target;
-    setContactForm((prev) => ({ ...prev, [name]: value }));
+    setContactForm((prev) => ({ ...prev, [name]: name === "phone" ? onlyPhoneDigits(value, 8) : value }));
   };
 
   const submit = async (event) => {
@@ -150,9 +151,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
       return;
     }
 
-    const normalizedPhone = normalizePhoneForStorage(trimmedPhone);
-    if (trimmedPhone && !normalizedPhone) {
-      setContactError("El teléfono ingresado no es válido. Usa formato +569XXXXXXXX o 9XXXXXXXX.");
+    const normalizedPhone = normalizePhone(trimmedPhone);
+    if (!normalizedPhone) {
+      setContactError(PHONE_ERROR_MESSAGE);
       return;
     }
 
@@ -208,15 +209,20 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
               <div className="form-grid">
                 <label>
                   Teléfono
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    name="phone"
-                    value={contactForm.phone}
-                    onChange={handleContactChange}
-                    placeholder="+56 9 XXXX XXXX"
-                    autoComplete="tel"
-                  />
+                  <div className="phone-input">
+                    <span>+56 9</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      name="phone"
+                      value={formatPhone(contactForm.phone)}
+                      onChange={handleContactChange}
+                      maxLength="9"
+                      placeholder="1234 5678"
+                      autoComplete="tel"
+                      aria-label="8 dígitos restantes del teléfono"
+                    />
+                  </div>
                 </label>
                 <label>
                   Correo electrónico
@@ -257,7 +263,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
               </div>
               <div>
                 <dt>Teléfono</dt>
-                <dd>{profile?.phone ? formatPhoneDisplay(profile.phone) : "Sin teléfono"}</dd>
+                <dd>{profile?.phone ? `+56 9 ${formatPhone(profile.phone)}` : "Sin teléfono"}</dd>
               </div>
               <div>
                 <dt>Fecha nacimiento</dt>

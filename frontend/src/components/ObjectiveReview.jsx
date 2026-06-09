@@ -43,7 +43,7 @@ export default function ObjectiveReview({ evaluation, onBack }) {
         </section>
 
         <section className="profile-card">
-          <strong>Orientacion</strong>
+          <strong>Orientación</strong>
           <p>
             No es necesario cambiar tu objetivo de inmediato. Usa esta revisión para comparar alternativas
             antes de repetir una preevaluación o iniciar una evaluación bancaria formal.
@@ -51,7 +51,7 @@ export default function ObjectiveReview({ evaluation, onBack }) {
           <ul>
             <li>Revisar si el plazo declarado da espacio suficiente para ahorrar.</li>
             <li>Comparar comuna objetivo y comuna alternativa.</li>
-            <li>Evaluar un dividendo esperado mas holgado si el objetivo se siente exigente.</li>
+            <li>Evaluar un dividendo esperado más holgado si el objetivo se siente exigente.</li>
           </ul>
         </section>
       </div>

@@ -1,4 +1,5 @@
 import { supabase } from "../utils/supabase";
+import { normalizePhone } from "../utils/phone";
 
 export const isSupabaseDataConfigured = Boolean(supabase);
 
@@ -47,11 +48,7 @@ export function logSupabaseError(error) {
 }
 
 export function normalizePhoneForStorage(phone = "") {
-  const digits = String(phone).replace(/\D/g, "");
-  if (!digits) return "";
-  const withoutCountry = digits.startsWith("56") ? digits.slice(2) : digits;
-  const mobileDigits = withoutCountry.startsWith("9") ? withoutCountry : `9${withoutCountry}`;
-  return `+56${mobileDigits.slice(0, 9)}`;
+  return normalizePhone(phone);
 }
 
 export function normalizeBirthDateForStorage(birthDate = "") {

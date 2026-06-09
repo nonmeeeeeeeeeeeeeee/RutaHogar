@@ -8,8 +8,8 @@ export const ESTIMATED_ANNUAL_UF_INCREASE = 0.04;
 
 const classificationMessages = {
   Alto: "Tu perfil se ve mejor preparado, pero igualmente conviene mantener estabilidad financiera.",
-  Medio: "Tu perfil podria mejorar antes de avanzar con una evaluacion formal.",
-  Bajo: "Conviene preparar mejor tu situacion financiera antes de avanzar.",
+  Medio: "Tu perfil podría mejorar antes de avanzar con una evaluación formal.",
+  Bajo: "Conviene preparar mejor tu situación financiera antes de avanzar.",
 };
 
 export const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
@@ -100,7 +100,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Mantener estabilidad financiera",
-        "Mantente sin nuevas deudas relevantes y conserva tus antecedentes de ingresos actualizados antes de iniciar una evaluacion formal.",
+        "Mantente sin nuevas deudas relevantes y conserva tus antecedentes de ingresos actualizados antes de iniciar una evaluación formal.",
         Math.min(months, 6),
       ),
     );
@@ -110,7 +110,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Aumentar ahorro disponible",
-        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia financiera, una meta saludable seria llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
+        `Para acercarte a tu objetivo en ${months} meses, intenta ahorrar aproximadamente ${money(savingsPlan.monthlyTarget)} mensuales. Como referencia financiera, una meta saludable sería llegar cerca de ${money(savingsPlan.totalTarget)} de ahorro disponible.`,
         months,
       ),
     );
@@ -118,7 +118,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Mantener fondo de ahorro",
-        "Tu ahorro declarado ya entrega una base inicial. Evita usarlo en gastos no vinculados al proceso y manten un margen para pie, gastos iniciales y seguridad.",
+        "Tu ahorro declarado ya entrega una base inicial. Evita usarlo en gastos no vinculados al proceso y mantén un margen para pie, gastos iniciales y seguridad.",
         Math.min(months, 6),
       ),
     );
@@ -128,7 +128,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Reducir deuda mensual",
-        `Intenta reducir cerca de ${money(debtReduction)} de carga mensual antes de volver a evaluar. Esto puede dar mas holgura frente al dividendo esperado.`,
+        `Intenta reducir cerca de ${money(debtReduction)} de carga mensual antes de volver a evaluar. Esto puede dar más holgura frente al dividendo esperado.`,
         Math.min(months, 6),
       ),
     );
@@ -137,8 +137,8 @@ function goalsFromEvaluation(evaluation, months) {
   if (input.morosidad_actual === "si" || input.morosidad_actual === "no_lo_se") {
     goals.push(
       buildGoal(
-        "Regularizar situacion de morosidad",
-        "Revisa y aclara compromisos pendientes antes de avanzar. Vuelve a precalificar cuando tu situacion declarada este ordenada.",
+        "Regularizar situación de morosidad",
+        "Revisa y aclara compromisos pendientes antes de avanzar. Vuelve a precalificar cuando tu situación declarada esté ordenada.",
         Math.min(months, 3),
       ),
     );
@@ -148,7 +148,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Fortalecer continuidad laboral",
-        "Mantener estabilidad durante los proximos meses puede ayudarte a preparar una evaluacion formal con mejores antecedentes.",
+        "Mantener estabilidad durante los próximos meses puede ayudarte a preparar una evaluación formal con mejores antecedentes.",
         Math.max(6, Math.min(months, 12)),
       ),
     );
@@ -158,7 +158,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Ordenar antecedentes de ingresos",
-        "Si trabajas independiente, prepara respaldos simples y consistentes de ingresos antes de iniciar una evaluacion formal.",
+        "Si trabajas independiente, prepara respaldos simples y consistentes de ingresos antes de iniciar una evaluación formal.",
         Math.min(months, 6),
       ),
     );
@@ -168,7 +168,7 @@ function goalsFromEvaluation(evaluation, months) {
     goals.push(
       buildGoal(
         "Validar complemento de renta",
-        "Ordena los antecedentes de la persona que complementara renta y revisa si ese apoyo se mantiene en el plazo declarado.",
+        "Ordena los antecedentes de la persona que complementará renta y revisa si ese apoyo se mantiene en el plazo declarado.",
         Math.min(months, 6),
       ),
     );
@@ -187,7 +187,7 @@ function goalsFromEvaluation(evaluation, months) {
   goals.push(
     buildGoal(
       "Volver a precalificar en el momento correcto",
-      "No recomendamos repetir la preevaluacion inmediatamente. Vuelve a evaluar cuando hayas reducido deuda, aumentado ahorro o cambiado tu objetivo inmobiliario.",
+      "No recomendamos repetir la preevaluación inmediatamente. Vuelve a evaluar cuando hayas reducido deuda, aumentado ahorro o cambiado tu objetivo inmobiliario.",
       Math.min(months, 6),
     ),
   );
@@ -210,7 +210,7 @@ export function buildFinancialTracking(evaluation) {
     return {
       score: evaluation.result?.score,
       classification,
-      message: "No hay informacion suficiente para generar un plan detallado. Realiza una preevaluacion completa.",
+      message: "No hay información suficiente para generar un plan detallado. Realiza una preevaluación completa.",
       months,
       goals: [],
       warning: "",
