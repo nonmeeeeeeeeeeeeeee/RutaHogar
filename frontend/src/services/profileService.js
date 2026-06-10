@@ -178,22 +178,28 @@ export async function updateLastLeadSeenAt(userId) {
   }
 }
 
-const CONSENT_KEY = "scoreleads_dataconsent";
+function consentKeyForUser(userId) {
+  return userId ? `scoreleads_dataconsent_${userId}` : "scoreleads_dataconsent";
+}
 
-export function getLocalConsent() {
+export function getLocalConsent(userId) {
   try {
-    return JSON.parse(localStorage.getItem(CONSENT_KEY)) || null;
+    return JSON.parse(localStorage.getItem(consentKeyForUser(userId))) || null;
   } catch {
     return null;
   }
 }
 
-export function saveLocalConsent(consentData) {
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(consentData));
+export function saveLocalConsent(consentData, userId) {
+  localStorage.setItem(consentKeyForUser(userId), JSON.stringify(consentData));
+}
+
+export function clearLocalConsent(userId) {
+  localStorage.removeItem(consentKeyForUser(userId));
 }
 
 export async function saveConsent(userId, consentData) {
-  saveLocalConsent(consentData);
+  saveLocalConsent(consentData, userId);
 
   if (!isSupabaseDataConfigured || !userId) return consentData;
 
@@ -213,30 +219,28 @@ export async function saveConsent(userId, consentData) {
 }
 
 export async function getConsent(userId) {
-  const local = getLocalConsent();
-  if (!isSupabaseDataConfigured || !userId) return local;
+  if (!userId) {
+    const local = getLocalConsent();
+    return local;
+  }
 
   try {
-    const user = await getAuthenticatedUser();
-    if (!user?.id) return local;
+    if (isSupabaseDataConfigured) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("consent_data")
+        .eq("id", userId)
+        .maybeSingle();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("consent_data")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (error || !data?.consent_data) return local;
-
-    const remote = data.consent_data;
-    if (!local || new Date(remote.timestamp) > new Date(local.timestamp)) {
-      saveLocalConsent(remote);
-      return remote;
+      if (!error && data?.consent_data) {
+        saveLocalConsent(data.consent_data, userId);
+        return data.consent_data;
+      }
     }
 
-    return local;
+    return getLocalConsent(userId);
   } catch {
-    return local;
+    return getLocalConsent(userId);
   }
 }
 

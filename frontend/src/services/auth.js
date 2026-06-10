@@ -11,6 +11,7 @@ import {
 
 const PROFILE_KEY = "scoreleads_profile";
 const SESSION_KEY = "scoreleads_session";
+const ONBOARDING_KEY = "scoreleads_onboarding";
 
 export const roles = {
   user: "usuario",
@@ -190,4 +191,23 @@ export async function signOut() {
   }
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(PROFILE_KEY);
+  localStorage.removeItem(ONBOARDING_KEY);
+  localStorage.removeItem("scoreleads_evaluations");
+  localStorage.removeItem("scoreleads_scoring_history");
+  localStorage.removeItem("scoreleads_improvement_goals");
+  localStorage.removeItem("scoreleads_goal_progress");
+  localStorage.removeItem("scoreleads_arco_requests");
+  localStorage.removeItem("scoreleads_last_lead_check");
+  clearDataconsentKeys();
+}
+
+function clearDataconsentKeys() {
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("scoreleads_dataconsent")) {
+      toRemove.push(key);
+    }
+  }
+  toRemove.forEach((key) => localStorage.removeItem(key));
 }
