@@ -194,6 +194,18 @@ export default function ScoreForm({
     }
   }, [consentGranted]);
 
+  useEffect(() => {
+    if (consentModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    // Limpieza al desmontar
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [consentModalOpen]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -640,7 +652,9 @@ export default function ScoreForm({
           </div>
 
           {/* Plazo estimado */}
-          <div className={`field-wrap${showMortgageAgeWarning ? " field-with-warning" : ""}`}>
+          <div
+            className={`field-wrap${showMortgageAgeWarning ? " field-with-warning" : ""}`}
+          >
             <div className="field-label-row">
               <label htmlFor="plazo_credito_hipotecario">
                 Plazo estimado del crédito hipotecario
@@ -903,7 +917,9 @@ export default function ScoreForm({
             </div>
 
             {/* Relación complementaria */}
-            <div className={`field-wrap${showComplementRelationWarning ? " field-with-warning" : ""}`}>
+            <div
+              className={`field-wrap${showComplementRelationWarning ? " field-with-warning" : ""}`}
+            >
               <div className="field-label-row">
                 <label htmlFor="relacion_complementario">
                   Relación complementaria
@@ -1075,7 +1091,10 @@ export default function ScoreForm({
       )}
 
       <div className="form-actions">
-        <button type="submit" disabled={loading || debtExceedsIncome || !consentGranted}>
+        <button
+          type="submit"
+          disabled={loading || debtExceedsIncome || !consentGranted}
+        >
           Calcular score
         </button>
         {loading && <span>Calculando...</span>}
