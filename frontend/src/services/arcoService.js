@@ -45,6 +45,7 @@ export async function submitArcoRequest({ tipo, email, descripcion, userId, user
       tipo,
       email,
       descripcion,
+      estado: "pendiente",
     })
     .select()
     .single();
@@ -73,9 +74,10 @@ export async function submitArcoRequest({ tipo, email, descripcion, userId, user
 }
 
 export async function getArcoRequests(userId, role) {
-  if (!isSupabaseDataConfigured || !userId) {
+  if (!isSupabaseDataConfigured) {
     const local = readLocalArcoRequests();
     if (role === "admin") return local;
+    if (!userId) return [];
     return local.filter((item) => item.user_id === userId || item.email === userId);
   }
 
@@ -101,6 +103,44 @@ export async function getArcoRequests(userId, role) {
   }
 
   return (data || []).map(normalizeArcoRequest);
+}
+
+export async function resolveArcoRequest(id) {
+  if (!id) throw new Error("ID de solicitud requerido.");
+
+  if (!isSupabaseDataConfigured) {
+    const local = readLocalArcoRequests();
+    const idx = local.findIndex((r) => r.id === id);
+    if (idx === -1) throw new Error("Solicitud no encontrada.");
+    local[idx].estado = "procesado";
+    local[idx].updated_at = new Date().toISOString();
+    writeLocalArcoRequests(local);
+    return normalizeArcoRequest(local[idx]);
+  }
+
+  const { data, error } = await supabase
+    .from("arco_requests")
+    .update({ estado: "procesado" })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
+
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
+
+  const local = readLocalArcoRequests();
+  const idx = local.findIndex((r) => r.id === id);
+  if (idx !== -1) {
+    local[idx].estado = "procesado";
+    local[idx].updated_at = data?.updated_at || new Date().toISOString();
+    writeLocalArcoRequests(local);
+    if (!data) return normalizeArcoRequest(local[idx]);
+  }
+
+  if (!data) throw new Error("Solicitud no encontrada.");
+  return normalizeArcoRequest(data);
 }
 
 function normalizeArcoRequest(row) {

@@ -120,7 +120,7 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
 
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({ ...profile, updated_at: new Date().toISOString() })
+    .upsert({ ...profile, updated_at: new Date().toISOString(), created_at: new Date().toISOString() })
     .select("id, full_name, phone, birth_date, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .maybeSingle();
 

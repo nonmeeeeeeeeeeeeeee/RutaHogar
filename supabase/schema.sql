@@ -128,8 +128,8 @@ create table if not exists public.arco_requests (
   estado text not null default 'pendiente',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint arco_requests_tipo_check check (tipo in ('acceso', 'rectificacion', 'cancelacion', 'otro')),
-  constraint arco_requests_estado_check check (estado in ('pendiente', 'en_proceso', 'completado', 'rechazado'))
+  constraint arco_requests_tipo_check check (tipo in ('acceso', 'rectificacion', 'cancelacion', 'oposicion', 'otro')),
+  constraint arco_requests_estado_check     check (estado in ('pendiente', 'en_proceso', 'rechazado', 'procesado'))
 );
 
 alter table public.arco_requests enable row level security;
@@ -220,6 +220,28 @@ on public.profiles
 for update
 using (auth.uid() = id::uuid)
 with check (auth.uid() = id::uuid);
+
+drop policy if exists "Profiles select admin" on public.profiles;
+create policy "Profiles select admin"
+  on public.profiles
+  for select
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
+
+drop policy if exists "Permitir a los admins actualizar cualquier perfil" on public.profiles;
+create policy "Permitir a los admins actualizar cualquier perfil"
+  on public.profiles
+  for update
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
 
 alter table public.evaluations 
 add column if not exists email text;

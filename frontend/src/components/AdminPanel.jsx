@@ -1,5 +1,6 @@
 import React from "react";
 import { roleLabels } from "../services/auth";
+import AdminArcoRequests from "./AdminArcoRequests";
 
 export default function AdminPanel({ evaluations, profile }) {
   const counts = evaluations.reduce(
@@ -62,6 +63,10 @@ export default function AdminPanel({ evaluations, profile }) {
           </ul>
         </section>
       </div>
+
+      <hr style={{ margin: "2rem 0", border: "none", borderTop: "1px solid var(--color-border, #ddd)" }} />
+
+      <AdminArcoRequests />
     </section>
   );
 }
