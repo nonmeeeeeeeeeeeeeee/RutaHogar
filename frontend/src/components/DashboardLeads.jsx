@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
- 
+
 function formatFecha(created_at) {
   if (!created_at) return "-";
   const d = new Date(created_at);
@@ -10,7 +10,7 @@ function formatFecha(created_at) {
     year: "numeric",
   });
 }
- 
+
 const AGE_RANGES = [
   { label: "Todas las edades", min: 0, max: Infinity },
   { label: "18 – 25 años", min: 18, max: 25 },
@@ -20,21 +20,49 @@ const AGE_RANGES = [
   { label: "55 – 65 años", min: 55, max: 65 },
   { label: "65+ años", min: 65, max: Infinity },
 ];
- 
+
+const DATE_RANGES = [
+  { label: "Cualquier fecha", value: "todos" },
+  { label: "Últimas 24 horas", value: "24h" },
+  { label: "Última semana", value: "semana" },
+  { label: "Último mes", value: "mes" },
+  { label: "Último año", value: "anio" },
+];
+
+function getDateThreshold(value) {
+  const now = new Date();
+  switch (value) {
+    case "24h":   return new Date(now - 24 * 60 * 60 * 1000);
+    case "semana": return new Date(now - 7 * 24 * 60 * 60 * 1000);
+    case "mes":   return new Date(now - 30 * 24 * 60 * 60 * 1000);
+    case "anio":  return new Date(now - 365 * 24 * 60 * 60 * 1000);
+    default:      return null;
+  }
+}
+
 export default function DashboardLeads({ evaluations }) {
   const [filter, setFilter] = useState("todos");
   const [filterCommune, setFilterCommune] = useState("todas");
   const [filterAge, setFilterAge] = useState(0);
+  const [filterDate, setFilterDate] = useState("todos");
+  const [search, setSearch] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
- 
-  const hasActiveFilters = filter !== "todos" || filterCommune !== "todas" || filterAge !== 0;
- 
+
+  const hasActiveFilters =
+    filter !== "todos" ||
+    filterCommune !== "todas" ||
+    filterAge !== 0 ||
+    filterDate !== "todos" ||
+    search !== "";
+
   const clearFilters = () => {
     setFilter("todos");
     setFilterCommune("todas");
     setFilterAge(0);
+    setFilterDate("todos");
+    setSearch("");
   };
- 
+
   const allCommunes = useMemo(() => {
     const set = new Set();
     evaluations.forEach((item) => {
@@ -45,7 +73,7 @@ export default function DashboardLeads({ evaluations }) {
     });
     return [...set].sort();
   }, [evaluations]);
- 
+
   const counts = useMemo(() => {
     const c = { Alto: 0, Medio: 0, Bajo: 0 };
     evaluations.forEach((item) => {
@@ -53,24 +81,41 @@ export default function DashboardLeads({ evaluations }) {
     });
     return c;
   }, [evaluations]);
- 
+
   const filtered = useMemo(() => {
     const ageRange = AGE_RANGES[filterAge];
+    const dateThreshold = getDateThreshold(filterDate);
+    const searchLower = search.trim().toLowerCase();
+
     return evaluations.filter((item) => {
       if (filter !== "todos" && item.result.classification !== filter) return false;
+
       if (filterCommune !== "todas") {
         const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
         const alt = item.onboarding?.comuna_alternativa;
         if (main !== filterCommune && alt !== filterCommune) return false;
       }
+
       if (ageRange.min > 0 || ageRange.max !== Infinity) {
         const age = item.input?.edad;
         if (age == null || age < ageRange.min || age >= ageRange.max) return false;
       }
+
+      if (dateThreshold) {
+        const itemDate = item.created_at ? new Date(item.created_at) : null;
+        if (!itemDate || itemDate < dateThreshold) return false;
+      }
+
+      if (searchLower) {
+        const name = (item.full_name || "").toLowerCase();
+        const email = (item.email || "").toLowerCase();
+        if (!name.includes(searchLower) && !email.includes(searchLower)) return false;
+      }
+
       return true;
     });
-  }, [evaluations, filter, filterCommune, filterAge]);
- 
+  }, [evaluations, filter, filterCommune, filterAge, filterDate, search]);
+
   return (
     <section className="section-block">
       <div className="section-heading">
@@ -78,8 +123,20 @@ export default function DashboardLeads({ evaluations }) {
         <h1>Dashboard Leads</h1>
         <p>Vista para revisar leads evaluados y priorizar acciones comerciales.</p>
       </div>
- 
+
       <div className="toolbar-filters">
+        {/* Búsqueda por nombre/correo */}
+        <label style={{ flexBasis: "100%" }}>
+          Buscar por nombre o correo
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Ej: Juan Pérez o juan@correo.cl"
+            style={{ marginTop: "0.5rem" }}
+          />
+        </label>
+
         <label>
           Clasificación
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
@@ -89,7 +146,7 @@ export default function DashboardLeads({ evaluations }) {
             <option value="Bajo">Bajo ({counts.Bajo})</option>
           </select>
         </label>
- 
+
         <label>
           Comuna
           <select value={filterCommune} onChange={(e) => setFilterCommune(e.target.value)}>
@@ -99,7 +156,7 @@ export default function DashboardLeads({ evaluations }) {
             ))}
           </select>
         </label>
- 
+
         <label>
           Rango de edad
           <select value={filterAge} onChange={(e) => setFilterAge(Number(e.target.value))}>
@@ -108,9 +165,36 @@ export default function DashboardLeads({ evaluations }) {
             ))}
           </select>
         </label>
- 
-        
+
+        <label>
+          Fecha
+          <select value={filterDate} onChange={(e) => setFilterDate(e.target.value)}>
+            {DATE_RANGES.map((r) => (
+              <option key={r.value} value={r.value}>{r.label}</option>
+            ))}
+          </select>
+        </label>
+
+        {/* Botón limpiar filtros — solo visible si hay algún filtro activo */}
+        {hasActiveFilters && (
+          <div style={{ display: "flex", alignItems: "flex-end" }}>
+            <button
+              type="button"
+              className="secondary-button compact-button"
+              onClick={clearFilters}
+            >
+              Limpiar filtros
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* Contador de resultados */}
+      <p style={{ fontSize: "0.88rem", color: "#526174", marginBottom: "12px" }}>
+        {filtered.length === evaluations.length
+          ? `${evaluations.length} leads en total`
+          : `${filtered.length} de ${evaluations.length} leads`}
+      </p>
 
       <div className="table-wrap">
         <table>
@@ -152,14 +236,18 @@ export default function DashboardLeads({ evaluations }) {
             ))}
             {!filtered.length && (
               <tr>
-                <td colSpan="6">Aún no existen leads para esta clasificación.</td>
+                <td colSpan="6">
+                  {hasActiveFilters
+                    ? "No hay leads que coincidan con los filtros aplicados."
+                    : "Aún no existen leads para esta clasificación."}
+                </td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles — sin cambios */}
       {selectedLead && (
         <div
           style={{
@@ -195,15 +283,9 @@ export default function DashboardLeads({ evaluations }) {
             </div>
 
             <div style={{ display: "grid", gap: "0.4rem", marginBottom: "1.25rem" }}>
-              <p style={{ margin: 0 }}>
-                <strong>Nombre:</strong> {selectedLead.full_name || "-"}
-              </p>
-              <p style={{ margin: 0 }}>
-                <strong>Email:</strong> {selectedLead.email || "-"}
-              </p>
-              <p style={{ margin: 0 }}>
-                <strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}
-              </p>
+              <p style={{ margin: 0 }}><strong>Nombre:</strong> {selectedLead.full_name || "-"}</p>
+              <p style={{ margin: 0 }}><strong>Email:</strong> {selectedLead.email || "-"}</p>
+              <p style={{ margin: 0 }}><strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}</p>
               <p style={{ margin: 0 }}><strong>Edad:</strong> {selectedLead.input?.edad ?? "-"} años</p>
               <p style={{ margin: 0 }}>
                 <strong>Comuna principal:</strong>{" "}
@@ -213,9 +295,7 @@ export default function DashboardLeads({ evaluations }) {
                 <strong>Comuna alternativa:</strong>{" "}
                 {selectedLead.onboarding?.comuna_alternativa || "-"}
               </p>
-              <p style={{ margin: 0 }}>
-                <strong>Score:</strong> {selectedLead.result.score}
-              </p>
+              <p style={{ margin: 0 }}><strong>Score:</strong> {selectedLead.result.score}</p>
               <p style={{ margin: 0 }}>
                 <strong>Clasificación:</strong>{" "}
                 <span className={`status-pill ${selectedLead.result.classification?.toLowerCase()}`}>
