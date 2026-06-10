@@ -1277,6 +1277,11 @@ th {
   color: #b42318;
 }
 
+.status-pill.procesado {
+  background: #e9f8ef;
+  color: #166534;
+}
+
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
