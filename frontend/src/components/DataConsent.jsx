@@ -92,7 +92,6 @@ export default function DataConsent({ profile, onAccept, onBack, readonly }) {
       version: CONSENT_VERSION,
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem("scoreleads_dataconsent", JSON.stringify(consentData));
     onAccept(consentData);
   };
 

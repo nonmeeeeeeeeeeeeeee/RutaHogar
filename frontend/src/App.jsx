@@ -139,10 +139,7 @@ export default function App() {
     }
   });
   const [scoringHistory, setScoringHistory] = useState([]);
-  const [consentGranted, setConsentGranted] = useState(() => {
-    const local = getConsent(null);
-    return local?.granted === true;
-  });
+  const [consentGranted, setConsentGranted] = useState(false);
 
   const profile = auth.profile;
   const userId = isUUID(profile?.id)
@@ -275,6 +272,30 @@ export default function App() {
     if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
   }, [page]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadConsent() {
+      if (!userId) {
+        if (active) setConsentGranted(false);
+        return;
+      }
+
+      try {
+        const consent = await getConsent(userId);
+        if (active) setConsentGranted(consent?.granted === true);
+      } catch {
+        if (active) setConsentGranted(false);
+      }
+    }
+
+    loadConsent();
+
+    return () => {
+      active = false;
+    };
+  }, [userId]);
+
   const startEvaluation = () => {
     setResult(null);
     setResultSaved(null);
@@ -287,6 +308,7 @@ export default function App() {
     setResultSaved(null);
     setDataError("");
     setTrackingGoals([]);
+    setConsentGranted(false);
     setPage(getInitialPageForProfile(nextAuth.profile));
   };
 
@@ -534,6 +556,7 @@ export default function App() {
     setAuth({ session: null, profile: null });
     setEvaluations([]);
     setTrackingGoals([]);
+    setConsentGranted(false);
     setPage("home");
     setResult(null);
     setResultSaved(null);
@@ -683,6 +706,8 @@ export default function App() {
             objective={userOnboarding?.objetivo_principal}
             birthDate={profile?.birth_date}
             profile={profile}
+            consentGranted={consentGranted}
+            onConsentAccept={handleDataConsent}
             onResult={handleResult}
           />
         </section>

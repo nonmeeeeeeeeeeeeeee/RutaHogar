@@ -1,77 +1,73 @@
 # ScoreLeads MVP
 
-Mini MVP web para preevaluación financiera de leads inmobiliarios.
-Usuario ingresa datos → score 0-100 → clasificación Alto/Medio/Bajo + explicación + recomendaciones.
+Referencia detallada: `.claude/CLAUDE.md` (266 líneas, la fuente más completa del repo).
 
-## Stack real
+## Stack
 
-| Capa | Tecnología |
-|------|-----------|
-| Frontend | React 18 + Vite 5 + axios |
-| Backend | FastAPI + Pydantic v2 |
-| DB/Auth | Supabase (PostgreSQL, auth, RLS, RPC) |
-| Deploy | Vercel (frontend SPA + serverless Python) |
-| Scoring | Reglas puras en `backend/app/scoring.py` (sin ML, sin APIs externas) |
+| Frontend | Backend | DB/Auth | Deploy | AI |
+|----------|---------|---------|--------|----|
+| React 18 + Vite 8 + axios | FastAPI + Pydantic v2 | Supabase (PostgreSQL, RLS) | Vercel SPA + serverless Python | Groq (llama-3.1-8b-instant) live |
 
-## Estructura del proyecto
+## Arquitectura clave (no obvio desde los nombres)
 
-```
-ScoreLeads/
-├── api/                        # Vercel serverless entry shim (/api/score → backend)
-├── backend/
-│   ├── app/
-│   │   ├── main.py             # FastAPI app, POST /score, ScoreRequest model
-│   │   └── scoring.py          # calculate_score() + generate_ai_explanation() + generate_improvement_plan()
-│   ├── api/index.py            # Vercel serverless entry (from backend dir)
-│   └── vercel.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/         # 12+ componentes (ScoreForm, Result, AuthPanel, etc.)
-│   │   ├── services/           # auth, profileService, evaluationService, goalsService, etc.
-│   │   ├── utils/supabase.ts   # Cliente Supabase singleton
-│   │   └── App.jsx             # Ruteo interno por estado (no react-router)
-│   └── .env                    # VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY, VITE_API_URL
-├── supabase/schema.sql         # DDL completo con RLS policies
-├── vercel.json                 # Root: build frontend + rewrite /score → /api/score
-└── Makefile                    # WSL/Git Bash: make run
-```
+- **No hay react-router**: el ruteo es por estado (`page` en `App.jsx`). Navegar: `setPage("nombre")`, ir a evaluar usa `startEvaluation()`.
+- **Supabase es condicional**: sin env vars todo funciona con localStorage. `isSupabaseDataConfigured` controla cada servicio.
+- **Scoring**: `calculate_score()` en `scoring.py`, base 50, clamped [0,100]. ≥70 Alto, ≥40 Medio.
+- **AI real** en `backend/app/ai.py`: `generate_executive_summary` (ejecutivo), `generate_commercial_guidance` (acción comercial), `generate_user_explanation` (usuario). Requiere `GROQ_API_KEY` (no ANTHROPIC_API_KEY como dice CLAUDE.md).
+- **scoring_history**: tabla inmutable `public.scoring_history` + servicio `getScoringHistory.js`. Se escribe en cada `createEvaluation()` (Supabase y localStorage).
+- **arco_requests**: tabla para solicitudes de datos ARCO (acceso/rectificación/cancelación). Servicio en `profileService.js`.
+- **utils/text.js**: `normalizeDisplayList()` y `normalizeDisplayText()` corrigen ortografía española. Úsalos al mostrar datos del backend.
+- **Dead code**: `formatPhoneDisplay()` en `ProfilePage.jsx` está definido pero nunca llamado. Eliminar en próxima limpieza.
 
-## Comandos exactos
+## Comandos
 
 ```powershell
-# Backend (Windows PowerShell)
-cd backend
-python -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
+# Backend
+cd backend; python -m venv .venv; .venv\Scripts\pip install -r requirements.txt
 .venv\Scripts\uvicorn app.main:app --reload --port 8000
 
 # Frontend
-cd frontend
-npm install
-npm run dev
-
-# Makefile (WSL o Git Bash, no PowerShell nativo)
-make run
+cd frontend; npm install; npm run dev
 ```
 
-Frontend abierto en `http://localhost:5173`, backend en `http://localhost:8000`.
+Backend `http://localhost:8000/docs`. Frontend `http://localhost:5173`.
+Makefile: solo WSL/Git Bash (`make run`).
 
-## Variables de entorno (`frontend/.env`)
+## Variables de entorno
 
 ```
+# frontend/.env
 VITE_SUPABASE_URL=https://adgnxtjkqedtvkwcizzn.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_Y8HX31lHegX7d37_uIngrQ_Osu7p3Cj
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 VITE_API_URL=http://127.0.0.1:8000
+
+# backend/.env (opcional, para AI)
+GROQ_API_KEY=gsk_...
 ```
 
-## Puntos clave para agentes
+## Cambios recientes que agents previos suelen errar
 
-- **No hay opencode.json** ni `CLAUDE.md` — los `agents/*.md` son la única fuente de instrucciones locales.
-- **No hay react-router**: el ruteo es por estado (`page` en App.jsx).
-- **No hay tests** — no hay pytest, vitest, eslint, ni scripts de lint/typecheck.
-- **Supabase es condicional**: si faltan env vars, `supabase` es `null` y todo funciona con localStorage como fallback.
-- **El consentimiento** es obligatorio (valida backend en `consentimiento: true`). Se otorga en Onboarding → DataConsent, se guarda localmente con `getLocalConsent()`.
-- **Scoring**: `calculate_score()` en `scoring.py`, base 50, clamped [0,100]. Clasificación: ≥70 Alto, ≥40 Medio, <40 Bajo.
-- **Complemento de renta** ahora evalúa perfil completo del co-deudor (morosidad -20, deuda alta -15, tarjetas ≥5 -15, etc.).
-- **Vercel deploy**: root `vercel.json` construye frontend y rewritea `/score` → `/api/score`. Backend tiene su propio `backend/vercel.json` para serverless Python.
-- **Backend serverless**: `api/score.py` y `backend/api/index.py` son shims que importan `app.main` ajustando sys.path.
+- `VALOR_UF_CLP` ahora es **40695** (no 45408 como dice backend.md).
+- Tipos de contrato: `indefinido`, `plazo_fijo`, `independiente`, `honorarios_variable`.
+- `antiguedad_morosidad` penaliza más si es reciente (<12 meses: -35, ≥12 meses: -25).
+- `complemento_relacion` excluye `{"amigo", "otro"}` (son `relaciones_debiles`, no aportan a capacidad).
+- `generate_ai_explanation` fue reemplazada por `generate_user_explanation` (firma distinta: recibe classification, score, lists planos).
+
+## Archivos de instrucciones existentes
+
+| Archivo | Estado |
+|---------|--------|
+| `.claude/CLAUDE.md` | Fuente primaria detallada (actualizada) |
+| `agents/AGENTS.md` | Este archivo — compacto, corrige omisiones |
+| `agents/backend.md` | Parcialmente desactualizado (scoring rules, AI mock claim) |
+| `agents/frontend.md` | Parcialmente desactualizado |
+| `agents/devops.md` | Mayormente vigente |
+| `agents/qa.md` | Mayormente vigente |
+
+## Guardrails
+
+- No asumir Supabase disponible — flujo offline con localStorage es el primary path en dev.
+- No modificar `PRECIOS_REFERENCIA_UF` en `scoring.py` sin contexto del negocio.
+- No reemplazar scoring de reglas por ML.
+- No agregar HdU 5+ sin instrucción explícita.
+- No hardcodear API keys.
