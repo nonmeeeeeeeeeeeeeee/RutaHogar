@@ -6,6 +6,72 @@ import FieldTooltip from "./FieldTooltip";
 import DataConsent from "./DataConsent";
 
 const FALLBACK_UF_VALUE_CLP = 40695;
+
+const currentYear = new Date().getFullYear();
+const dayOptions = Array.from({ length: 31 }, (_, i) => {
+  const value = String(i + 1).padStart(2, "0");
+  return { value, label: value };
+});
+const monthOptions = [
+  ["01", "Enero"], ["02", "Febrero"], ["03", "Marzo"], ["04", "Abril"],
+  ["05", "Mayo"], ["06", "Junio"], ["07", "Julio"], ["08", "Agosto"],
+  ["09", "Septiembre"], ["10", "Octubre"], ["11", "Noviembre"], ["12", "Diciembre"],
+].map(([value, month]) => ({ value, label: `${value} ${month}` }));
+const yearOptions = Array.from({ length: currentYear - 18 - 1900 + 1 }, (_, i) => {
+  const value = String(currentYear - 18 - i);
+  return { value, label: value };
+});
+
+function onlyDigits(value, maxLength) {
+  return value.replace(/\D/g, "").slice(0, maxLength);
+}
+
+function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
+  const day = onlyDigits(birth_day, 2).padStart(2, "0");
+  const month = onlyDigits(birth_month, 2).padStart(2, "0");
+  const year = onlyDigits(birth_year, 4);
+  if (year.length !== 4 || day.length !== 2 || month.length !== 2) return "";
+  return `${year}-${month}-${day}`;
+}
+
+function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, options, activeDropdown, onOpen, onClose, onBlur, onChange, onSelect }) {
+  const isOpen = activeDropdown === name;
+  return (
+    <div className="date-dropdown-field">
+      <input
+        type="text"
+        name={name}
+        value={value}
+        onChange={onChange}
+        onFocus={() => onOpen(name)}
+        onBlur={onBlur}
+        inputMode="numeric"
+        maxLength={maxLength}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        autoComplete="off"
+      />
+      {isOpen && (
+        <div className="date-dropdown-menu" role="listbox">
+          {options.map((option) => (
+            <button
+              type="button"
+              key={option.value}
+              role="option"
+              aria-selected={value === option.value}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onSelect(name, option.value); onClose(); }}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 const mortgageTerms = [10, 15, 20, 25, 30];
 const buyerObjectives = new Set([
   "comprar_ahora",
@@ -88,13 +154,18 @@ export default function ScoreForm({
   birthDate,
   profile,
   consentGranted,
+  isAnon = false,
   onResult,
   onConsentAccept,
   onViewConsent,
 }) {
   const debtIncomeMessage =
     "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
-  const declaredAge = useMemo(() => calculateAge(birthDate), [birthDate]);
+  const needsBirthDate = birthDate == null || birthDate === "";
+  const [birthFields, setBirthFields] = useState({ birth_day: "", birth_month: "", birth_year: "" });
+  const [activeDateDropdown, setActiveDateDropdown] = useState(null);
+  const effectiveBirthDate = needsBirthDate ? buildBirthDateIso(birthFields) : birthDate;
+  const declaredAge = useMemo(() => calculateAge(effectiveBirthDate), [effectiveBirthDate]);
   const asksPropertyValue = buyerObjectives.has(objective);
 
   const [form, setForm] = useState({
@@ -238,6 +309,25 @@ export default function ScoreForm({
     };
   }, [consentModalOpen]);
 
+  const handleBirthFieldChange = (e) => {
+    const { name, value } = e.target;
+    const maxLen = name === "birth_year" ? 4 : 2;
+    setBirthFields((prev) => ({ ...prev, [name]: onlyDigits(value, maxLen) }));
+  };
+
+  const handleBirthFieldSelect = (name, value) => {
+    setBirthFields((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const normalizeBirthField = (name) => {
+    setBirthFields((prev) => {
+      if (name !== "birth_day" && name !== "birth_month") return prev;
+      const digits = onlyDigits(prev[name], 2);
+      if (!digits) return prev;
+      return { ...prev, [name]: digits.padStart(2, "0") };
+    });
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
@@ -348,7 +438,7 @@ export default function ScoreForm({
     if (form.ingreso_mensual === "") missing.push("Ingreso mensual");
     if (form.deuda_mensual === "") missing.push("Deuda mensual");
     if (!Number.isFinite(declaredAge))
-      missing.push("Fecha de nacimiento del perfil");
+      missing.push(needsBirthDate ? "Fecha de nacimiento" : "Fecha de nacimiento del perfil");
     if (form.ahorro_disponible === "") missing.push("Ahorro disponible");
     if (asksPropertyValue && form.property_value === "")
       missing.push("Monto estimado de vivienda");
@@ -513,6 +603,7 @@ export default function ScoreForm({
         : buildPropertyValues("", form.property_value_unit, ufValueClp);
 
       const payload = {
+        birth_date: effectiveBirthDate || undefined,
         ingreso_mensual: parseFloat(form.ingreso_mensual),
         deuda_mensual: parseFloat(form.deuda_mensual),
         edad: declaredAge,
@@ -585,6 +676,67 @@ export default function ScoreForm({
 
   return (
     <form onSubmit={submit} className="score-form">
+      {/* ── Fecha de nacimiento (solo usuarios anónimos) ── */}
+      {needsBirthDate && (
+        <div className="form-section">
+          <div>
+            <span className="eyebrow">Información personal</span>
+          </div>
+          <div className="form-grid">
+            <div className="field-wrap">
+              <div className="field-label-row">
+                <label>Fecha de nacimiento</label>
+                <FieldTooltip text="Tu edad se usa para calcular el plazo máximo del crédito hipotecario." />
+              </div>
+              <div className="birth-date-grid" onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget)) setActiveDateDropdown(null);
+              }}>
+                <BirthDateField
+                  name="birth_day"
+                  value={birthFields.birth_day}
+                  onChange={handleBirthFieldChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthFieldSelect}
+                  onBlur={() => normalizeBirthField("birth_day")}
+                  maxLength="2"
+                  placeholder="DD"
+                  ariaLabel="Día de nacimiento"
+                  options={dayOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+                <BirthDateField
+                  name="birth_month"
+                  value={birthFields.birth_month}
+                  onChange={handleBirthFieldChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthFieldSelect}
+                  onBlur={() => normalizeBirthField("birth_month")}
+                  maxLength="2"
+                  placeholder="MM"
+                  ariaLabel="Mes de nacimiento"
+                  options={monthOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+                <BirthDateField
+                  name="birth_year"
+                  value={birthFields.birth_year}
+                  onChange={handleBirthFieldChange}
+                  onOpen={setActiveDateDropdown}
+                  onClose={() => setActiveDateDropdown(null)}
+                  onSelect={handleBirthFieldSelect}
+                  maxLength="4"
+                  placeholder="AAAA"
+                  ariaLabel="Año de nacimiento"
+                  options={yearOptions}
+                  activeDropdown={activeDateDropdown}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* ── Datos financieros ── */}
       <div className="form-section">
         <div>
@@ -1122,7 +1274,7 @@ export default function ScoreForm({
       )}
 
       {/* ── Consentimiento ── */}
-      {consentGranted ? (
+      {!isAnon && (consentGranted ? (
         <div className="consent-info">
           <span className="consent-info-icon">✓ </span>
           <span>
@@ -1151,7 +1303,7 @@ export default function ScoreForm({
             Aceptar autorización
           </button>
         </div>
-      )}
+      ))}
 
       <div className="form-actions">
         <button
