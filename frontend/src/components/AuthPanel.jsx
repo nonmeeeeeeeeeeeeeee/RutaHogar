@@ -136,7 +136,7 @@ function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, option
   );
 }
 
-export default function AuthPanel({ onAuth }) {
+export default function AuthPanel({ onAuth, onBack }) {
   const [mode, setMode] = useState("signin");
   const [form, setForm] = useState({
     full_name: "",
@@ -264,6 +264,13 @@ export default function AuthPanel({ onAuth }) {
 
   return (
     <section className="auth-panel">
+      {onBack && (
+        <div style={{ padding: "16px 24px 0", gridColumn: "1 / -1" }}>
+          <button type="button" className="secondary-button compact-button" onClick={onBack}>
+            ← Volver
+          </button>
+        </div>
+      )}
       <div className="auth-copy">
         <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
         <span className="eyebrow">Acceso a ScoreLeads</span>

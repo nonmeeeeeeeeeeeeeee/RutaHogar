@@ -3,7 +3,8 @@ import { comunasMvp } from "../constants/comunas";
 
 const normalizePropertyType = (value) => (value === "indiferente" ? "aun_no_lo_se" : value || "");
 
-export default function Onboarding({ initialData, onComplete }) {
+export default function Onboarding({ initialData, onComplete, isAnon = false }) {
+  const [anonConsent, setAnonConsent] = useState(false);
   const [form, setForm] = useState({
     objetivo_principal: initialData?.objetivo_principal || "",
     tipo_propiedad: normalizePropertyType(initialData?.tipo_propiedad),
@@ -56,6 +57,11 @@ export default function Onboarding({ initialData, onComplete }) {
 
     if (form.comuna_alternativa && form.comuna_alternativa === form.comuna_interes) {
       setError("La comuna alternativa debe ser distinta a la comuna principal.");
+      return;
+    }
+
+    if (isAnon && !anonConsent) {
+      setError("Debes aceptar el procesamiento de tus datos para continuar.");
       return;
     }
 
@@ -141,8 +147,24 @@ export default function Onboarding({ initialData, onComplete }) {
           </label>
         </div>
 
+        {isAnon && (
+          <label className="check-row anon-consent-row">
+            <input
+              type="checkbox"
+              checked={anonConsent}
+              onChange={(e) => setAnonConsent(e.target.checked)}
+            />
+            <span>
+              Acepto que mis datos sean procesados para calcular mi score orientativo.
+              No se almacenan permanentemente si no creo una cuenta.
+            </span>
+          </label>
+        )}
+
         <div className="form-actions">
-          <button type="submit">Continuar al formulario financiero</button>
+          <button type="submit" disabled={isAnon && !anonConsent}>
+            Continuar al formulario financiero
+          </button>
         </div>
 
         {error && <div className="error-message">{error}</div>}

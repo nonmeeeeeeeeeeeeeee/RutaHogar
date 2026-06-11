@@ -1,5 +1,7 @@
-import React, { useMemo, useState } from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
+import { getScoringHistoryByEvaluation } from "../services/getScoringHistory";
+import { formatScore } from "../utils/helpers";
+ 
 function formatFecha(created_at) {
   if (!created_at) return "-";
   const d = new Date(created_at);
@@ -20,6 +22,13 @@ const AGE_RANGES = [
   { label: "55 – 65 años", min: 55, max: 65 },
   { label: "65+ años", min: 65, max: Infinity },
 ];
+ 
+const channelLabels = {
+  web: "Web",
+  chatbot: "Chatbot",
+  whatsapp: "WhatsApp",
+  vendedor: "Vendedor",
+};
 
 const DATE_RANGES = [
   { label: "Cualquier fecha", value: "todos" },
@@ -28,6 +37,7 @@ const DATE_RANGES = [
   { label: "Último mes", value: "mes" },
   { label: "Último año", value: "anio" },
 ];
+const DEFAULT_CLASSIFICATION_FILTER = "Alto";
 
 function getDateThreshold(value) {
   const now = new Date();
@@ -41,27 +51,36 @@ function getDateThreshold(value) {
 }
 
 export default function DashboardLeads({ evaluations }) {
-  const [filter, setFilter] = useState("todos");
+  const [filter, setFilter] = useState(DEFAULT_CLASSIFICATION_FILTER);
   const [filterCommune, setFilterCommune] = useState("todas");
   const [filterAge, setFilterAge] = useState(0);
   const [filterDate, setFilterDate] = useState("todos");
   const [search, setSearch] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
-
+  const [leadHistory, setLeadHistory] = useState([]);
   const hasActiveFilters =
-    filter !== "todos" ||
+    filter !== DEFAULT_CLASSIFICATION_FILTER ||
     filterCommune !== "todas" ||
     filterAge !== 0 ||
     filterDate !== "todos" ||
     search !== "";
 
   const clearFilters = () => {
-    setFilter("todos");
+    setFilter(DEFAULT_CLASSIFICATION_FILTER);
     setFilterCommune("todas");
     setFilterAge(0);
     setFilterDate("todos");
     setSearch("");
   };
+
+  useEffect(() => {
+    if (!selectedLead) { setLeadHistory([]); return; }
+    let active = true;
+    getScoringHistoryByEvaluation(selectedLead.id)
+      .then((data) => { if (active) setLeadHistory(data); })
+      .catch((err) => console.error(err));
+    return () => { active = false; };
+  }, [selectedLead]);
 
   const allCommunes = useMemo(() => {
     const set = new Set();
@@ -275,70 +294,189 @@ export default function DashboardLeads({ evaluations }) {
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.25rem" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", borderBottom: "1px solid #eaeaea", paddingBottom: "1rem" }}>
               <h2 style={{ margin: 0 }}>Perfil del Lead</h2>
               <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
                 Cerrar
               </button>
             </div>
 
-            <div style={{ display: "grid", gap: "0.4rem", marginBottom: "1.25rem" }}>
-              <p style={{ margin: 0 }}><strong>Nombre:</strong> {selectedLead.full_name || "-"}</p>
-              <p style={{ margin: 0 }}><strong>Email:</strong> {selectedLead.email || "-"}</p>
-              <p style={{ margin: 0 }}><strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}</p>
-              <p style={{ margin: 0 }}><strong>Edad:</strong> {selectedLead.input?.edad ?? "-"} años</p>
-              <p style={{ margin: 0 }}>
-                <strong>Comuna principal:</strong>{" "}
-                {selectedLead.input?.comuna_objetivo || selectedLead.onboarding?.comuna_interes || "-"}
-              </p>
-              <p style={{ margin: 0 }}>
-                <strong>Comuna alternativa:</strong>{" "}
-                {selectedLead.onboarding?.comuna_alternativa || "-"}
-              </p>
-              <p style={{ margin: 0 }}><strong>Score:</strong> {selectedLead.result.score}</p>
-              <p style={{ margin: 0 }}>
-                <strong>Clasificación:</strong>{" "}
-                <span className={`status-pill ${selectedLead.result.classification?.toLowerCase()}`}>
-                  {selectedLead.result.classification}
-                </span>
-              </p>
+            <div className={`lead-score-highlight ${selectedLead.result.classification?.toLowerCase() || ""}`}>
+              <div>
+                <span>Score</span>
+                <strong>{selectedLead.result.score}</strong>
+              </div>
+              <div>
+                <span>Clasificación</span>
+                <strong>{selectedLead.result.classification || "-"}</strong>
+              </div>
             </div>
 
-            {selectedLead.result.positive_indicators?.length > 0 && (
-              <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Indicadores positivos</h3>
-                <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
-                  {selectedLead.result.positive_indicators.map((ind, i) => (
-                    <li key={i}>{ind}</li>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
+              {/* Columna Izquierda */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                {/* Datos del lead */}
+                <div style={{ background: "#f8fafc", padding: "1.25rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                  <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.1rem", color: "#334155" }}>Información del Cliente</h3>
+                  <div style={{ display: "grid", gap: "0.6rem", fontSize: "0.95rem", color: "#475569" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Nombre:</strong> <span style={{ textAlign: "right" }}>{selectedLead.full_name || "-"}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Email:</strong> <span style={{ textAlign: "right" }}>{selectedLead.email || "-"}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Teléfono:</strong> <span style={{ textAlign: "right" }}>{selectedLead.phone || selectedLead.profile?.phone || "-"}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Edad:</strong> <span style={{ textAlign: "right" }}>{selectedLead.input?.edad ?? "-"} años</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna principal:</strong> <span style={{ textAlign: "right" }}>{selectedLead.input?.comuna_objetivo || selectedLead.onboarding?.comuna_interes || "-"}</span></div>
+                    {selectedLead.onboarding?.comuna_alternativa && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna alternativa:</strong> <span style={{ textAlign: "right" }}>{selectedLead.onboarding.comuna_alternativa}</span></div>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Fecha evaluación:</strong> <span style={{ textAlign: "right" }}>{formatFecha(selectedLead.created_at)}</span></div>
+                  </div>
+                </div>
+
+                {/* Indicadores positivos */}
+                {selectedLead.result.positive_indicators?.length > 0 && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155", display: "flex", alignItems: "center", gap: "6px" }}>
+                       <span style={{ color: "#10b981", fontWeight: "bold" }}>✓</span> Indicadores positivos
+                    </h3>
+                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                      {selectedLead.result.positive_indicators.map((ind, i) => (
+                        <li key={i} style={{ marginBottom: "0.25rem" }}>{ind}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Riesgos detectados */}
+                {selectedLead.result.risks?.length > 0 && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155", display: "flex", alignItems: "center", gap: "6px" }}>
+                       <span style={{ color: "#ef4444", fontWeight: "bold" }}>⚠</span> Riesgos detectados
+                    </h3>
+                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                      {selectedLead.result.risks.map((r, i) => (
+                        <li key={i} style={{ marginBottom: "0.25rem" }}>{r}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              {/* Columna Derecha */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                {selectedLead.result.executive_summary && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Resumen Ejecutivo</h3>
+                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f8fafc", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #cbd5e1" }}>
+                       {selectedLead.result.executive_summary}
+                    </p>
+                  </div>
+                )}
+                
+                {selectedLead.result.commercial_guidance && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Orientación Comercial</h3>
+                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80" }}>
+                      <>
+                        <strong>Acción:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[0].replace("Acción:", "").trim()}
+                        <br />
+                        <strong>Motivo:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[1].trim()}
+                      </>
+                    </p>
+                  </div>
+                )}
+
+                <div style={{ marginTop: "auto" }}>
+                  <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.05rem", color: "#334155" }}>Acciones Rápidas</h3>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                    <a
+                      href={`mailto:${selectedLead.email || ""}?subject=${encodeURIComponent("Contacto ScoreLeads - Evaluación Financiera")}&body=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"},\n\nTe escribo a partir de tu evaluación en ScoreLeads.\n\nSaludos.`)}`}
+                      className="secondary-button compact-button"
+                      style={{ textDecoration: "none", textAlign: "center", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.6rem" }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                      </svg>
+                      Correo
+                    </a>
+                    <a
+                      href={`https://wa.me/${(selectedLead.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"}! Te escribo por ScoreLeads!`)}`}
+                      style={{ textDecoration: "none", textAlign: "center", backgroundColor: "#25D366", color: "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.6rem", fontWeight: "500", fontSize: "0.9rem", border: "none", cursor: "pointer" }}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}>
+                        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                      </svg>
+                      WhatsApp
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <hr style={{ margin: "1.5rem 0", border: "none", borderTop: "1px solid var(--color-border, #e0e0e0)" }} />
+
+            <section>
+              <h3 style={{ marginBottom: "1rem" }}>Historial inmutable (auditoría)</h3>
+              {leadHistory.length > 0 ? (
+                <div className="history-list" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {leadHistory.map((item) => (
+                    <article
+                      className="history-card"
+                      key={item.id}
+                      style={{
+                        padding: "1rem",
+                        border: "1px solid var(--color-border, #e0e0e0)",
+                        borderRadius: "10px",
+                        background: "var(--color-surface-secondary, #f9f9f9)",
+                      }}
+                    >
+                      <div className="history-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                        <span className="eyebrow">{(() => { const d = new Date(item.created_at); const fecha = d.toLocaleDateString("es-CL"); const hora = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}`; return `${fecha} ${hora} UTC`; })()}</span>
+                        <strong>{formatScore(item.score) ?? "Sin score"} / {item.classification}</strong>
+                      </div>
+                      <dl style={{ margin: 0, display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Comuna objetivo</dt>
+                          <dd style={{ margin: 0 }}>{item.snapshot?.comuna_objetivo || "No declarada"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Canal de origen</dt>
+                          <dd style={{ margin: 0 }}>{channelLabels[item.channel] || item.channel || "web"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Versión del algoritmo</dt>
+                          <dd style={{ margin: 0 }}>{item.algorithm_version || "—"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Desglose por componente</dt>
+                          <dd style={{ margin: 0 }}>
+                            {item.component_scores && Object.keys(item.component_scores).length > 0 ? (
+                              <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
+                                {Object.entries(item.component_scores).map(([key, value]) => (
+                                  <li key={key}>
+                                    <span>{key.replace(/_/g, " ")} </span>
+                                    <span style={{ color: value >= 0 ? "var(--color-positive, #16a34a)" : "var(--color-negative, #dc2626)" }}>
+                                      {value >= 0 ? `+${value}` : value}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
                   ))}
-                </ul>
-              </>
-            )}
-
-            {selectedLead.result.risks?.length > 0 && (
-              <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Riesgos detectados</h3>
-                <ul style={{ paddingLeft: "1.25rem", marginBottom: "1.25rem" }}>
-                  {selectedLead.result.risks.map((r, i) => (
-                    <li key={i}>{r}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            {selectedLead.result.executive_summary && (
-              <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Resumen Ejecutivo</h3>
-                <p style={{ marginBottom: "1.25rem" }}>{selectedLead.result.executive_summary}</p>
-              </>
-            )}
-
-            {selectedLead.result.commercial_guidance && (
-              <>
-                <h3 style={{ marginBottom: "0.5rem" }}>Orientación Comercial</h3>
-                <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
-              </>
-            )}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ color: "var(--color-muted, #888)", fontStyle: "italic" }}>
+                  <p style={{ margin: 0 }}>No hay registros de auditoría para esta evaluación.</p>
+                </div>
+              )}
+            </section>
           </div>
         </div>
       )}

@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
 import { formatScore } from "../utils/helpers";
 
-export default function Recommendations({ evaluation, onStartEvaluation }) {
+export default function Recommendations({ evaluation, onStartEvaluation, onNavigate }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
 
   if (!data) {
@@ -30,13 +30,20 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       </div>
 
       <div className="recommendation-summary">
-        <div className="score-badge-wrap">
+        <div className={`score-badge-wrap ${data.classification === "Alto" ? "score-high" : data.classification === "Medio" ? "score-medium" : "score-low"}`}>
           <span>Score actual</span>
           <strong>{formatScore(data.score, "Sin score")}</strong>
           <small>{data.classification}</small>
         </div>
         <p>{data.summary}</p>
       </div>
+
+      {evaluation?.result?.ai_explanation ? (
+        <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
+          <strong>Explicación mejorada con IA</strong>
+          <p>{evaluation.result.ai_explanation}</p>
+        </section>
+      ) : null}
 
       <div className="recommendation-grid">
         <section>
@@ -61,6 +68,14 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       <div className="warning-note">
         Esta orientación no reemplaza una evaluación bancaria formal.
       </div>
+
+      {data.classification === "Bajo" && (
+        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+          <button className="primary-button" type="button" onClick={() => onNavigate?.("tracking")}>
+            Ver Plan de Mejora
+          </button>
+        </div>
+      )}
     </section>
   );
 }
