@@ -1,9 +1,7 @@
 import { supabase } from "../utils/supabase";
+import { normalizePhone } from "../utils/phone";
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-export const isSupabaseDataConfigured = Boolean(supabaseUrl && supabasePublishableKey && supabase);
+export const isSupabaseDataConfigured = Boolean(supabase);
 
 const roleAliases = {
   usuario_comun: "usuario",
@@ -17,7 +15,7 @@ export function normalizeRole(role) {
   return roleAliases[role] || "usuario";
 }
 
-function isUUID(id) {
+export function isUUID(id) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
@@ -50,11 +48,7 @@ export function logSupabaseError(error) {
 }
 
 export function normalizePhoneForStorage(phone = "") {
-  const digits = String(phone).replace(/\D/g, "");
-  if (!digits) return "";
-  const withoutCountry = digits.startsWith("56") ? digits.slice(2) : digits;
-  const mobileDigits = withoutCountry.startsWith("9") ? withoutCountry : `9${withoutCountry}`;
-  return `+56${mobileDigits.slice(0, 9)}`;
+  return normalizePhone(phone);
 }
 
 export function normalizeBirthDateForStorage(birthDate = "") {
@@ -126,7 +120,7 @@ export async function upsertProfile(userId, fullName, role = "usuario", onboardi
 
   const { data, error } = await supabase
     .from("profiles")
-    .upsert({ ...profile, updated_at: new Date().toISOString() })
+    .upsert({ ...profile, updated_at: new Date().toISOString(), created_at: new Date().toISOString() })
     .select("id, full_name, phone, birth_date, role, onboarding_data, last_lead_seen_at, created_at, updated_at")
     .maybeSingle();
 
@@ -184,22 +178,28 @@ export async function updateLastLeadSeenAt(userId) {
   }
 }
 
-const CONSENT_KEY = "scoreleads_dataconsent";
+function consentKeyForUser(userId) {
+  return userId ? `scoreleads_dataconsent_${userId}` : "scoreleads_dataconsent";
+}
 
-export function getLocalConsent() {
+export function getLocalConsent(userId) {
   try {
-    return JSON.parse(localStorage.getItem(CONSENT_KEY)) || null;
+    return JSON.parse(localStorage.getItem(consentKeyForUser(userId))) || null;
   } catch {
     return null;
   }
 }
 
-export function saveLocalConsent(consentData) {
-  localStorage.setItem(CONSENT_KEY, JSON.stringify(consentData));
+export function saveLocalConsent(consentData, userId) {
+  localStorage.setItem(consentKeyForUser(userId), JSON.stringify(consentData));
+}
+
+export function clearLocalConsent(userId) {
+  localStorage.removeItem(consentKeyForUser(userId));
 }
 
 export async function saveConsent(userId, consentData) {
-  saveLocalConsent(consentData);
+  saveLocalConsent(consentData, userId);
 
   if (!isSupabaseDataConfigured || !userId) return consentData;
 
@@ -219,30 +219,28 @@ export async function saveConsent(userId, consentData) {
 }
 
 export async function getConsent(userId) {
-  const local = getLocalConsent();
-  if (!isSupabaseDataConfigured || !userId) return local;
+  if (!userId) {
+    const local = getLocalConsent();
+    return local;
+  }
 
   try {
-    const user = await getAuthenticatedUser();
-    if (!user?.id) return local;
+    if (isSupabaseDataConfigured) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("consent_data")
+        .eq("id", userId)
+        .maybeSingle();
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("consent_data")
-      .eq("id", userId)
-      .maybeSingle();
-
-    if (error || !data?.consent_data) return local;
-
-    const remote = data.consent_data;
-    if (!local || new Date(remote.timestamp) > new Date(local.timestamp)) {
-      saveLocalConsent(remote);
-      return remote;
+      if (!error && data?.consent_data) {
+        saveLocalConsent(data.consent_data, userId);
+        return data.consent_data;
+      }
     }
 
-    return local;
+    return getLocalConsent(userId);
   } catch {
-    return local;
+    return getLocalConsent(userId);
   }
 }
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { getLocalConsent } from "../services/profileService";
+
+import { calculateAge } from "../utils/helpers";
 import FieldTooltip from "./FieldTooltip";
 import DataConsent from "./DataConsent";
 
@@ -26,20 +27,6 @@ const integerFormattedFields = new Set([
   "valor_inmuebles",
   "property_value",
 ]);
-
-function calculateAge(birthDate) {
-  if (!birthDate) return null;
-  const birth = new Date(`${birthDate}T00:00:00`);
-  if (Number.isNaN(birth.getTime())) return null;
-  const today = new Date();
-  let age = today.getFullYear() - birth.getFullYear();
-  const hasBirthdayPassed =
-    today.getMonth() > birth.getMonth() ||
-    (today.getMonth() === birth.getMonth() &&
-      today.getDate() >= birth.getDate());
-  if (!hasBirthdayPassed) age -= 1;
-  return age;
-}
 
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
@@ -87,7 +74,9 @@ export default function ScoreForm({
   objective,
   birthDate,
   profile,
+  consentGranted,
   onResult,
+  onConsentAccept,
   onViewConsent,
 }) {
   const debtIncomeMessage =
@@ -115,7 +104,7 @@ export default function ScoreForm({
     continuidad_laboral_complementario: "",
     morosidad_complementario: "",
     relacion_complementario: "",
-    consentimiento: true,
+    consentimiento: false,
     declara_patrimonio: false,
     valor_vehiculos: "",
     valor_inmuebles: "",
@@ -130,9 +119,7 @@ export default function ScoreForm({
   const [ufValueClp, setUfValueClp] = useState(FALLBACK_UF_VALUE_CLP);
   const [ufStatus, setUfStatus] = useState("fallback");
   const [consentModalOpen, setConsentModalOpen] = useState(false);
-  const [consentTimestamp, setConsentTimestamp] = useState(
-    () => getLocalConsent()?.timestamp || null,
-  );
+  const [consentTimestamp, setConsentTimestamp] = useState(null);
 
   const consentDate = consentTimestamp
     ? new Date(consentTimestamp).toLocaleDateString("es-CL", {
@@ -197,6 +184,27 @@ export default function ScoreForm({
       window.clearTimeout(timeoutId);
     };
   }, []);
+
+  useEffect(() => {
+    setForm((prev) => ({ ...prev, consentimiento: consentGranted }));
+    if (consentGranted && !consentTimestamp) {
+      setConsentTimestamp(new Date().toISOString());
+    } else if (!consentGranted) {
+      setConsentTimestamp(null);
+    }
+  }, [consentGranted]);
+
+  useEffect(() => {
+    if (consentModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    // Limpieza al desmontar
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [consentModalOpen]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -644,7 +652,9 @@ export default function ScoreForm({
           </div>
 
           {/* Plazo estimado */}
-          <div className={`field-wrap${showMortgageAgeWarning ? " field-with-warning" : ""}`}>
+          <div
+            className={`field-wrap${showMortgageAgeWarning ? " field-with-warning" : ""}`}
+          >
             <div className="field-label-row">
               <label htmlFor="plazo_credito_hipotecario">
                 Plazo estimado del crédito hipotecario
@@ -907,7 +917,9 @@ export default function ScoreForm({
             </div>
 
             {/* Relación complementaria */}
-            <div className={`field-wrap${showComplementRelationWarning ? " field-with-warning" : ""}`}>
+            <div
+              className={`field-wrap${showComplementRelationWarning ? " field-with-warning" : ""}`}
+            >
               <div className="field-label-row">
                 <label htmlFor="relacion_complementario">
                   Relación complementaria
@@ -1047,23 +1059,42 @@ export default function ScoreForm({
       )}
 
       {/* ── Consentimiento ── */}
-      <div className="consent-info">
-        <span className="consent-info-icon">✓ </span>
-        <span>
-          Autorización de tratamiento de datos personales otorgada el{" "}
-          <strong>{consentDate || "fecha registrada"}</strong>.
+      {consentGranted ? (
+        <div className="consent-info">
+          <span className="consent-info-icon">✓ </span>
+          <span>
+            Autorización de tratamiento de datos personales otorgada el{" "}
+            <strong>{consentDate}</strong>.
+            <button
+              type="button"
+              className="consent-ref-link"
+              onClick={() => setConsentModalOpen(true)}
+            >
+              Ver detalle
+            </button>
+          </span>
+        </div>
+      ) : (
+        <div className="consent-required">
+          <p>
+            Debes aceptar la autorización de tratamiento de datos personales
+            antes de calcular tu score.
+          </p>
           <button
             type="button"
-            className="consent-ref-link"
+            className="secondary-button"
             onClick={() => setConsentModalOpen(true)}
           >
-            Ver detalle
+            Aceptar autorización
           </button>
-        </span>
-      </div>
+        </div>
+      )}
 
       <div className="form-actions">
-        <button type="submit" disabled={loading || debtExceedsIncome}>
+        <button
+          type="submit"
+          disabled={loading || debtExceedsIncome || !consentGranted}
+        >
           Calcular score
         </button>
         {loading && <span>Calculando...</span>}
@@ -1084,10 +1115,11 @@ export default function ScoreForm({
           >
             <DataConsent
               profile={profile}
-              readonly={true}
+              readonly={consentGranted}
               onAccept={(consentData) => {
                 setConsentTimestamp(consentData.timestamp);
                 setConsentModalOpen(false);
+                onConsentAccept?.(consentData);
               }}
               onBack={() => setConsentModalOpen(false)}
             />

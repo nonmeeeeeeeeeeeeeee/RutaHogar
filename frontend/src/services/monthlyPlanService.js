@@ -1,15 +1,4 @@
-const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
-  style: "currency",
-  currency: "CLP",
-  maximumFractionDigits: 0,
-});
-
-const timelineMonths = {
-  "0_3_meses": 3,
-  "3_6_meses": 6,
-  "6_12_meses": 12,
-  mas_12_meses: 18,
-};
+import { CLP_FORMATTER, timelineMonths } from "./financialTracking";
 
 export function formatClp(value) {
   const number = Number(value);
@@ -32,9 +21,7 @@ export function isMonetaryPlanGoal(goal) {
   ].some((keyword) => title.includes(keyword));
 }
 
-export function getTimelineMonths(onboarding) {
-  return timelineMonths[onboarding?.plazo_compra] || 12;
-}
+export { getTimelineMonths } from "./financialTracking";
 
 function monthLabel(date) {
   const text = new Intl.DateTimeFormat("es-CL", { month: "long", year: "numeric" }).format(date);

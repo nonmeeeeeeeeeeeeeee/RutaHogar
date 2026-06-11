@@ -1,7 +1,14 @@
 import React, { useMemo } from "react";
 import { buildFinancialTracking, goalStatuses } from "../services/financialTracking";
+import { formatScore } from "../utils/helpers";
 
-const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : "Sin score");
+const scoreColorClass = (score) => {
+  const n = Number(score);
+  if (!Number.isFinite(n)) return "";
+  if (n >= 60) return "score-high";
+  if (n <= 40) return "score-low";
+  return "score-medium";
+};
 
 export default function FinancialTracking({
   evaluation,
@@ -21,7 +28,7 @@ export default function FinancialTracking({
           <h1>Mi plan de mejora</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluación.</strong>
+          <strong>Aún no tienes una preevaluación.</strong>
           <p>Realiza una preevaluación para generar tu seguimiento financiero.</p>
           <button type="button" onClick={onStartEvaluation}>Iniciar pre-evaluación</button>
         </div>
@@ -41,13 +48,13 @@ export default function FinancialTracking({
       <div className="section-heading">
         <span className="eyebrow">Seguimiento financiero</span>
         <h1>Mi plan de mejora</h1>
-        <p>Metas accionables para preparar mejor tu situación financiera a partir de tu ultima preevaluación.</p>
+        <p>Metas accionables para preparar mejor tu situación financiera a partir de tu última preevaluación.</p>
       </div>
 
       <div className="tracking-summary">
-        <div className="score-badge-wrap">
+        <div className={`score-badge-wrap ${scoreColorClass(tracking.score)}`}>
           <span>Score actual</span>
-          <strong>{formatScore(tracking.score)}</strong>
+          <strong>{formatScore(tracking.score, "Sin score")}</strong>
           <small>{tracking.classification}</small>
         </div>
         <p>{tracking.message}</p>
@@ -67,7 +74,7 @@ export default function FinancialTracking({
         <div className="empty-state">
           <strong>No hay información suficiente para generar un plan detallado.</strong>
           <p>Realiza una preevaluación completa para generar metas mensuales y acciones sugeridas.</p>
-          <button type="button" onClick={onStartEvaluation}>Ir a precalificacion</button>
+          <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       ) : null}
 

@@ -1,93 +1,247 @@
-import sys
 import os
+import sys
 
-# Añadir el directorio backend al sys.path para importar el paquete app.scoring
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
 from app.scoring import calculate_score
 
-def test_tc_004_alto():
-    print("Ejecutando TC-004 (Parte 1): Validar umbral para clasificación 'Alto' (>= 70)")
+
+def base_payload(**overrides):
     data = {
-        "ingreso_mensual": 400000,
-        "deuda_mensual": 0,
-        "ahorro_disponible": 100000,
-        "plazo_credito_hipotecario": 20,
+        "ingreso_mensual": 2500000,
+        "deuda_mensual": 150000,
+        "edad": 32,
+        "ahorro_disponible": 30000000,
+        "property_value": 3500,
+        "property_value_unit": "uf",
+        "property_value_uf": 3500,
+        "property_value_clp": 142432500,
+        "uf_value_clp": 40695,
+        "plazo_credito_hipotecario": 25,
         "tipo_contrato": "indefinido",
         "continuidad_laboral": "mas_3_anios",
         "morosidad_actual": "no",
-        "dividendo_estimado": 100000,
-        "complemento_renta": False
+        "dividendo_estimado": 500000,
+        "complemento_renta": False,
+        "declara_patrimonio": False,
+        "numero_cargas": 3,
     }
-    # Base: 50
-    # ingreso >= 4 * dividendo (400k >= 400k): +25 -> 75
-    # deuda <= 0.4 * ingreso (0 <= 160k): +0
-    # ahorro >= dividendo (100k >= 100k): +0 (sin comuna)
-    # contrato = indefinido: +10 -> 85
-    # continuidad = mas_3_anios: +5 -> 90
-    # morosidad = no: +0
-    result = calculate_score(data)
-    print(f"Score obtenido: {result['score']}")
-    print(f"Clasificación esperada: Alto | Obtenida: {result['classification']}")
-    assert result['classification'] == "Alto", f"Error en TC-004-Alto: {result}"
-    print("TC-004 (Alto) PASSED.\n")
+    data.update(overrides)
+    return data
 
-def test_tc_004_medio():
-    print("Ejecutando TC-004 (Parte 2): Validar umbral para clasificación 'Medio' (>= 40 y < 70)")
-    data = {
-        "ingreso_mensual": 400000,
-        "deuda_mensual": 0,
-        "ahorro_disponible": 0,
-        "plazo_credito_hipotecario": 20,
-        "tipo_contrato": "independiente",
-        "continuidad_laboral": "entre_6_y_12_meses",
-        "morosidad_actual": "no",
-        "dividendo_estimado": 100000,
-        "complemento_renta": False
-    }
-    # Base: 50
-    # ingreso >= 4 * dividendo (400k >= 400k): +25 -> 75
-    # deuda <= 0.4 * ingreso: +0
-    # ahorro < dividendo (0 < 100k): -10 -> 65
-    # contrato = independiente con continuidad limitada: alerta moderada
-    # continuidad = entre_6_y_12_meses: -8 -> 52
-    # morosidad = no: +0
-    result = calculate_score(data)
-    print(f"Score obtenido: {result['score']}")
-    print(f"Clasificación esperada: Medio | Obtenida: {result['classification']}")
-    assert result['classification'] == "Medio", f"Error en TC-004-Medio: {result}"
-    print("TC-004 (Medio) PASSED.\n")
 
-def test_tc_005_bajo():
-    print("Ejecutando TC-005: Validar umbral para clasificación 'Bajo' (< 40) y clamp")
-    data = {
-        "ingreso_mensual": 300000,
-        "deuda_mensual": 200000,
-        "ahorro_disponible": 0,
-        "plazo_credito_hipotecario": 20,
-        "tipo_contrato": "independiente",
-        "continuidad_laboral": "menos_6_meses",
-        "morosidad_actual": "si",
-        "dividendo_estimado": 100000,
-        "complemento_renta": False
-    }
-    # Base: 50
-    # ingreso < 4 * dividendo (300k < 400k): -15 -> 35
-    # deuda > 0.4 * ingreso (200k > 120k): -20 -> 15
-    # ahorro < dividendo (0 < 100k): -10 -> 5
-    # contrato = independiente: -5 -> 0
-    # continuidad = menos_6_meses: -15 -> -15
-    # morosidad = si: -30 -> -45
-    # Clamp -> 0
-    result = calculate_score(data)
-    print(f"Score obtenido: {result['score']}")
-    print(f"Clasificación esperada: Bajo | Obtenida: {result['classification']}")
-    assert result['classification'] == "Bajo", f"Error en TC-005-Bajo: {result}"
-    print("TC-005 (Bajo) PASSED.\n")
+def joined(result, key):
+    return " ".join(result.get(key, []))
+
+
+def test_joven_indefinido_sin_morosidad_buen_ahorro():
+    result = calculate_score(base_payload())
+    assert result["classification"] == "Alto", result
+    assert "Ahorro" in joined(result, "positive_indicators")
+
+
+def test_edad_mas_plazo_genera_advertencia_sin_rechazo_automatico():
+    result = calculate_score(base_payload(edad=50, plazo_credito_hipotecario=30))
+    assert result["classification"] in {"Alto", "Medio"}, result
+    assert "edad" in joined(result, "risks").lower()
+
+
+def test_contrato_plazo_fijo_alerta_y_baja_score():
+    base = calculate_score(base_payload())
+    result = calculate_score(base_payload(tipo_contrato="plazo_fijo"))
+    assert result["score"] < base["score"], result
+    assert "plazo fijo" in joined(result, "risks").lower()
+
+
+def test_morosidad_alta_y_antigua_genera_advertencia_fuerte():
+    result = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            deuda_mensual=450000,
+            ahorro_disponible=1000000,
+            morosidad_actual="si",
+            monto_morosidad=1500000,
+            antiguedad_morosidad="1_a_3_anios",
+        )
+    )
+    assert result["classification"] == "Bajo", result
+    assert "morosidad" in joined(result, "risks").lower()
+
+
+def test_complementario_valido_sin_morosidad_se_considera():
+    sin_complemento = calculate_score(base_payload(ingreso_mensual=1200000, dividendo_estimado=500000))
+    con_complemento = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            dividendo_estimado=500000,
+            complemento_renta=True,
+            ingreso_mensual_complementario=1200000,
+            deuda_mensual_complementario=100000,
+            tipo_contrato_complementario="indefinido",
+            continuidad_laboral_complementario="mas_3_anios",
+            morosidad_complementario="no",
+            relacion_complementario="conyuge",
+        )
+    )
+    assert con_complemento["score"] > sin_complemento["score"], con_complemento
+
+
+def test_complementario_con_morosidad_no_mejora():
+    sin_complemento = calculate_score(base_payload(ingreso_mensual=1200000, dividendo_estimado=500000))
+    con_morosidad = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            dividendo_estimado=500000,
+            complemento_renta=True,
+            ingreso_mensual_complementario=1200000,
+            deuda_mensual_complementario=100000,
+            tipo_contrato_complementario="indefinido",
+            continuidad_laboral_complementario="mas_3_anios",
+            morosidad_complementario="si",
+            relacion_complementario="conyuge",
+        )
+    )
+    assert con_morosidad["score"] <= sin_complemento["score"], con_morosidad
+    assert "complementaria declara morosidad" in joined(con_morosidad, "risks").lower()
+
+
+def test_complementario_amigo_advierte_y_no_mejora_demasiado():
+    result = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            dividendo_estimado=500000,
+            complemento_renta=True,
+            ingreso_mensual_complementario=1800000,
+            deuda_mensual_complementario=0,
+            tipo_contrato_complementario="indefinido",
+            continuidad_laboral_complementario="mas_3_anios",
+            morosidad_complementario="no",
+            relacion_complementario="amigo",
+        )
+    )
+    assert "relación" in joined(result, "risks").lower() or "relacion" in joined(result, "risks").lower()
+
+
+def test_monto_vivienda_alto_vs_ingreso_ahorro_recomienda_ajustar():
+    result = calculate_score(
+        base_payload(
+            ingreso_mensual=1000000,
+            deuda_mensual=100000,
+            ahorro_disponible=1000000,
+            property_value_uf=8000,
+            property_value_clp=325560000,
+            dividendo_estimado=900000,
+        )
+    )
+    text = f"{joined(result, 'risks')} {joined(result, 'recommendations')}".lower()
+    assert "ahorro" in text or "objetivo" in text, result
+
+
+def test_patrimonio_declared_mejora_moderada():
+    sin_patrimonio = calculate_score(base_payload(ahorro_disponible=12000000))
+    con_patrimonio = calculate_score(
+        base_payload(
+            ahorro_disponible=12000000,
+            declara_patrimonio=True,
+            valor_vehiculos=12000000,
+            valor_inmuebles=25000000,
+            patrimonio_unit="clp",
+        )
+    )
+    assert con_patrimonio["score"] > sin_patrimonio["score"], con_patrimonio
+    assert "Patrimonio" in joined(con_patrimonio, "positive_indicators")
+
+
+def test_vehiculo_como_patrimonio_mejora_leve():
+    sin_patrimonio = calculate_score(base_payload(ahorro_disponible=12000000))
+    con_vehiculo = calculate_score(
+        base_payload(
+            ahorro_disponible=12000000,
+            declara_patrimonio=True,
+            valor_vehiculos=9000000,
+            valor_inmuebles=0,
+            patrimonio_unit="clp",
+        )
+    )
+    assert con_vehiculo["score"] > sin_patrimonio["score"], con_vehiculo
+    assert con_vehiculo["score"] - sin_patrimonio["score"] <= 3, con_vehiculo
+    assert "Patrimonio" in joined(con_vehiculo, "positive_indicators")
+
+
+def test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto():
+    sin_patrimonio = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            deuda_mensual=200000,
+            ahorro_disponible=8000000,
+            tipo_contrato="honorarios_variable",
+            continuidad_laboral="entre_1_y_3_anios",
+            dividendo_estimado=500000,
+        )
+    )
+    con_propiedad = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            deuda_mensual=200000,
+            ahorro_disponible=8000000,
+            tipo_contrato="honorarios_variable",
+            continuidad_laboral="entre_1_y_3_anios",
+            dividendo_estimado=500000,
+            declara_patrimonio=True,
+            valor_vehiculos=0,
+            valor_inmuebles=45000000,
+            patrimonio_unit="clp",
+        )
+    )
+    assert con_propiedad["score"] > sin_patrimonio["score"], con_propiedad
+    assert con_propiedad["classification"] != "Alto", con_propiedad
+    assert "Patrimonio" in joined(con_propiedad, "positive_indicators")
+
+
+def test_patrimonio_no_compensa_morosidad_fuerte():
+    result = calculate_score(
+        base_payload(
+            ingreso_mensual=1200000,
+            deuda_mensual=450000,
+            ahorro_disponible=1000000,
+            morosidad_actual="si",
+            monto_morosidad=1500000,
+            antiguedad_morosidad="1_a_3_anios",
+            declara_patrimonio=True,
+            valor_vehiculos=15000000,
+            valor_inmuebles=50000000,
+            patrimonio_unit="clp",
+        )
+    )
+    assert result["classification"] == "Bajo", result
+    assert "morosidad" in joined(result, "risks").lower()
+    assert "Patrimonio" in joined(result, "positive_indicators")
+
+
+def test_numero_cargas_antiguo_no_afecta_scoring():
+    sin_cargas = calculate_score(base_payload(numero_cargas=0))
+    con_cargas = calculate_score(base_payload(numero_cargas=5))
+    assert con_cargas["score"] == sin_cargas["score"]
+    assert con_cargas["classification"] == sin_cargas["classification"]
+
 
 if __name__ == "__main__":
-    print("--- INICIANDO PRUEBAS DE CLASIFICACIÓN (CA2) ---")
-    test_tc_004_alto()
-    test_tc_004_medio()
-    test_tc_005_bajo()
-    print("--- TODAS LAS PRUEBAS PASARON EXITOSAMENTE ---")
+    tests = [
+        test_joven_indefinido_sin_morosidad_buen_ahorro,
+        test_edad_mas_plazo_genera_advertencia_sin_rechazo_automatico,
+        test_contrato_plazo_fijo_alerta_y_baja_score,
+        test_morosidad_alta_y_antigua_genera_advertencia_fuerte,
+        test_complementario_valido_sin_morosidad_se_considera,
+        test_complementario_con_morosidad_no_mejora,
+        test_complementario_amigo_advierte_y_no_mejora_demasiado,
+        test_monto_vivienda_alto_vs_ingreso_ahorro_recomienda_ajustar,
+        test_patrimonio_declared_mejora_moderada,
+        test_vehiculo_como_patrimonio_mejora_leve,
+        test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto,
+        test_patrimonio_no_compensa_morosidad_fuerte,
+        test_numero_cargas_antiguo_no_afecta_scoring,
+    ]
+    for test in tests:
+        test()
+        print(f"{test.__name__}: OK")
+    print("Todas las pruebas de scoring pasaron.")

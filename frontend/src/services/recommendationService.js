@@ -1,20 +1,20 @@
 const summaries = {
   Alto: "Tu perfil se ve mejor preparado para iniciar conversaciones formales, manteniendo siempre una revisión responsable.",
-  Medio: "Tu perfil podria fortalecerse antes de avanzar con una evaluación formal.",
+  Medio: "Tu perfil podría fortalecerse antes de avanzar con una evaluación formal.",
   Bajo: "Conviene preparar mejor tu situación financiera antes de avanzar con el proceso.",
 };
 
 const primaryRecommendations = {
   Alto: [
-    "Manten tu estabilidad financiera y evita aumentar tus deudas antes de iniciar una evaluación formal.",
+    "Mantén tu estabilidad financiera y evita aumentar tus deudas antes de iniciar una evaluación formal.",
     "Conserva el ahorro disponible para pie, gastos iniciales y margen de seguridad.",
   ],
   Medio: [
-    "Podrias fortalecer tu perfil financiero antes de avanzar. Revisa tus niveles de deuda, ahorro y estabilidad declarada.",
-    "Evalua si el dividendo esperado sigue siendo sostenible para tu situación actual.",
+    "Podrías fortalecer tu perfil financiero antes de avanzar. Revisa tus niveles de deuda, ahorro y estabilidad declarada.",
+    "Evalúa si el dividendo esperado sigue siendo sostenible para tu situación actual.",
   ],
   Bajo: [
-    "Conviene preparar mejor tu situación financiera antes de avanzar. Enfocate en ordenar deudas, aumentar ahorro o revisar tu objetivo inmobiliario.",
+    "Conviene preparar mejor tu situación financiera antes de avanzar. Enfócate en ordenar deudas, aumentar ahorro o revisar tu objetivo inmobiliario.",
     "Considera ajustar el plazo de compra o revisar alternativas de comuna antes de una evaluación formal.",
   ],
 };

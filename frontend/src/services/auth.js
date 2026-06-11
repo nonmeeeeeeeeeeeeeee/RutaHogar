@@ -6,13 +6,12 @@ import {
   normalizeBirthDateForStorage,
   normalizePhoneForStorage,
   normalizeRole,
+  isSupabaseDataConfigured,
 } from "./profileService";
 
 const PROFILE_KEY = "scoreleads_profile";
 const SESSION_KEY = "scoreleads_session";
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabasePublishableKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const ONBOARDING_KEY = "scoreleads_onboarding";
 
 export const roles = {
   user: "usuario",
@@ -25,8 +24,6 @@ export const roleLabels = {
   ejecutivo: "Ejecutivo comercial",
   admin: "Admin",
 };
-
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);
 
 function readStored(key) {
   try {
@@ -104,9 +101,9 @@ function authUserAlreadyExists(data) {
 }
 
 export async function signIn({ email, password, role = roles.user }) {
-  if (isSupabaseConfigured) {
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
-      throw new Error("Supabase no esta configurado correctamente.");
+      throw new Error("Supabase no está configurado correctamente.");
     }
 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
@@ -130,7 +127,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
   const normalizedPhone = normalizePhoneForStorage(phone);
   const normalizedBirthDate = normalizeBirthDateForStorage(birth_date);
 
-  if (isSupabaseConfigured) {
+  if (isSupabaseDataConfigured) {
     if (!supabase) {
       throw new Error("Supabase no esta configurado correctamente.");
     }
@@ -143,7 +140,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
     if (error) {
       logSupabaseError(error);
       if (isExistingUserError(error)) {
-        throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
+        throw new Error("Este correo ya está registrado. Intenta iniciar sesión.");
       }
       throw new Error("No se pudo crear la cuenta.");
     }
@@ -155,7 +152,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
         hint: "Ask the user to sign in instead of creating a duplicate account.",
         code: "user_already_exists",
       });
-      throw new Error("Este correo ya esta registrado. Intenta iniciar sesión.");
+      throw new Error("Este correo ya está registrado. Intenta iniciar sesión.");
     }
 
     if (!data?.user) {
@@ -189,9 +186,28 @@ export function updateStoredProfile(profile) {
 }
 
 export async function signOut() {
-  if (isSupabaseConfigured && supabase) {
+  if (isSupabaseDataConfigured) {
     await supabase.auth.signOut();
   }
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(PROFILE_KEY);
+  localStorage.removeItem(ONBOARDING_KEY);
+  localStorage.removeItem("scoreleads_evaluations");
+  localStorage.removeItem("scoreleads_scoring_history");
+  localStorage.removeItem("scoreleads_improvement_goals");
+  localStorage.removeItem("scoreleads_goal_progress");
+  localStorage.removeItem("scoreleads_arco_requests");
+  localStorage.removeItem("scoreleads_last_lead_check");
+  clearDataconsentKeys();
+}
+
+function clearDataconsentKeys() {
+  const toRemove = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key && key.startsWith("scoreleads_dataconsent")) {
+      toRemove.push(key);
+    }
+  }
+  toRemove.forEach((key) => localStorage.removeItem(key));
 }

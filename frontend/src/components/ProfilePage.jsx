@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { comunasMvp } from "../constants/comunas";
 import { roleLabels, updateStoredProfile } from "../services/auth";
-import { normalizePhoneForStorage, upsertProfile } from "../services/profileService";
+import { upsertProfile } from "../services/profileService";
+import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 const objetivoLabels = {
   comprar_ahora: "Comprar ahora",
@@ -10,21 +11,8 @@ const objetivoLabels = {
   conocer_propiedad: "Conocer que tipo de propiedad podría buscar",
 };
 
-const propertyLabels = {
-  departamento: "Departamento",
-  casa: "Casa",
-  aun_no_lo_se: "Aun no lo sé",
-  indiferente: "Indiferente",
-};
-
-const plazoLabels = {
-  "0_3_meses": "0 a 3 meses",
-  "3_6_meses": "3 a 6 meses",
-  "6_12_meses": "6 a 12 meses",
-  mas_12_meses: "Más de 12 meses",
-};
-
-const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : null);
+import { formatScore } from "../utils/helpers";
+import { plazoLabels, propertyLabels } from "../constants";
 
 const normalizeOnboarding = (data) => ({
   objetivo_principal: data?.objetivo_principal || "",
@@ -34,7 +22,6 @@ const normalizeOnboarding = (data) => ({
   comuna_alternativa: data?.comuna_alternativa || "",
 });
 
-// Formatea un teléfono para mostrarlo de forma legible: +56 9 XXXX XXXX
 function formatPhoneDisplay(phone) {
   if (!phone) return "";
   const digits = String(phone).replace(/\D/g, "");
@@ -45,7 +32,14 @@ function formatPhoneDisplay(phone) {
   return phone;
 }
 
-export default function ProfilePage({ profile, onboarding, evaluations, onSaveOnboarding, onDeleteEvaluation, onProfileUpdate }) {
+const channelLabels = {
+  web: "Web",
+  chatbot: "Chatbot",
+  whatsapp: "WhatsApp",
+  vendedor: "Vendedor",
+};
+
+export default function ProfilePage({ profile, onboarding, evaluations, scoringHistory, onSaveOnboarding, onDeleteEvaluation, onProfileUpdate }) {
   const savedOnboarding = useMemo(() => normalizeOnboarding(onboarding), [onboarding]);
   const [form, setForm] = useState(savedOnboarding);
   const [error, setError] = useState("");
@@ -73,7 +67,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
   // Al abrir el formulario de contacto, cargar los valores actuales del perfil
   const openContactEdit = () => {
     setContactForm({
-      phone: profile?.phone ? formatPhoneDisplay(profile.phone) : "",
+      phone: profile?.phone ? formatPhone(profile.phone).replace(/\s/g, "") : "",
       email: profile?.email || "",
     });
     setContactError("");
@@ -94,7 +88,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
 
   const handleContactChange = (event) => {
     const { name, value } = event.target;
-    setContactForm((prev) => ({ ...prev, [name]: value }));
+    setContactForm((prev) => ({ ...prev, [name]: name === "phone" ? onlyPhoneDigits(value, 8) : value }));
   };
 
   const submit = async (event) => {
@@ -157,9 +151,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
       return;
     }
 
-    const normalizedPhone = normalizePhoneForStorage(trimmedPhone);
-    if (trimmedPhone && !normalizedPhone) {
-      setContactError("El teléfono ingresado no es válido. Usa formato +569XXXXXXXX o 9XXXXXXXX.");
+    const normalizedPhone = normalizePhone(trimmedPhone);
+    if (!normalizedPhone) {
+      setContactError(PHONE_ERROR_MESSAGE);
       return;
     }
 
@@ -215,15 +209,20 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
               <div className="form-grid">
                 <label>
                   Teléfono
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    name="phone"
-                    value={contactForm.phone}
-                    onChange={handleContactChange}
-                    placeholder="+56 9 XXXX XXXX"
-                    autoComplete="tel"
-                  />
+                  <div className="phone-input">
+                    <span>+56 9</span>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      name="phone"
+                      value={formatPhone(contactForm.phone)}
+                      onChange={handleContactChange}
+                      maxLength="9"
+                      placeholder="1234 5678"
+                      autoComplete="tel"
+                      aria-label="8 dígitos restantes del teléfono"
+                    />
+                  </div>
                 </label>
                 <label>
                   Correo electrónico
@@ -264,7 +263,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
               </div>
               <div>
                 <dt>Teléfono</dt>
-                <dd>{profile?.phone ? formatPhoneDisplay(profile.phone) : "Sin teléfono"}</dd>
+                <dd>{profile?.phone ? `+56 9 ${formatPhone(profile.phone)}` : "Sin teléfono"}</dd>
               </div>
               <div>
                 <dt>Fecha nacimiento</dt>
@@ -409,6 +408,56 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
           <div className="empty-state">
             <strong>Aun no tienes precalificaciones guardadas.</strong>
             <p>Cuando completes una evaluación, aparecerá aqui como registro independiente.</p>
+          </div>
+        )}
+      </section>
+
+      <section className="profile-card">
+        <strong>Historial inmutable (auditoría)</strong>
+        {scoringHistory.length > 0 ? (
+          <div className="history-list profile-history">
+            {scoringHistory.map((item) => (
+              <article className="history-card" key={item.id}>
+                <div className="history-card-header">
+                  <span className="eyebrow">{new Date(item.created_at).toLocaleDateString("es-CL")}</span>
+                  <h3>{formatScore(item.score) ?? "Sin score"} / {item.classification}</h3>
+                </div>
+                <dl>
+                  <div>
+                    <dt>Comuna objetivo</dt>
+                    <dd>{item.snapshot?.comuna_objetivo || "No declarada"}</dd>
+                  </div>
+                  <div>
+                    <dt>Canal de origen</dt>
+                    <dd>{channelLabels[item.channel] || item.channel || "web"}</dd>
+                  </div>
+                  <div>
+                    <dt>Versión del algoritmo</dt>
+                    <dd>{item.algorithm_version || "—"}</dd>
+                  </div>
+                  <div>
+                    <dt>Desglose por componente</dt>
+                    <dd className="component-scores">
+                      {item.component_scores && Object.keys(item.component_scores).length > 0 ? (
+                        <ul>
+                          {Object.entries(item.component_scores).map(([key, value]) => (
+                            <li key={key}>
+                              <span className="component-label">{key.replace(/_/g, " ")}</span>
+                              <span className={value >= 0 ? "positive" : "negative"}>{value >= 0 ? `+${value}` : value}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : "—"}
+                    </dd>
+                  </div>
+                </dl>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state">
+            <strong>No hay registros de auditoría.</strong>
+            <p>Cuando completes una evaluacion, se creará automáticamente un registro inmutable.</p>
           </div>
         )}
       </section>

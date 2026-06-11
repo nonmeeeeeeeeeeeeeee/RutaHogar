@@ -1,11 +1,13 @@
 import { supabase } from "../utils/supabase";
+import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
+import { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory } from "./getScoringHistory";
 
 const EVALUATIONS_KEY = "scoreleads_evaluations";
 
 function readLocalEvaluations() {
   try {
-    return JSON.parse(localStorage.getItem(EVALUATIONS_KEY)) || [];
+    return (JSON.parse(localStorage.getItem(EVALUATIONS_KEY)) || []).map(normalizeLocalEvaluation);
   } catch {
     return [];
   }
@@ -33,7 +35,7 @@ export function normalizeEvaluation(row, profilesMap = {}) {
 
   return {
     id: row.id,
-    created_at: row.created_at,
+    created_at: row.created_at || new Date().toISOString(),
     email: row.email,
     // Busca el nombre en el mapa de profiles por user_id
     full_name: profilesMap[row.user_id] || null,
@@ -43,13 +45,32 @@ export function normalizeEvaluation(row, profilesMap = {}) {
     result: {
       score: row.score,
       classification: row.classification,
-      risks: Array.isArray(recommendationData.risks) ? recommendationData.risks : [],
-      recommendations,
-      ai_explanation: row.explanation || "",
-      improvement_plan: Array.isArray(recommendationData.improvement_plan) ? recommendationData.improvement_plan : [],
-      positive_indicators: Array.isArray(recommendationData.positive_indicators) ? recommendationData.positive_indicators : [],
-      executive_summary: row.executive_summary || "",
-      commercial_guidance: row.commercial_guidance || "",
+      risks: normalizeDisplayList(recommendationData.risks),
+      recommendations: normalizeDisplayList(recommendations),
+      ai_explanation: normalizeDisplayText(row.explanation || ""),
+      improvement_plan: normalizeDisplayList(recommendationData.improvement_plan),
+      positive_indicators: normalizeDisplayList(recommendationData.positive_indicators),
+      executive_summary: normalizeDisplayText(row.executive_summary || ""),
+      commercial_guidance: normalizeDisplayText(row.commercial_guidance || ""),
+    },
+  };
+}
+
+function normalizeLocalEvaluation(entry) {
+  if (!entry) return null;
+  const result = entry.result || {};
+
+  return {
+    ...entry,
+    result: {
+      ...result,
+      risks: normalizeDisplayList(result.risks),
+      recommendations: normalizeDisplayList(result.recommendations),
+      ai_explanation: normalizeDisplayText(result.ai_explanation || ""),
+      improvement_plan: normalizeDisplayList(result.improvement_plan),
+      positive_indicators: normalizeDisplayList(result.positive_indicators),
+      executive_summary: normalizeDisplayText(result.executive_summary || ""),
+      commercial_guidance: normalizeDisplayText(result.commercial_guidance || ""),
     },
   };
 }
@@ -63,6 +84,7 @@ function buildRow(userId, evaluationPayload) {
     email: evaluationPayload.email || null,
     score: Math.round(Number(result.score) || 0),
     classification: result.classification,
+    created_at: new Date().toISOString(),
     objective: onboarding.objetivo_principal || null,
     property_type: onboarding.tipo_propiedad || null,
     target_commune: onboarding.comuna_interes || evaluationPayload.input?.comuna_objetivo || null,
@@ -81,11 +103,23 @@ function buildRow(userId, evaluationPayload) {
   };
 }
 
-const selectColumns = [
-  "id", "user_id", "email", "score", "classification",
-  "objective", "property_type", "target_commune", "alternative_commune",
-  "purchase_timeline", "financial_data", "explanation", "recommendations",
-  "executive_summary", "commercial_guidance", "created_at",
+const evaluationSelectColumns = [
+  "id",
+  "user_id",
+  "email",
+  "score",
+  "classification",
+  "objective",
+  "property_type",
+  "target_commune",
+  "alternative_commune",
+  "purchase_timeline",
+  "financial_data",
+  "explanation",
+  "recommendations",
+  "executive_summary",
+  "commercial_guidance",
+  "created_at",
 ].join(", ");
 
 export async function createEvaluation(userId, evaluationPayload) {
@@ -102,7 +136,16 @@ export async function createEvaluation(userId, evaluationPayload) {
     };
     const next = [entry, ...readLocalEvaluations()].slice(0, 25);
     writeLocalEvaluations(next);
-    return entry;
+
+    const historyEntry = {
+      ...buildScoringHistoryRow(userId, entry.id, evaluationPayload),
+      id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
+      created_at: new Date().toISOString(),
+    };
+    const historyNext = [historyEntry, ...readLocalScoringHistory()].slice(0, 25);
+    writeLocalScoringHistory(historyNext);
+
+    return normalizeLocalEvaluation(entry);
   }
 
   const user = await getAuthenticatedUser();
@@ -112,10 +155,20 @@ export async function createEvaluation(userId, evaluationPayload) {
   const { data, error } = await supabase
     .from("evaluations")
     .insert(buildRow(user.id, evaluationPayload))
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .single();
 
   if (error) { logSupabaseError(error); throw error; }
+
+  const historyRow = buildScoringHistoryRow(user.id, data.id, evaluationPayload);
+  const { error: historyError } = await supabase
+    .from("scoring_history")
+    .insert(historyRow);
+
+  if (historyError) {
+    logSupabaseError(historyError);
+  }
+
   return normalizeEvaluation(data);
 }
 
@@ -134,7 +187,7 @@ export async function getEvaluations(userId, role) {
 
   let query = supabase
     .from("evaluations")
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .order("created_at", { ascending: false });
 
   if (!isSales) {
@@ -174,7 +227,7 @@ export async function getLatestEvaluation(userId) {
 
   const { data, error } = await supabase
     .from("evaluations")
-    .select(selectColumns)
+    .select(evaluationSelectColumns)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -210,7 +263,7 @@ export async function acceptEvaluationPlan(evaluationId, userId) {
       item.id === evaluationId ? { ...item, plan_accepted_at: acceptedAt } : item,
     );
     writeLocalEvaluations(next);
-    return next.find((item) => item.id === evaluationId) || null;
+    return normalizeLocalEvaluation(next.find((item) => item.id === evaluationId) || null);
   }
 
   return null;

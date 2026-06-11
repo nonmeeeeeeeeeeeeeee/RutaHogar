@@ -1,6 +1,6 @@
 -- ScoreLeads MVP schema.
 -- Ejecutar en Supabase SQL Editor o como migracion inicial.
--- Mantiene solo las tablas del MVP: profiles, evaluations, improvement_goals.
+-- Tablas del MVP: profiles, evaluations, improvement_goals, scoring_history.
 
 create extension if not exists pgcrypto;
 
@@ -53,7 +53,19 @@ create table if not exists public.evaluations (
 );
 
 alter table public.evaluations replica identity full;
-alter publication supabase_realtime add table public.evaluations;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+    and tablename = 'evaluations'
+    and schemaname = 'public'
+  ) then
+    alter publication supabase_realtime add table public.evaluations;
+  end if;
+end;
+$$;
 
 alter table public.evaluations
 add column if not exists objective text,
@@ -80,6 +92,84 @@ create table if not exists public.improvement_goals (
 alter table public.improvement_goals
 add column if not exists progress_data jsonb;
 
+create table if not exists public.scoring_history (
+  id uuid primary key default gen_random_uuid(),
+  evaluation_id uuid not null references public.evaluations(id) on delete restrict,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  score integer not null,
+  classification text not null,
+  snapshot jsonb not null,
+  component_scores jsonb not null,
+  algorithm_version text not null,
+  channel text not null,
+  created_at timestamptz not null default now(),
+  constraint scoring_history_score_check check (score between 0 and 100),
+  constraint scoring_history_classification_check check (classification in ('Alto', 'Medio', 'Bajo')),
+  constraint scoring_history_channel_check check (channel in ('web', 'chatbot', 'whatsapp', 'vendedor'))
+);
+
+alter table public.scoring_history
+add column if not exists algorithm_version text,
+add column if not exists channel text;
+
+alter table public.scoring_history
+alter column algorithm_version set not null,
+alter column channel set not null;
+
+create index if not exists scoring_history_user_created_idx
+  on public.scoring_history (user_id, created_at desc);
+
+create table if not exists public.arco_requests (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  tipo text not null,
+  email text not null,
+  descripcion text not null,
+  estado text not null default 'pendiente',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint arco_requests_tipo_check check (tipo in ('acceso', 'rectificacion', 'cancelacion', 'oposicion', 'otro')),
+  constraint arco_requests_estado_check     check (estado in ('pendiente', 'en_proceso', 'rechazado', 'procesado'))
+);
+
+alter table public.arco_requests enable row level security;
+
+drop policy if exists "ARCO insert own" on public.arco_requests;
+create policy "ARCO insert own"
+  on public.arco_requests
+  for insert
+  with check (auth.uid() = user_id);
+
+drop policy if exists "ARCO select own" on public.arco_requests;
+create policy "ARCO select own"
+  on public.arco_requests
+  for select
+  using (auth.uid() = user_id);
+
+drop policy if exists "ARCO select admin" on public.arco_requests;
+create policy "ARCO select admin"
+  on public.arco_requests
+  for select
+  using (public.get_my_role() = 'admin');
+
+drop policy if exists "ARCO update admin" on public.arco_requests;
+create policy "ARCO update admin"
+  on public.arco_requests
+  for update
+  using (public.get_my_role() = 'admin')
+  with check (public.get_my_role() = 'admin');
+
+drop trigger if exists arco_requests_set_updated_at on public.arco_requests;
+create trigger arco_requests_set_updated_at
+  before update on public.arco_requests
+  for each row execute function public.set_updated_at();
+
+create index if not exists arco_requests_user_created_idx
+  on public.arco_requests (user_id, created_at desc);
+
+create index if not exists arco_requests_estado_idx
+  on public.arco_requests (estado);
+
 create index if not exists evaluations_user_created_idx
   on public.evaluations (user_id, created_at desc);
 
@@ -99,6 +189,7 @@ for each row execute function public.set_updated_at();
 alter table public.profiles enable row level security;
 alter table public.evaluations enable row level security;
 alter table public.improvement_goals enable row level security;
+alter table public.scoring_history enable row level security;
 
 -- Helper SECURITY DEFINER: lee el rol del usuario sin disparar RLS
 create or replace function public.get_my_role()
@@ -129,6 +220,28 @@ on public.profiles
 for update
 using (auth.uid() = id::uuid)
 with check (auth.uid() = id::uuid);
+
+drop policy if exists "Profiles select admin" on public.profiles;
+create policy "Profiles select admin"
+  on public.profiles
+  for select
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
+
+drop policy if exists "Permitir a los admins actualizar cualquier perfil" on public.profiles;
+create policy "Permitir a los admins actualizar cualquier perfil"
+  on public.profiles
+  for update
+  using (
+    exists (
+      select 1 from public.profiles
+      where id = auth.uid() and role = 'admin'
+    )
+  );
 
 alter table public.evaluations 
 add column if not exists email text;
@@ -179,3 +292,21 @@ create policy "Improvement goals delete own"
 on public.improvement_goals
 for delete
 using (auth.uid() = user_id::uuid);
+
+drop policy if exists "Scoring history insert own" on public.scoring_history;
+create policy "Scoring history insert own"
+on public.scoring_history
+for insert
+with check (auth.uid() = user_id::uuid);
+
+drop policy if exists "Scoring history select own" on public.scoring_history;
+create policy "Scoring history select own"
+on public.scoring_history
+for select
+using (auth.uid() = user_id::uuid);
+
+-- Migracion: endurecer FK para evitar borrado en cascada del historial inmutable.
+alter table public.scoring_history
+  drop constraint if exists scoring_history_evaluation_id_fkey,
+  add constraint scoring_history_evaluation_id_fkey
+    foreign key (evaluation_id) references public.evaluations(id) on delete restrict;

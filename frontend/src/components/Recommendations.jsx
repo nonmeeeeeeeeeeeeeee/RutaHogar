@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
-
-const formatScore = (score) => (Number.isFinite(Number(score)) ? Math.round(Number(score)) : "Sin score");
+import { formatScore } from "../utils/helpers";
 
 export default function Recommendations({ evaluation, onStartEvaluation }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
@@ -14,8 +13,8 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
           <h1>Orientación personalizada</h1>
         </div>
         <div className="empty-state">
-          <strong>Aun no tienes una preevaluación.</strong>
-          <p>Realiza una preevaluacion para generar recomendaciones personalizadas.</p>
+          <strong>Aún no tienes una preevaluación.</strong>
+          <p>Realiza una preevaluación para generar recomendaciones personalizadas.</p>
           <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       </section>
@@ -33,7 +32,7 @@ export default function Recommendations({ evaluation, onStartEvaluation }) {
       <div className="recommendation-summary">
         <div className="score-badge-wrap">
           <span>Score actual</span>
-          <strong>{formatScore(data.score)}</strong>
+          <strong>{formatScore(data.score, "Sin score")}</strong>
           <small>{data.classification}</small>
         </div>
         <p>{data.summary}</p>
