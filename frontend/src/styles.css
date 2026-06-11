@@ -332,16 +332,138 @@ li {
 }
 
 .navbar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: center;
   margin-bottom: 18px;
   padding: 12px 14px;
   border: 1px solid rgba(112, 128, 144, 0.24);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.96);
   box-shadow: 0 12px 30px rgba(31, 47, 70, 0.06);
+}
+
+/* Fila superior: logo a la izquierda, usuario+hamburguesa a la derecha */
+.navbar-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Menú horizontal en desktop */
+.navbar-menu {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* Nav user en desktop: info alineada a la derecha */
+.nav-user {
+  display: grid;
+  gap: 2px;
+  justify-items: end;
+  color: #334155;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+.nav-user small {
+  color: #64748b;
+  font-weight: 700;
+}
+
+/* Hamburguesa: oculta en desktop */
+.navbar-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 36px;
+  min-height: 36px;
+  padding: 6px;
+  background: #e7eef4;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.navbar-hamburger:hover {
+  background: #d9e3ec;
+}
+
+.navbar-hamburger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: #334155;
+  transition: opacity 160ms;
+}
+
+@media (max-width: 820px) {
+  /* Mostrar hamburguesa */
+  .navbar-hamburger {
+    display: flex;
+  }
+
+  /* Ocultar nav-user detallado, solo mostrar nombre */
+  .nav-user {
+    justify-items: start;
+    text-align: left;
+  }
+
+  .current-score {
+    display: none; /* se muestra en el menú desplegado si quieres */
+  }
+
+  /* Menú colapsado por defecto en móvil */
+  .navbar-menu {
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #d7e0ea;
+  }
+
+  .navbar-menu.is-open {
+    display: flex;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-link {
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 8px;
+  }
+
+  .nav-actions {
+    padding-top: 4px;
+    border-top: 1px solid #e7eef4;
+  }
 }
 
 .brand-button {
@@ -1566,41 +1688,97 @@ th {
   align-items: flex-start;
   justify-content: center;
   padding: 2rem 1rem;
-  overflow-y: auto;
+  overflow: hidden;
 }
- 
+
 .consent-modal-content {
   position: relative;
-  background: var(--bg);
+  background: #ffffff;
   border-radius: 0.75rem;
   width: 100%;
   max-width: 720px;
   max-height: calc(100vh - 4rem);
-  overflow-y: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 8px 40px rgba(0, 0, 0, 0.25);
+  height: calc(100vh - 4rem);
 }
- 
-.consent-modal-content .consent-panel {
-  padding: 2rem;
+
+.consent-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  gap: 0;
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 0;
 }
- 
+
+.consent-body {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  padding: 24px;
+  display: grid;
+  gap: 18px;
+}
+
+
+.consent-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  padding: 14px 24px;
+  background: #ffffff;
+  border-bottom: 1px solid #d7e0ea;
+  border-radius: 0.75rem 0.75rem 0 0;
+
+  box-shadow: 0 2px 8px rgba(31, 47, 70, 0.06);
+  flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .consent-modal-content {
+    border-radius: 1rem 1rem 0 0;
+    max-height: 92vh;
+    height: 92vh; 
+    margin-bottom: 0;
+  }
+
+
+  .consent-sticky-header {
+    border-radius: 1rem 1rem 0 0;
+    padding: 12px 16px;
+  }
+
+  .consent-body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .consent-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+    overflow: hidden; 
+  }
+
+  .consent-modal-content {
+    border-radius: 1rem 1rem 0 0;
+    max-height: 92vh;
+    margin-bottom: 0;
+  }
+}
 
  
 .consent-modal-close:hover {
   opacity: 1;
 }
  
-@media (max-width: 600px) {
-  .consent-modal-overlay {
-    padding: 0;
-    align-items: flex-end;
-  }
- 
-  .consent-modal-content {
-    border-radius: 1rem 1rem 0 0;
-    max-height: 92vh;
-  }
-}
 
 .toolbar-filters {
   display: flex;
@@ -1703,41 +1881,31 @@ th {
 }
 
 .field-tooltip-cloud {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-
+  position: fixed;
   width: 260px;
   padding: 12px;
-
   background: white;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
-
   box-shadow:
-    0 10px 25px rgba(0,0,0,0.08),
-    0 4px 10px rgba(0,0,0,0.04);
-
+    0 10px 25px rgba(0, 0, 0, 0.08),
+    0 4px 10px rgba(0, 0, 0, 0.04);
   font-size: 13px;
   line-height: 1.4;
   color: #426da9;
-
-  z-index: 999;
+  z-index: 1000;
 }
 
-/* Flechita */
-.field-tooltip-cloud::before {
+/* Flechita apunta siempre al ícono */
+.field-tooltip-cloud::after {
   content: "";
   position: absolute;
-  top: -6px;
-  left: 12px;
-
+  bottom: -6px;
+  left: var(--arrow-left, 12px);
   width: 10px;
   height: 10px;
-
   background: white;
-  border-left: 1px solid #e2e8f0;
-  border-top: 1px solid #e2e8f0;
-
+  border-right: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
   transform: rotate(45deg);
 }
