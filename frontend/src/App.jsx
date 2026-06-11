@@ -84,6 +84,7 @@ const hasCompletedOnboarding = (data) => {
 
 const getInitialPageForProfile = (profile) => {
   if (!profile) return "landing";
+  if (profile.role === roles.sales) return "leads";
   if (profile.role !== roles.user) return "home";
   return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
 };
