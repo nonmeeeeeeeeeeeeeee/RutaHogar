@@ -7,7 +7,7 @@ export default function ObjectiveReview({ evaluation, onBack }) {
 
   return (
     <section className="section-block objective-review">
-      <button className="secondary-button compact-button" type="button" onClick={onBack}>Volver al seguimiento</button>
+      <button className="secondary-button compact-button" type="button" onClick={onBack}>Volver al Plan de Mejora</button>
 
       <div className="section-heading compact">
         <span className="eyebrow">Revisión de objetivo</span>

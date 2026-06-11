@@ -28,7 +28,7 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
 
   return (
     <section className="section-block monthly-plan">
-      <button className="secondary-button compact-button" type="button" onClick={onBack}>Volver al seguimiento</button>
+      <button className="secondary-button compact-button" type="button" onClick={onBack}>Volver al Plan de Mejora</button>
 
       <div className="section-heading compact">
         <span className="eyebrow">Plan mensual</span>

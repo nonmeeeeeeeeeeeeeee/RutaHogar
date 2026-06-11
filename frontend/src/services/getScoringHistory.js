@@ -66,4 +66,22 @@ export async function getScoringHistory(userId) {
   return data || [];
 }
 
+export async function getScoringHistoryByEvaluation(evaluationId) {
+  if (!isSupabaseDataConfigured) {
+    return readLocalScoringHistory().filter((item) => item.evaluation_id === evaluationId);
+  }
+
+  const { data, error } = await supabase
+    .from("scoring_history")
+    .select(scoringHistorySelectColumns)
+    .eq("evaluation_id", evaluationId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    logSupabaseError(error);
+    throw error;
+  }
+  return data || [];
+}
+
 export { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory };
