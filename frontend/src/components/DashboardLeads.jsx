@@ -374,8 +374,12 @@ export default function DashboardLeads({ evaluations }) {
                 {selectedLead.result.commercial_guidance && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Orientación Comercial</h3>
-                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80", whiteSpace: "pre-line" }}>
-                      {selectedLead.result.commercial_guidance}
+                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80" }}>
+                      <>
+                        <strong>Acción:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[0].replace("Acción:", "").trim()}
+                        <br />
+                        <strong>Motivo:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[1].trim()}
+                      </>
                     </p>
                   </div>
                 )}

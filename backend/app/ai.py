@@ -53,7 +53,7 @@ def _clean_generated_text(text: str) -> str:
         "solida": "sólida",
         "seria": "sería",
     }
-    cleaned = re.sub(r"\s+", " ", text or "").strip()
+    cleaned = re.sub(r"[^\S\n]+", " ", text or "").strip()
     cleaned = re.sub(r"\s+([,.;:!?])", r"\1", cleaned)
     cleaned = re.sub(r"([.!?])\s*[,;:]+\s*", r"\1 ", cleaned)
     cleaned = re.sub(r"[,;:]+\s*([.!?])", r"\1", cleaned)
