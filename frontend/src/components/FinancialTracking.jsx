@@ -24,12 +24,12 @@ export default function FinancialTracking({
     return (
       <section className="section-block tracking-panel">
         <div className="section-heading">
-          <span className="eyebrow">Seguimiento financiero</span>
+          <span className="eyebrow">Plan de Mejora</span>
           <h1>Mi plan de mejora</h1>
         </div>
         <div className="empty-state">
           <strong>Aún no tienes una preevaluación.</strong>
-          <p>Realiza una preevaluación para generar tu seguimiento financiero.</p>
+          <p>Realiza una preevaluación para generar tu plan de mejora.</p>
           <button type="button" onClick={onStartEvaluation}>Iniciar pre-evaluación</button>
         </div>
       </section>
@@ -46,7 +46,7 @@ export default function FinancialTracking({
   return (
     <section className="section-block tracking-panel">
       <div className="section-heading">
-        <span className="eyebrow">Seguimiento financiero</span>
+        <span className="eyebrow">Plan de Mejora</span>
         <h1>Mi plan de mejora</h1>
         <p>Metas accionables para preparar mejor tu situación financiera a partir de tu última preevaluación.</p>
       </div>

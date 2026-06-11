@@ -14,7 +14,6 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
-import { getScoringHistory } from "./services/getScoringHistory";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
@@ -138,7 +137,6 @@ export default function App() {
       return {};
     }
   });
-  const [scoringHistory, setScoringHistory] = useState([]);
   const [consentGranted, setConsentGranted] = useState(false);
 
   const profile = auth.profile;
@@ -206,20 +204,6 @@ export default function App() {
     }
 
     loadEvaluations();
-
-    async function loadScoringHistory() {
-      if (!userId) {
-        setScoringHistory([]);
-        return;
-      }
-      try {
-        const storedHistory = await getScoringHistory(userId);
-        if (active) setScoringHistory(storedHistory);
-      } catch (err) {
-        console.error(err);
-      }
-    }
-    loadScoringHistory();
 
     return () => {
       active = false;
@@ -716,7 +700,6 @@ export default function App() {
           profile={profile}
           onboarding={userOnboarding}
           evaluations={userEvaluations}
-          scoringHistory={scoringHistory}
           onSaveOnboarding={handleProfileOnboardingSave}
           onDeleteEvaluation={deleteEvaluation}
           onProfileUpdate={handleProfileUpdate}
@@ -746,6 +729,7 @@ export default function App() {
         <Recommendations
           evaluation={currentEvaluation}
           onStartEvaluation={startEvaluation}
+          onNavigate={setPage}
         />
       ) : page === "leads" && profile.role === roles.sales ? (
         <DashboardLeads evaluations={evaluations} />

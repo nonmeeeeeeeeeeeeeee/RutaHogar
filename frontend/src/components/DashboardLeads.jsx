@@ -1,4 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { getScoringHistoryByEvaluation } from "../services/getScoringHistory";
+import { formatScore } from "../utils/helpers";
  
 function formatFecha(created_at) {
   if (!created_at) return "-";
@@ -21,11 +23,19 @@ const AGE_RANGES = [
   { label: "65+ años", min: 65, max: Infinity },
 ];
  
+const channelLabels = {
+  web: "Web",
+  chatbot: "Chatbot",
+  whatsapp: "WhatsApp",
+  vendedor: "Vendedor",
+};
+
 export default function DashboardLeads({ evaluations }) {
   const [filter, setFilter] = useState("todos");
   const [filterCommune, setFilterCommune] = useState("todas");
   const [filterAge, setFilterAge] = useState(0);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [leadHistory, setLeadHistory] = useState([]);
  
   const hasActiveFilters = filter !== "todos" || filterCommune !== "todas" || filterAge !== 0;
  
@@ -34,7 +44,16 @@ export default function DashboardLeads({ evaluations }) {
     setFilterCommune("todas");
     setFilterAge(0);
   };
- 
+
+  useEffect(() => {
+    if (!selectedLead) { setLeadHistory([]); return; }
+    let active = true;
+    getScoringHistoryByEvaluation(selectedLead.id)
+      .then((data) => { if (active) setLeadHistory(data); })
+      .catch((err) => console.error(err));
+    return () => { active = false; };
+  }, [selectedLead]);
+
   const allCommunes = useMemo(() => {
     const set = new Set();
     evaluations.forEach((item) => {
@@ -259,6 +278,68 @@ export default function DashboardLeads({ evaluations }) {
                 <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
               </>
             )}
+
+            <hr style={{ margin: "1.5rem 0", border: "none", borderTop: "1px solid var(--color-border, #e0e0e0)" }} />
+
+            <section>
+              <h3 style={{ marginBottom: "1rem" }}>Historial inmutable (auditoría)</h3>
+              {leadHistory.length > 0 ? (
+                <div className="history-list" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  {leadHistory.map((item) => (
+                    <article
+                      className="history-card"
+                      key={item.id}
+                      style={{
+                        padding: "1rem",
+                        border: "1px solid var(--color-border, #e0e0e0)",
+                        borderRadius: "10px",
+                        background: "var(--color-surface-secondary, #f9f9f9)",
+                      }}
+                    >
+                      <div className="history-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
+                        <span className="eyebrow">{(() => { const d = new Date(item.created_at); const fecha = d.toLocaleDateString("es-CL"); const hora = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}`; return `${fecha} ${hora} UTC`; })()}</span>
+                        <strong>{formatScore(item.score) ?? "Sin score"} / {item.classification}</strong>
+                      </div>
+                      <dl style={{ margin: 0, display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Comuna objetivo</dt>
+                          <dd style={{ margin: 0 }}>{item.snapshot?.comuna_objetivo || "No declarada"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Canal de origen</dt>
+                          <dd style={{ margin: 0 }}>{channelLabels[item.channel] || item.channel || "web"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Versión del algoritmo</dt>
+                          <dd style={{ margin: 0 }}>{item.algorithm_version || "—"}</dd>
+                        </div>
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <dt style={{ fontWeight: 600, minWidth: "140px" }}>Desglose por componente</dt>
+                          <dd style={{ margin: 0 }}>
+                            {item.component_scores && Object.keys(item.component_scores).length > 0 ? (
+                              <ul style={{ margin: 0, paddingLeft: "1.25rem" }}>
+                                {Object.entries(item.component_scores).map(([key, value]) => (
+                                  <li key={key}>
+                                    <span>{key.replace(/_/g, " ")} </span>
+                                    <span style={{ color: value >= 0 ? "var(--color-positive, #16a34a)" : "var(--color-negative, #dc2626)" }}>
+                                      {value >= 0 ? `+${value}` : value}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            ) : "—"}
+                          </dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ color: "var(--color-muted, #888)", fontStyle: "italic" }}>
+                  <p style={{ margin: 0 }}>No hay registros de auditoría para esta evaluación.</p>
+                </div>
+              )}
+            </section>
           </div>
         </div>
       )}

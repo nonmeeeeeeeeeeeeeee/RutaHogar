@@ -32,14 +32,7 @@ function formatPhoneDisplay(phone) {
   return phone;
 }
 
-const channelLabels = {
-  web: "Web",
-  chatbot: "Chatbot",
-  whatsapp: "WhatsApp",
-  vendedor: "Vendedor",
-};
-
-export default function ProfilePage({ profile, onboarding, evaluations, scoringHistory, onSaveOnboarding, onDeleteEvaluation, onProfileUpdate }) {
+export default function ProfilePage({ profile, onboarding, evaluations, onSaveOnboarding, onDeleteEvaluation, onProfileUpdate }) {
   const savedOnboarding = useMemo(() => normalizeOnboarding(onboarding), [onboarding]);
   const [form, setForm] = useState(savedOnboarding);
   const [error, setError] = useState("");
@@ -412,55 +405,6 @@ export default function ProfilePage({ profile, onboarding, evaluations, scoringH
         )}
       </section>
 
-      <section className="profile-card">
-        <strong>Historial inmutable (auditoría)</strong>
-        {scoringHistory.length > 0 ? (
-          <div className="history-list profile-history">
-            {scoringHistory.map((item) => (
-              <article className="history-card" key={item.id}>
-                <div className="history-card-header">
-                  <span className="eyebrow">{new Date(item.created_at).toLocaleDateString("es-CL")}</span>
-                  <h3>{formatScore(item.score) ?? "Sin score"} / {item.classification}</h3>
-                </div>
-                <dl>
-                  <div>
-                    <dt>Comuna objetivo</dt>
-                    <dd>{item.snapshot?.comuna_objetivo || "No declarada"}</dd>
-                  </div>
-                  <div>
-                    <dt>Canal de origen</dt>
-                    <dd>{channelLabels[item.channel] || item.channel || "web"}</dd>
-                  </div>
-                  <div>
-                    <dt>Versión del algoritmo</dt>
-                    <dd>{item.algorithm_version || "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Desglose por componente</dt>
-                    <dd className="component-scores">
-                      {item.component_scores && Object.keys(item.component_scores).length > 0 ? (
-                        <ul>
-                          {Object.entries(item.component_scores).map(([key, value]) => (
-                            <li key={key}>
-                              <span className="component-label">{key.replace(/_/g, " ")}</span>
-                              <span className={value >= 0 ? "positive" : "negative"}>{value >= 0 ? `+${value}` : value}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : "—"}
-                    </dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-state">
-            <strong>No hay registros de auditoría.</strong>
-            <p>Cuando completes una evaluacion, se creará automáticamente un registro inmutable.</p>
-          </div>
-        )}
-      </section>
     </section>
   );
 }
