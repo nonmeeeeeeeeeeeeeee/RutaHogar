@@ -13,6 +13,12 @@ const buyerObjectives = new Set([
   "evaluar_capacidad",
 ]);
 const weakComplementRelations = new Set(["amigo", "otro"]);
+const continuityMinimumYears = {
+  menos_6_meses: 0,
+  entre_6_y_12_meses: 0.5,
+  entre_1_y_3_anios: 1,
+  mas_3_anios: 3,
+};
 
 // Campos enteros (solo dígitos, sin decimales)
 const integerFormattedFields = new Set([
@@ -67,6 +73,13 @@ function stripFormat(value) {
   return String(value)
     .replace(/\./g, "")
     .replace(/[^0-9]/g, "");
+}
+
+function isContinuityIncompatibleWithAge(continuity, age) {
+  if (!continuity || !Number.isFinite(age)) return false;
+  const minimumYears = continuityMinimumYears[continuity];
+  if (minimumYears == null) return false;
+  return minimumYears > Math.max(0, age - 18);
 }
 
 export default function ScoreForm({
@@ -145,6 +158,25 @@ export default function ScoreForm({
     form.relacion_complementario,
   );
   const showComplementMorosityWarning = form.morosidad_complementario === "si";
+  const complementRequiredFields = [
+    form.ingreso_mensual_complementario,
+    form.deuda_mensual_complementario,
+    form.tipo_contrato_complementario,
+    form.continuidad_laboral_complementario,
+    form.morosidad_complementario,
+    form.relacion_complementario,
+  ];
+  const complementFieldsIncomplete = complementRequiredFields.some(
+    (value) => value === "" || value == null,
+  );
+  const patrimonioValues = [form.valor_vehiculos, form.valor_inmuebles];
+  const patrimonioFieldsIncomplete = patrimonioValues.every(
+    (value) => value === "" || value == null,
+  );
+  const continuityAgeMismatch = isContinuityIncompatibleWithAge(
+    form.continuidad_laboral,
+    declaredAge,
+  );
 
   const ufHelpText =
     ufStatus === "loading"
@@ -331,8 +363,30 @@ export default function ScoreForm({
     }
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
     if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
+
+    if (form.complemento_renta && complementFieldsIncomplete) {
+      setError(
+        "Completa los datos del complementario antes de calcular tu preevaluación.",
+      );
+      return false;
+    }
+
+    if (form.declara_patrimonio && patrimonioFieldsIncomplete) {
+      setError(
+        "Completa la información de patrimonio antes de calcular tu preevaluación.",
+      );
+      return false;
+    }
+
     if (missing.length) {
       setError(`Complete todos los campos: ${missing.join(", ")}`);
+      return false;
+    }
+
+    if (continuityAgeMismatch) {
+      setError(
+        "La continuidad laboral declarada no es coherente con tu edad registrada. Revisa este dato antes de continuar.",
+      );
       return false;
     }
 
@@ -394,19 +448,20 @@ export default function ScoreForm({
     }
 
     if (form.complemento_renta) {
-      [
-        ["Ingreso mensual complementario", form.ingreso_mensual_complementario],
-        ["Deuda mensual complementaria", form.deuda_mensual_complementario],
-      ].forEach(([label, value]) => {
-        if (value !== "") {
-          numericRules.push([
-            label,
-            value,
-            (parsed) => parsed >= 0,
-            "no puede ser negativo.",
-          ]);
-        }
-      });
+      numericRules.push(
+        [
+          "Ingreso mensual complementario",
+          form.ingreso_mensual_complementario,
+          (parsed) => parsed > 0,
+          "debe ser mayor que 0.",
+        ],
+        [
+          "Deuda mensual complementaria",
+          form.deuda_mensual_complementario,
+          (parsed) => parsed >= 0,
+          "no puede ser negativo.",
+        ],
+      );
     }
 
     if (form.declara_patrimonio) {
@@ -418,8 +473,8 @@ export default function ScoreForm({
           numericRules.push([
             label,
             value,
-            (parsed) => parsed >= 0,
-            "no puede ser negativo.",
+            (parsed) => parsed > 0,
+            "debe ser mayor que 0.",
           ]);
         }
       });
@@ -716,7 +771,9 @@ export default function ScoreForm({
           </div>
 
           {/* Continuidad laboral */}
-          <div className="field-wrap">
+          <div
+            className={`field-wrap${continuityAgeMismatch ? " field-with-warning" : ""}`}
+          >
             <div className="field-label-row">
               <label htmlFor="continuidad_laboral">Continuidad laboral</label>
               <FieldTooltip text="Tiempo que llevas trabajando de forma continua en tu empleo o actividad actual." />
@@ -733,6 +790,12 @@ export default function ScoreForm({
               <option value="entre_1_y_3_anios">Entre 1 y 3 años</option>
               <option value="mas_3_anios">Más de 3 años</option>
             </select>
+            {continuityAgeMismatch && (
+              <span className="field-warning">
+                La continuidad laboral declarada no es coherente con tu edad
+                registrada. Revisa este dato antes de continuar.
+              </span>
+            )}
           </div>
 
           {/* Morosidad actual */}
@@ -1097,7 +1160,6 @@ export default function ScoreForm({
         >
           Calcular score
         </button>
-        {loading && <span>Calculando...</span>}
       </div>
 
       {error && <div className="error-message">{error}</div>}
