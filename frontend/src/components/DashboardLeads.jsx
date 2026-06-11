@@ -28,6 +28,7 @@ const DATE_RANGES = [
   { label: "Último mes", value: "mes" },
   { label: "Último año", value: "anio" },
 ];
+const DEFAULT_CLASSIFICATION_FILTER = "Alto";
 
 function getDateThreshold(value) {
   const now = new Date();
@@ -41,7 +42,7 @@ function getDateThreshold(value) {
 }
 
 export default function DashboardLeads({ evaluations }) {
-  const [filter, setFilter] = useState("todos");
+  const [filter, setFilter] = useState(DEFAULT_CLASSIFICATION_FILTER);
   const [filterCommune, setFilterCommune] = useState("todas");
   const [filterAge, setFilterAge] = useState(0);
   const [filterDate, setFilterDate] = useState("todos");
@@ -49,14 +50,14 @@ export default function DashboardLeads({ evaluations }) {
   const [selectedLead, setSelectedLead] = useState(null);
 
   const hasActiveFilters =
-    filter !== "todos" ||
+    filter !== DEFAULT_CLASSIFICATION_FILTER ||
     filterCommune !== "todas" ||
     filterAge !== 0 ||
     filterDate !== "todos" ||
     search !== "";
 
   const clearFilters = () => {
-    setFilter("todos");
+    setFilter(DEFAULT_CLASSIFICATION_FILTER);
     setFilterCommune("todas");
     setFilterAge(0);
     setFilterDate("todos");
@@ -282,9 +283,26 @@ export default function DashboardLeads({ evaluations }) {
               </button>
             </div>
 
+            <div
+              className={`lead-score-highlight ${selectedLead.result.classification?.toLowerCase() || ""}`}
+            >
+              <div>
+                <span>Score</span>
+                <strong>{selectedLead.result.score}</strong>
+              </div>
+              <div>
+                <span>Clasificación</span>
+                <strong>{selectedLead.result.classification || "-"}</strong>
+              </div>
+            </div>
+
             <div style={{ display: "grid", gap: "0.4rem", marginBottom: "1.25rem" }}>
               <p style={{ margin: 0 }}><strong>Nombre:</strong> {selectedLead.full_name || "-"}</p>
               <p style={{ margin: 0 }}><strong>Email:</strong> {selectedLead.email || "-"}</p>
+              <p style={{ margin: 0 }}>
+                <strong>Teléfono:</strong>{" "}
+                {selectedLead.phone || selectedLead.profile?.phone || "-"}
+              </p>
               <p style={{ margin: 0 }}><strong>Fecha evaluación:</strong> {formatFecha(selectedLead.created_at)}</p>
               <p style={{ margin: 0 }}><strong>Edad:</strong> {selectedLead.input?.edad ?? "-"} años</p>
               <p style={{ margin: 0 }}>
@@ -294,13 +312,6 @@ export default function DashboardLeads({ evaluations }) {
               <p style={{ margin: 0 }}>
                 <strong>Comuna alternativa:</strong>{" "}
                 {selectedLead.onboarding?.comuna_alternativa || "-"}
-              </p>
-              <p style={{ margin: 0 }}><strong>Score:</strong> {selectedLead.result.score}</p>
-              <p style={{ margin: 0 }}>
-                <strong>Clasificación:</strong>{" "}
-                <span className={`status-pill ${selectedLead.result.classification?.toLowerCase()}`}>
-                  {selectedLead.result.classification}
-                </span>
               </p>
             </div>
 
