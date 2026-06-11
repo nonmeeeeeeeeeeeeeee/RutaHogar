@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import AdminPanel from "./components/AdminPanel";
+import AnonHeader from "./components/AnonHeader";
 import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
 import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
+import LandingPage from "./components/LandingPage";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
 import NotificationToast from "./components/NotificationToast";
@@ -13,12 +15,13 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import SignupOffer from "./components/SignupOffer";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { getScoringHistory } from "./services/getScoringHistory";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
-import { getStoredAuth, roles, signOut, updateStoredProfile } from "./services/auth";
+import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
 import {
   getConsent,
@@ -31,6 +34,9 @@ import { formatScore } from "./utils/helpers";
 import { plazoLabels } from "./constants";
 
 const ONBOARDING_KEY = "scoreleads_onboarding";
+const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
+const ANON_RESULT_KEY = "scoreleads_anon_result";
+const ANON_INPUT_KEY = "scoreleads_anon_input";
 
 function getChannel() {
   try {
@@ -78,7 +84,7 @@ const hasCompletedOnboarding = (data) => {
 };
 
 const getInitialPageForProfile = (profile) => {
-  if (!profile) return "home";
+  if (!profile) return "landing";
   if (profile.role !== roles.user) return "home";
   return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
 };
@@ -140,6 +146,17 @@ export default function App() {
   });
   const [scoringHistory, setScoringHistory] = useState([]);
   const [consentGranted, setConsentGranted] = useState(false);
+  const [anonOnboarding, setAnonOnboarding] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(ANON_ONBOARDING_KEY)); } catch { return null; }
+  });
+  const [anonResult, setAnonResult] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(ANON_RESULT_KEY)); } catch { return null; }
+  });
+  const [anonInput, setAnonInput] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem(ANON_INPUT_KEY)); } catch { return null; }
+  });
+  const [signupOfferLoading, setSignupOfferLoading] = useState(false);
+  const [signupOfferError, setSignupOfferError] = useState("");
 
   const profile = auth.profile;
   const userId = isUUID(profile?.id)
@@ -296,6 +313,102 @@ export default function App() {
     };
   }, [userId]);
 
+  const clearAnonSession = () => {
+    sessionStorage.removeItem(ANON_ONBOARDING_KEY);
+    sessionStorage.removeItem(ANON_RESULT_KEY);
+    sessionStorage.removeItem(ANON_INPUT_KEY);
+    setAnonOnboarding(null);
+    setAnonResult(null);
+    setAnonInput(null);
+  };
+
+  const handleAnonOnboardingComplete = (answers) => {
+    const data = { ...answers, updated_at: new Date().toISOString() };
+    sessionStorage.setItem(ANON_ONBOARDING_KEY, JSON.stringify(data));
+    setAnonOnboarding(data);
+    setPage("anon-evaluate");
+  };
+
+  const handleAnonResult = (scoreResult, input) => {
+    const resultSnapshot = {
+      score: scoreResult.score,
+      classification: scoreResult.classification,
+      risks: normalizeDisplayList(scoreResult.risks),
+      recommendations: normalizeDisplayList(scoreResult.recommendations),
+      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
+      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
+      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
+      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
+      algorithm_version: scoreResult.algorithm_version,
+      component_scores: scoreResult.component_scores,
+    };
+    sessionStorage.setItem(ANON_RESULT_KEY, JSON.stringify(resultSnapshot));
+    sessionStorage.setItem(ANON_INPUT_KEY, JSON.stringify(input));
+    setAnonResult(resultSnapshot);
+    setAnonInput(input);
+    setPage("signup-offer");
+  };
+
+  const handleSignupFromOffer = async ({ full_name, email, password, birth_date, consentData }) => {
+    setSignupOfferLoading(true);
+    setSignupOfferError("");
+    let nextAuth = null;
+    try {
+      nextAuth = await signUp({
+        email,
+        password,
+        full_name,
+        birth_date,
+        role: roles.user,
+      });
+
+      const newProfile = nextAuth.profile;
+      const newUserId = isUUID(newProfile?.id) ? newProfile.id
+        : isUUID(newProfile?.user_id) ? newProfile.user_id : null;
+
+      if (newUserId) {
+        await saveConsent(newUserId, consentData);
+      }
+
+      let savedEvaluation = null;
+      if (anonResult && anonInput) {
+        savedEvaluation = await createEvaluation(newUserId, {
+          email: newProfile?.email || "sin-email",
+          onboarding: anonOnboarding || null,
+          input: anonInput,
+          result: anonResult,
+          channel: getChannel(),
+        });
+      }
+
+      // Batch all state updates together after all async work is done
+      clearAnonSession();
+      setConsentGranted(true);
+      if (savedEvaluation) {
+        prependEvaluation(savedEvaluation);
+        setEvaluations([savedEvaluation]);
+      }
+      setAuth(nextAuth);
+      setPage("recommendations");
+    } catch (err) {
+      console.error(err);
+      if (nextAuth?.profile) {
+        setSignupOfferError("Cuenta creada, pero no pudimos guardar tu evaluación. Por favor intenta de nuevo.");
+        setAuth(nextAuth);
+      } else {
+        setSignupOfferError(err?.message || "No se pudo crear la cuenta. Intenta nuevamente.");
+      }
+    } finally {
+      setSignupOfferLoading(false);
+    }
+  };
+
+  const handleContinueWithout = () => {
+    clearAnonSession();
+    setPage("landing");
+  };
+
   const startEvaluation = () => {
     setResult(null);
     setResultSaved(null);
@@ -303,6 +416,7 @@ export default function App() {
   };
 
   const handleAuth = (nextAuth) => {
+    clearAnonSession();
     setAuth(nextAuth);
     setResult(null);
     setResultSaved(null);
@@ -557,9 +671,9 @@ export default function App() {
     setEvaluations([]);
     setTrackingGoals([]);
     setConsentGranted(false);
-    setPage("home");
     setResult(null);
     setResultSaved(null);
+    setPage("landing");
   };
 
   const handleNotificationClick = () => setPage("leads");
@@ -567,11 +681,96 @@ export default function App() {
   const handleDismissNotification = () => markLeadsSeen();
 
   if (!profile) {
-    return (
-      <div className="app-shell auth-shell">
-        <AuthPanel onAuth={handleAuth} />
-      </div>
-    );
+    if (page === "auth") {
+      return (
+        <div className="app-shell auth-shell">
+          <AuthPanel onAuth={handleAuth} onBack={() => setPage("landing")} />
+        </div>
+      );
+    }
+
+    if (page === "anon-onboarding") {
+      return (
+        <div className="anon-shell">
+          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <div className="app-shell">
+            <Onboarding
+              isAnon
+              onComplete={handleAnonOnboardingComplete}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (page === "anon-evaluate") {
+      return (
+        <div className="anon-shell">
+          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <div className="app-shell">
+            <section className="evaluation-panel">
+              <button className="secondary-button" type="button" onClick={() => setPage("anon-onboarding")}>
+                Volver
+              </button>
+              <div className="section-heading compact">
+                <span className="eyebrow">Disponible</span>
+                <h1>Pre-evaluación financiera</h1>
+                <p>
+                  Completa todos los campos para calcular un score orientativo. El
+                  resultado no equivale a aprobación bancaria.
+                </p>
+              </div>
+              {anonOnboarding && (
+                <div className="context-summary">
+                  <strong>Contexto inicial</strong>
+                  <span>
+                    {anonOnboarding.comuna_interes} ·{" "}
+                    {plazoLabels[anonOnboarding.plazo_compra] || anonOnboarding.plazo_compra}
+                  </span>
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    onClick={() => setPage("anon-onboarding")}
+                  >
+                    Editar contexto
+                  </button>
+                </div>
+              )}
+              <ScoreForm
+                targetCommune={anonOnboarding?.comuna_interes}
+                objective={anonOnboarding?.objetivo_principal}
+                birthDate={null}
+                profile={null}
+                consentGranted={true}
+                isAnon
+                onConsentAccept={() => {}}
+                onResult={handleAnonResult}
+              />
+            </section>
+          </div>
+        </div>
+      );
+    }
+
+    if (page === "signup-offer") {
+      return (
+        <div className="anon-shell">
+          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <div className="app-shell">
+            <SignupOffer
+              result={anonResult}
+              anonBirthDate={anonInput?.birth_date}
+              onSignup={handleSignupFromOffer}
+              onContinueWithout={handleContinueWithout}
+              loading={signupOfferLoading}
+              error={signupOfferError}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return <LandingPage onStart={() => setPage("anon-onboarding")} onLogin={() => setPage("auth")} />;
   }
 
   return (
