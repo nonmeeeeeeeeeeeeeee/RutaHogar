@@ -296,17 +296,19 @@ export default function DashboardLeads({ evaluations }) {
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", borderBottom: "1px solid #eaeaea", paddingBottom: "1rem" }}>
               <h2 style={{ margin: 0 }}>Perfil del Lead</h2>
-              <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  <span style={{ fontSize: "1.1rem", fontWeight: "600", color: "#526174" }}>Score:</span>
-                  <span style={{ fontSize: "2rem", fontWeight: "bold", color: "#111827", lineHeight: 1 }}>{selectedLead.result.score}</span>
-                  <span className={`status-pill ${selectedLead.result.classification?.toLowerCase()}`} style={{ marginLeft: "4px" }}>
-                    {selectedLead.result.classification}
-                  </span>
-                </div>
-                <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
-                  Cerrar
-                </button>
+              <button className="secondary-button compact-button" onClick={() => setSelectedLead(null)}>
+                Cerrar
+              </button>
+            </div>
+
+            <div className={`lead-score-highlight ${selectedLead.result.classification?.toLowerCase() || ""}`}>
+              <div>
+                <span>Score</span>
+                <strong>{selectedLead.result.score}</strong>
+              </div>
+              <div>
+                <span>Clasificación</span>
+                <strong>{selectedLead.result.classification || "-"}</strong>
               </div>
             </div>
 
@@ -372,7 +374,7 @@ export default function DashboardLeads({ evaluations }) {
                 {selectedLead.result.commercial_guidance && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Orientación Comercial</h3>
-                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80" }}>
+                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80", whiteSpace: "pre-line" }}>
                       {selectedLead.result.commercial_guidance}
                     </p>
                   </div>
