@@ -336,7 +336,29 @@ export default function DashboardLeads({ evaluations }) {
             {selectedLead.result.commercial_guidance && (
               <>
                 <h3 style={{ marginBottom: "0.5rem" }}>Orientación Comercial</h3>
-                <p style={{ margin: 0 }}>{selectedLead.result.commercial_guidance}</p>
+                <p style={{ margin: 0, marginBottom: "1.25rem" }}>{selectedLead.result.commercial_guidance}</p>
+                
+                <h3 style={{ marginBottom: "0.5rem" }}>Acciones Rápidas</h3>
+                <div style={{ display: "flex", gap: "10px", marginTop: "0.5rem" }}>
+                  <a
+                    href={`mailto:${selectedLead.email || ""}?subject=${encodeURIComponent("Contacto ScoreLeads - Evaluación Financiera")}&body=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"},\n\nTe escribo a partir de tu evaluación en ScoreLeads.\n\nSaludos.`)}`}
+                    className="secondary-button compact-button"
+                    style={{ textDecoration: "none", textAlign: "center", flex: 1 }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Contactar por Correo
+                  </a>
+                  <a
+                    href={`https://wa.me/${(selectedLead.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"}! Te escribo por ScoreLeads!`)}`}
+                    className="secondary-button compact-button"
+                    style={{ textDecoration: "none", textAlign: "center", flex: 1, backgroundColor: "#25D366", color: "white", borderColor: "#25D366" }}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Contactar por WhatsApp
+                  </a>
+                </div>
               </>
             )}
           </div>
