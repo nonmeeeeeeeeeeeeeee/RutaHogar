@@ -374,9 +374,9 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                     <span className="eyebrow">{new Date(item.created_at).toLocaleDateString("es-CL")}</span>
                     <h3>{formatScore(item.result.score) ?? "Sin score"} / {item.result.classification}</h3>
                   </div>
-                  <button className="secondary-button compact-button" type="button" onClick={() => onDeleteEvaluation(item.id)}>
+                  {/* <button className="secondary-button compact-button" type="button" onClick={() => onDeleteEvaluation(item.id)}>
                     Eliminar
-                  </button>
+                  </button> */}
                 </div>
                 <dl>
                   <div>
