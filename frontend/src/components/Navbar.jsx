@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { roleLabels, roles } from "../services/auth";
 
 const navByRole = {
@@ -12,45 +12,87 @@ const navByRole = {
 };
 
 export default function Navbar({ profile, page, currentScore, onNavigate, onLogout }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const role = profile?.role || roles.user;
   const items = navByRole[role] || navByRole[roles.user];
   const displayName = profile?.full_name || profile?.email || "Usuario";
 
+  const handleNavigate = (id) => {
+    onNavigate(id);
+    setMenuOpen(false);
+  };
+
   return (
     <nav className="navbar">
-      <button className="brand-button" type="button" onClick={() => onNavigate("home")} aria-label="Ir al inicio">
-        <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
-      </button>
+      {/* Fila superior: logo + usuario + hamburguesa */}
+      <div className="navbar-top">
+        <button
+          className="brand-button"
+          type="button"
+          onClick={() => handleNavigate("home")}
+          aria-label="Ir al inicio"
+        >
+          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
+        </button>
 
-      <div className="nav-links">
-        {items.map((item) => (
+        <div className="navbar-right">
+          <div className="nav-user">
+            {role === roles.user && currentScore && (
+              <strong className="current-score">
+                {currentScore.score} / {currentScore.classification}
+              </strong>
+            )}
+            <span>{displayName}</span>
+            <small>{roleLabels[role]}</small>
+          </div>
+
           <button
-            key={item.id}
-            className={`nav-link ${page === item.id ? "is-active" : ""}`}
+            className="navbar-hamburger"
             type="button"
-            onClick={() => onNavigate(item.id)}
+            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((prev) => !prev)}
           >
-            {item.label}
+            <span />
+            <span />
+            <span />
           </button>
-        ))}
+        </div>
       </div>
 
-      <div className="nav-user">
-        {role === roles.user && (
-          <strong className="current-score">
-            {currentScore ? `Score actual: ${currentScore.score} / ${currentScore.classification}` : "Sin score actual"}
-          </strong>
-        )}
-        <span>{displayName}</span>
-        <small>{roleLabels[role]}</small>
-        {role === roles.user && (
-          <button className="secondary-button compact-button" type="button" onClick={() => onNavigate("profile")}>
-            Perfil
+      {/* Menú: siempre visible en desktop, desplegable en móvil */}
+      <div className={`navbar-menu ${menuOpen ? "is-open" : ""}`}>
+        <div className="nav-links">
+          {items.map((item) => (
+            <button
+              key={item.id}
+              className={`nav-link ${page === item.id ? "is-active" : ""}`}
+              type="button"
+              onClick={() => handleNavigate(item.id)}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="nav-actions">
+          {role === roles.user && (
+            <button
+              className="secondary-button compact-button"
+              type="button"
+              onClick={() => handleNavigate("profile")}
+            >
+              Perfil
+            </button>
+          )}
+          <button
+            className="secondary-button compact-button"
+            type="button"
+            onClick={onLogout}
+          >
+            Salir
           </button>
-        )}
-        <button className="secondary-button compact-button" type="button" onClick={onLogout}>
-          Salir
-        </button>
+        </div>
       </div>
     </nav>
   );
