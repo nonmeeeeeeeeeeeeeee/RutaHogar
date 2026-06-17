@@ -1,4 +1,5 @@
-from typing import Optional
+import os
+from typing import Any, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator, model_validator
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,9 +18,26 @@ VALID_RELATION_TYPES = {
 
 app = FastAPI(title="ScoreLeads")
 
+LOCAL_FRONTEND_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
+]
+EXTRA_FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("SCORELEADS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=LOCAL_FRONTEND_ORIGINS + EXTRA_FRONTEND_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +61,16 @@ class ScoreRequest(BaseModel):
     monto_morosidad: Optional[float] = None
     antiguedad_morosidad: Optional[str] = None
     comuna_objetivo: Optional[str] = None
-    dividendo_estimado: float
+    dividendo_estimado: Optional[float] = None
+    dividendo_esperado: Optional[float] = None
+    dividendo_estimado_origen: Optional[str] = None
+    dividendo_estimado_calculado: Optional[float] = None
+    dividendo_estimado_manual: Optional[float] = None
+    dividendo_tasa_anual_referencial: Optional[float] = None
+    dividendo_monto_credito_estimado_clp: Optional[float] = None
+    dividendo_monto_credito_estimado_uf: Optional[float] = None
+    dividendo_uf_referencial_clp: Optional[float] = None
+    anonymous_flow_id: Optional[str] = None
     complemento_renta: bool = False
     ingreso_mensual_complementario: Optional[float] = None
     deuda_mensual_complementario: Optional[float] = None
@@ -57,6 +84,23 @@ class ScoreRequest(BaseModel):
     valor_inmuebles: Optional[float] = 0.0
     patrimonio_unit: Optional[str] = "clp"
 
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_compatible_payload(cls, values: Any):
+        if not isinstance(values, dict):
+            return values
+
+        data = dict(values)
+        if data.get("dividendo_estimado") is None:
+            dividend = (
+                data.get("dividendo_esperado")
+                or data.get("dividendo_estimado_manual")
+                or data.get("dividendo_estimado_calculado")
+            )
+            if dividend is not None:
+                data["dividendo_estimado"] = dividend
+        return data
+
     @field_validator("ingreso_mensual")
     @classmethod
     def validate_income(cls, value):
@@ -67,7 +111,7 @@ class ScoreRequest(BaseModel):
     @field_validator("deuda_mensual", "ahorro_disponible", "dividendo_estimado")
     @classmethod
     def validate_non_negative(cls, value):
-        if value < 0:
+        if value is not None and value < 0:
             raise ValueError("El valor no puede ser negativo")
         return value
 
@@ -184,6 +228,8 @@ class ScoreRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_conditional_fields(self):
+        if self.dividendo_estimado is None:
+            raise ValueError("Debe indicar el dividendo estimado")
         if self.morosidad_actual == "si":
             if self.monto_morosidad is None or self.monto_morosidad <= 0:
                 raise ValueError("Debe indicar el monto de morosidad")

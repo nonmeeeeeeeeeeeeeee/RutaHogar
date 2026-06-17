@@ -152,7 +152,7 @@ export async function createEvaluation(userId, evaluationPayload) {
   if (!user?.id) throw new Error("No hay usuario autenticado para guardar la preevaluación.");
   await ensureUserProfile(user);
 
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("evaluations")
     .insert(buildRow(user.id, evaluationPayload))
     .select(evaluationSelectColumns)
@@ -167,6 +167,27 @@ export async function createEvaluation(userId, evaluationPayload) {
 
   if (historyError) {
     logSupabaseError(historyError);
+    const traceabilityData = {
+      ...(data.financial_data || {}),
+      score_traceability: {
+        scoring_history_insert_failed: true,
+        failed_at: new Date().toISOString(),
+        code: historyError.code || null,
+        message: historyError.message || "No se pudo insertar scoring_history.",
+      },
+    };
+    const { data: updatedEvaluation, error: traceabilityError } = await supabase
+      .from("evaluations")
+      .update({ financial_data: traceabilityData })
+      .eq("id", data.id)
+      .select(evaluationSelectColumns)
+      .maybeSingle();
+
+    if (traceabilityError) {
+      logSupabaseError(traceabilityError);
+    } else if (updatedEvaluation) {
+      data = updatedEvaluation;
+    }
   }
 
   return normalizeEvaluation(data);

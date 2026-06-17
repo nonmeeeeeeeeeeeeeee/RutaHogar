@@ -151,7 +151,6 @@ Los datos considerados inicialmente para el MVP son:
 - Continuidad laboral.
 - Ahorro disponible.
 - Existencia de bienes.
-- Cantidad de cargas.
 - Posibilidad de complementar renta.
 
 El sistema también solicitará consentimiento explícito para el tratamiento de datos.
@@ -515,4 +514,3 @@ Las historias de usuario principales seleccionadas para el MVP son:
 - HdU3 – Generación de Scoring.
 
 Estas representan el núcleo funcional del sistema y permiten validar tempranamente la propuesta de valor del proyecto.
-
