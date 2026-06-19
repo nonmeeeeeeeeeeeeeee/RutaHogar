@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import AdminPanel from "./components/AdminPanel";
 import AnonHeader from "./components/AnonHeader";
 import AuthPanel from "./components/AuthPanel";
@@ -36,6 +37,14 @@ const ONBOARDING_KEY = "scoreleads_onboarding";
 const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
 const ANON_RESULT_KEY = "scoreleads_anon_result";
 const ANON_INPUT_KEY = "scoreleads_anon_input";
+
+function readSessionJson(key) {
+  try {
+    return JSON.parse(sessionStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
 
 const evaluationMatchFields = [
   "ingreso_mensual",
@@ -202,6 +211,62 @@ const getInitialPageForProfile = (profile) => {
   return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
 };
 
+const getPublicPageForPath = (pathname, profile, hasAnonOnboarding) => {
+  if (pathname === "/") return profile ? getInitialPageForProfile(profile) : "landing";
+  if (pathname === "/login" || pathname === "/registro") {
+    return profile ? getInitialPageForProfile(profile) : "auth";
+  }
+  if (pathname === "/pre-evaluacion") {
+    if (!profile) return hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding";
+    if (profile.role !== roles.user) return getInitialPageForProfile(profile);
+    return hasCompletedOnboarding(getOnboardingData(profile)) ? "evaluate" : "onboarding";
+  }
+  return null;
+};
+
+const getPrivatePageForPath = (pathname, profile) => {
+  if (!profile) return null;
+
+  if (pathname === "/dashboard") {
+    if (profile.role === roles.sales) return "leads";
+    return profile.role === roles.user ? "home" : "admin";
+  }
+
+  if (pathname === "/perfil" || pathname === "/historial") {
+    return profile.role === roles.user ? "profile" : getInitialPageForProfile(profile);
+  }
+
+  if (pathname === "/recomendaciones") {
+    return profile.role === roles.user ? "recommendations" : getInitialPageForProfile(profile);
+  }
+
+  if (pathname === "/ejecutivo/leads") {
+    return profile.role === roles.sales || profile.role === roles.admin
+      ? "leads"
+      : getInitialPageForProfile(profile);
+  }
+
+  return null;
+};
+
+const isPrivatePath = (pathname) =>
+  ["/dashboard", "/perfil", "/historial", "/recomendaciones", "/ejecutivo/leads"].includes(pathname);
+
+const getDefaultRouteForProfile = (profile) =>
+  profile?.role === roles.sales ? "/ejecutivo/leads" : "/dashboard";
+
+const getRouteForPage = (page, profile, options = {}) => {
+  if (page === "landing") return "/";
+  if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
+  if (page === "anon-onboarding" || page === "anon-evaluate") return "/pre-evaluacion";
+  if (page === "home" || page === "admin" || page === "tracking") return "/dashboard";
+  if (page === "recommendations") return "/recomendaciones";
+  if (page === "profile") return "/perfil";
+  if (page === "leads") return "/ejecutivo/leads";
+  if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/pre-evaluacion";
+  return profile ? getDefaultRouteForProfile(profile) : "/";
+};
+
 const futureModules = [
   {
     title: "Objetivo inmobiliario",
@@ -242,9 +307,21 @@ const futureModules = [
 ];
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const storedAuth = useMemo(() => getStoredAuth(), []);
+  const initialAnonOnboarding = useMemo(() => readSessionJson(ANON_ONBOARDING_KEY), []);
+  const initialAnonResult = useMemo(() => readSessionJson(ANON_RESULT_KEY), []);
+  const initialAnonInput = useMemo(() => readSessionJson(ANON_INPUT_KEY), []);
   const [auth, setAuth] = useState(storedAuth);
-  const [page, setPage] = useState(() => getInitialPageForProfile(storedAuth.profile));
+  const [page, setPage] = useState(
+    () =>
+      getPublicPageForPath(
+        location.pathname,
+        storedAuth.profile,
+        Boolean(initialAnonOnboarding),
+      ) || getInitialPageForProfile(storedAuth.profile),
+  );
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
@@ -258,15 +335,9 @@ export default function App() {
     }
   });
   const [consentGranted, setConsentGranted] = useState(false);
-  const [anonOnboarding, setAnonOnboarding] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_ONBOARDING_KEY)); } catch { return null; }
-  });
-  const [anonResult, setAnonResult] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_RESULT_KEY)); } catch { return null; }
-  });
-  const [anonInput, setAnonInput] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_INPUT_KEY)); } catch { return null; }
-  });
+  const [anonOnboarding, setAnonOnboarding] = useState(initialAnonOnboarding);
+  const [anonResult, setAnonResult] = useState(initialAnonResult);
+  const [anonInput, setAnonInput] = useState(initialAnonInput);
   const [signupOfferLoading, setSignupOfferLoading] = useState(false);
   const [signupOfferError, setSignupOfferError] = useState("");
 
@@ -311,6 +382,44 @@ export default function App() {
           classification: currentEvaluation.result.classification,
         }
       : null;
+
+  const navigateToPage = (nextPage, options = {}) => {
+    setPage(nextPage);
+    const nextPath = getRouteForPage(nextPage, profile, options);
+    if (nextPath && nextPath !== location.pathname) {
+      navigate(nextPath, { replace: Boolean(options.replace) });
+    }
+  };
+
+  useEffect(() => {
+    if (isPrivatePath(location.pathname) && !profile) {
+      setPage("auth");
+      navigate("/login", { replace: true });
+      return;
+    }
+
+    const routedPage = getPublicPageForPath(
+      location.pathname,
+      profile,
+      Boolean(anonOnboarding),
+    );
+    if (routedPage) {
+      setPage(routedPage);
+      return;
+    }
+
+    const privatePage = getPrivatePageForPath(location.pathname, profile);
+    if (privatePage) {
+      setPage(privatePage);
+      if (
+        location.pathname === "/ejecutivo/leads" &&
+        profile?.role !== roles.sales &&
+        profile?.role !== roles.admin
+      ) {
+        navigate(getDefaultRouteForProfile(profile), { replace: true });
+      }
+    }
+  }, [location.pathname, profile?.role, anonOnboarding]);
 
   useEffect(() => {
     let active = true;
@@ -384,7 +493,7 @@ export default function App() {
   }, [userId, currentEvaluation?.id, page]);
 
   useEffect(() => {
-    if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
+    if (page === "leads" && (profile?.role === roles.sales || profile?.role === roles.admin)) markLeadsSeen();
   }, [page]);
 
   useEffect(() => {
@@ -555,6 +664,7 @@ export default function App() {
       }
       setAuth(nextAuth);
       setPage(migration.targetPage);
+      navigate(getRouteForPage(migration.targetPage, nextAuth.profile), { replace: true });
     } catch (err) {
       console.error(err);
       if (nextAuth?.profile) {
@@ -570,13 +680,13 @@ export default function App() {
 
   const handleContinueWithout = () => {
     clearAnonSession();
-    setPage("landing");
+    navigateToPage("landing");
   };
 
   const startEvaluation = () => {
     setResult(null);
     setResultSaved(null);
-    setPage(onboardingCompleted ? "evaluate" : "onboarding");
+    navigateToPage(onboardingCompleted ? "evaluate" : "onboarding");
   };
 
   const handleAuth = (nextAuth) => {
@@ -592,6 +702,7 @@ export default function App() {
         }
         setAuth(migration.auth);
         setPage(migration.targetPage);
+        navigate(getRouteForPage(migration.targetPage, migration.auth.profile), { replace: true });
       })
       .catch((err) => {
         console.error(err);
@@ -599,7 +710,9 @@ export default function App() {
         setDataError(
           "Iniciaste sesion, pero no pudimos migrar la preevaluación previa. Tus datos temporales se conservaron para reintentar.",
         );
-        setPage(getInitialPageForProfile(nextAuth.profile));
+        const fallbackPage = getInitialPageForProfile(nextAuth.profile);
+        setPage(fallbackPage);
+        navigate(getRouteForPage(fallbackPage, nextAuth.profile), { replace: true });
       });
   };
 
@@ -640,7 +753,7 @@ export default function App() {
       );
     }
     setResult(null);
-    setPage("home");
+    navigateToPage("home");
   };
 
   const handleProfileOnboardingSave = async (answers) => {
@@ -658,7 +771,7 @@ export default function App() {
       await saveConsent(userId, consentData);
     }
     setConsentGranted(true);
-    setPage("evaluate");
+    navigateToPage("evaluate");
   };
 
   const handleResult = async (scoreResult, input) => {
@@ -669,11 +782,7 @@ export default function App() {
       setResult(resultSnapshot);
       setResultSaved(null);
 
-      // Si el score es Bajo, redirigir a educación financiera (recommendations)
-      // De lo contrario, ir al home para ver el resultado detallado
-      setPage(
-        resultSnapshot.classification === "Alto" ? "home" : "recommendations",
-      );
+      navigateToPage("recommendations");
 
       setDataError("");
       // Corrección: se usaban variables 'rt' y 't' no definidas.
@@ -807,18 +916,29 @@ export default function App() {
     setConsentGranted(false);
     setResult(null);
     setResultSaved(null);
-    setPage("landing");
+    navigateToPage("landing", { replace: true });
   };
 
-  const handleNotificationClick = () => setPage("leads");
+  const handleNotificationClick = () => navigateToPage("leads");
 
   const handleDismissNotification = () => markLeadsSeen();
 
   if (!profile) {
     if (page === "auth") {
+      const authMode = location.pathname === "/registro" ? "signup" : "signin";
       return (
         <div className="app-shell auth-shell">
-          <AuthPanel onAuth={handleAuth} onBack={() => setPage("landing")} />
+          <AuthPanel
+            initialMode={authMode}
+            onModeChange={(mode) =>
+              navigateToPage("auth", {
+                authMode: mode,
+                replace: true,
+              })
+            }
+            onAuth={handleAuth}
+            onBack={() => navigateToPage("landing")}
+          />
         </div>
       );
     }
@@ -826,7 +946,7 @@ export default function App() {
     if (page === "anon-onboarding") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <Onboarding
               isAnon
@@ -840,10 +960,10 @@ export default function App() {
     if (page === "anon-evaluate") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <section className="evaluation-panel">
-              <button className="secondary-button" type="button" onClick={() => setPage("anon-onboarding")}>
+              <button className="secondary-button" type="button" onClick={() => navigateToPage("anon-onboarding")}>
                 Volver
               </button>
               <div className="section-heading compact">
@@ -864,7 +984,7 @@ export default function App() {
                   <button
                     className="secondary-button compact-button"
                     type="button"
-                    onClick={() => setPage("anon-onboarding")}
+                    onClick={() => navigateToPage("anon-onboarding")}
                   >
                     Editar contexto
                   </button>
@@ -890,7 +1010,7 @@ export default function App() {
     if (page === "signup-offer") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <SignupOffer
               result={anonResult}
@@ -905,7 +1025,7 @@ export default function App() {
       );
     }
 
-    return <LandingPage onStart={() => setPage("anon-onboarding")} onLogin={() => setPage("auth")} />;
+    return <LandingPage onStart={() => navigateToPage("anon-onboarding")} onLogin={() => navigateToPage("auth")} />;
   }
 
   return (
@@ -915,7 +1035,7 @@ export default function App() {
         page={page}
         currentScore={currentScore}
         onNavigate={(nextPage) =>
-          nextPage === "evaluate" ? startEvaluation() : setPage(nextPage)
+          nextPage === "evaluate" ? startEvaluation() : navigateToPage(nextPage)
         }
         onLogout={handleLogout}
       />
@@ -938,7 +1058,7 @@ export default function App() {
           profile={profile}
           readonly={consentGranted}
           onAccept={handleDataConsent}
-          onBack={() => setPage(consentGranted ? "evaluate" : "onboarding")}
+          onBack={() => navigateToPage(consentGranted ? "evaluate" : "onboarding")}
         />
       ) : page === "home" ? (
         <>
@@ -1007,7 +1127,7 @@ export default function App() {
         </>
       ) : page === "evaluate" ? (
         <section className="evaluation-panel">
-          <button className="secondary-button" onClick={() => setPage("home")}>
+          <button className="secondary-button" onClick={() => navigateToPage("home")}>
             Volver al inicio
           </button>
           <div className="section-heading compact">
@@ -1029,7 +1149,7 @@ export default function App() {
               <button
                 className="secondary-button compact-button"
                 type="button"
-                onClick={() => setPage("onboarding")}
+                onClick={() => navigateToPage("onboarding")}
               >
                 Editar contexto
               </button>
@@ -1080,9 +1200,9 @@ export default function App() {
         <Recommendations
           evaluation={currentEvaluation}
           onStartEvaluation={startEvaluation}
-          onNavigate={setPage}
+          onNavigate={navigateToPage}
         />
-      ) : page === "leads" && profile.role === roles.sales ? (
+      ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (
         <AdminPanel evaluations={evaluations} profile={profile} />

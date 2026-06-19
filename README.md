@@ -37,3 +37,109 @@ make run
 > Nota: este `Makefile` usa comandos bash; si estás en Windows, úsalo desde WSL o Git Bash.
 
 Open the Vite URL (http://localhost:5173) and test the form.
+
+## Supabase Edge Function: feedback por correo
+
+La landing envia feedback mediante la Edge Function `submit-feedback`. La
+funcion valida el payload, guarda el registro en `public.feedback` y luego
+intenta enviar una notificacion por correo usando Resend. Si el envio de correo
+falla, el feedback ya guardado no se pierde y la funcion responde con
+`email_sent: false`.
+
+Archivo de ejemplo para variables locales:
+
+```bash
+supabase/functions/.env.example
+```
+
+No guardar secretos reales en el repo. Para configurar produccion en Supabase:
+
+```bash
+supabase secrets set RESEND_API_KEY=TU_KEY_DE_RESEND
+supabase secrets set FEEDBACK_TO_EMAIL=TU_CORREO_DESTINO
+supabase functions deploy submit-feedback
+```
+
+Opcionalmente puedes configurar el remitente si tienes un dominio verificado en
+Resend:
+
+```bash
+supabase secrets set FEEDBACK_FROM_EMAIL="ScoreLeads <feedback@tu-dominio.cl>"
+```
+
+Para probar localmente con Supabase CLI, crea un archivo ignorado por git:
+
+```bash
+cp supabase/functions/.env.example supabase/functions/.env.local
+```
+
+Completa `RESEND_API_KEY` y luego levanta la funcion:
+
+```bash
+supabase functions serve submit-feedback --env-file supabase/functions/.env.local
+```
+
+Prueba remota esperada:
+
+1. Desplegar la funcion con los secrets configurados.
+2. Abrir la landing.
+3. Enviar feedback desde el formulario.
+4. Confirmar que el registro queda en `public.feedback`.
+5. Confirmar que llega correo a `FEEDBACK_TO_EMAIL`.
+6. Si falta `RESEND_API_KEY`, la funcion debe guardar el feedback y responder
+   `success: true` con `email_sent: false`.
+
+### Despliegue automatico con GitHub Actions
+
+El workflow `.github/workflows/deploy-supabase-functions.yml` despliega la Edge
+Function `submit-feedback` cuando hay push a las ramas `main`, `master` o
+`deploy` con cambios dentro de `supabase/functions/**`. Si Vercel usa otra rama
+como rama productiva, ajusta la lista `on.push.branches` del workflow para que
+coincida con esa rama.
+
+Las credenciales no van en Git. Configuralas en GitHub desde:
+
+`Settings` -> `Secrets and variables` -> `Actions` -> `New repository secret`
+
+Secrets requeridos:
+
+```text
+SUPABASE_ACCESS_TOKEN
+SUPABASE_PROJECT_REF
+RESEND_API_KEY
+FEEDBACK_TO_EMAIL
+FEEDBACK_FROM_EMAIL
+```
+
+Notas de configuracion:
+
+- `SUPABASE_ACCESS_TOKEN`: token personal para la CLI de Supabase. Se crea en
+  Supabase Dashboard -> Account -> Access Tokens.
+- `SUPABASE_PROJECT_REF`: ref del proyecto Supabase usado por Vercel. Lo puedes
+  ver en la URL del proyecto (`https://supabase.com/dashboard/project/<ref>`) o
+  en Project Settings -> General.
+- `RESEND_API_KEY`: API key de Resend.
+- `FEEDBACK_TO_EMAIL`: correo destino que recibira el feedback.
+- `FEEDBACK_FROM_EMAIL`: usa `ScoreLeads <onboarding@resend.dev>` mientras el
+  dominio propio no este verificado en Resend.
+
+El workflow configura los secrets de la Edge Function antes de desplegar:
+
+```bash
+supabase secrets set \
+  RESEND_API_KEY="$RESEND_API_KEY" \
+  FEEDBACK_TO_EMAIL="$FEEDBACK_TO_EMAIL" \
+  FEEDBACK_FROM_EMAIL="$FEEDBACK_FROM_EMAIL" \
+  --project-ref "$SUPABASE_PROJECT_REF"
+
+supabase functions deploy submit-feedback --project-ref "$SUPABASE_PROJECT_REF"
+```
+
+Para probar el despliegue:
+
+1. Ejecuta manualmente el workflow desde GitHub Actions con `Run workflow`.
+2. Confirma que el log no muestre valores de secrets, solo nombres de pasos.
+3. Abre la landing publicada por Vercel y envia feedback.
+4. Verifica que el registro quede en `public.feedback`.
+5. Verifica que llegue el correo de Resend al valor configurado en
+   `FEEDBACK_TO_EMAIL`.

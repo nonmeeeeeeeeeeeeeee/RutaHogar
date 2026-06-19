@@ -8,7 +8,10 @@ const navByRole = {
     { id: "recommendations", label: "Recomendaciones" },
   ],
   [roles.sales]: [{ id: "leads", label: "Dashboard Leads" }],
-  [roles.admin]: [{ id: "admin", label: "Panel Admin" }],
+  [roles.admin]: [
+    { id: "admin", label: "Panel Admin" },
+    { id: "leads", label: "Dashboard Leads" },
+  ],
 };
 
 export default function Navbar({ profile, page, currentScore, onNavigate, onLogout }) {
