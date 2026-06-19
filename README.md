@@ -1,6 +1,9 @@
-# ScoreLeads MVP
+# ScoreLeads
 
-Minimal MVP for pre-evaluating real-estate leads (React frontend + FastAPI backend).
+Software for pre-evaluating real-estate leads (React frontend + FastAPI backend).
+The current project focus is moving toward a final product version for year-end,
+prioritizing data consistency, correct persistence, traceability, and real user
+flows.
 
 Run backend:
 
@@ -16,9 +19,14 @@ Run frontend:
 
 ```bash
 cd frontend
+nvm use
 npm install
 npm run dev
 ```
+
+The frontend requires Node.js 20.19+ or 22.12+ because the current Vite
+toolchain does not support older Node versions. Node 22 is recommended; use
+`nvm use` from the repository root to pick the version declared in `.nvmrc`.
 
 Or use Makefile targets from the repo root:
 

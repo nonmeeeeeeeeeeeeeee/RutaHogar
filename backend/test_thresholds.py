@@ -24,7 +24,6 @@ def base_payload(**overrides):
         "dividendo_estimado": 500000,
         "complemento_renta": False,
         "declara_patrimonio": False,
-        "numero_cargas": 3,
     }
     data.update(overrides)
     return data
@@ -40,10 +39,13 @@ def test_joven_indefinido_sin_morosidad_buen_ahorro():
     assert "Ahorro" in joined(result, "positive_indicators")
 
 
-def test_edad_mas_plazo_genera_advertencia_sin_rechazo_automatico():
+def test_edad_mas_plazo_no_rechaza_ni_penaliza_en_backend():
+    base = calculate_score(base_payload())
     result = calculate_score(base_payload(edad=50, plazo_credito_hipotecario=30))
     assert result["classification"] in {"Alto", "Medio"}, result
-    assert "edad" in joined(result, "risks").lower()
+    assert result["score"] >= base["score"] - 5, result
+    text = f"{joined(result, 'risks')} {joined(result, 'recommendations')}".lower()
+    assert "edad" in text or "plazo" in text, result
 
 
 def test_contrato_plazo_fijo_alerta_y_baja_score():
@@ -149,6 +151,7 @@ def test_patrimonio_declared_mejora_moderada():
         )
     )
     assert con_patrimonio["score"] > sin_patrimonio["score"], con_patrimonio
+    assert con_patrimonio["classification"] == sin_patrimonio["classification"], con_patrimonio
     assert "Patrimonio" in joined(con_patrimonio, "positive_indicators")
 
 
@@ -165,7 +168,8 @@ def test_vehiculo_como_patrimonio_mejora_leve():
     )
     assert con_vehiculo["score"] > sin_patrimonio["score"], con_vehiculo
     assert con_vehiculo["score"] - sin_patrimonio["score"] <= 3, con_vehiculo
-    assert "Patrimonio" in joined(con_vehiculo, "positive_indicators")
+    assert con_vehiculo["classification"] == sin_patrimonio["classification"], con_vehiculo
+    assert "respaldo patrimonial" in joined(con_vehiculo, "positive_indicators").lower()
 
 
 def test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto():
@@ -194,7 +198,7 @@ def test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto():
         )
     )
     assert con_propiedad["score"] > sin_patrimonio["score"], con_propiedad
-    assert con_propiedad["classification"] != "Alto", con_propiedad
+    assert con_propiedad["classification"] == "Bajo", con_propiedad
     assert "Patrimonio" in joined(con_propiedad, "positive_indicators")
 
 
@@ -216,19 +220,26 @@ def test_patrimonio_no_compensa_morosidad_fuerte():
     assert result["classification"] == "Bajo", result
     assert "morosidad" in joined(result, "risks").lower()
     assert "Patrimonio" in joined(result, "positive_indicators")
+    assert result["score"] < 40, result
 
 
-def test_numero_cargas_antiguo_no_afecta_scoring():
-    sin_cargas = calculate_score(base_payload(numero_cargas=0))
-    con_cargas = calculate_score(base_payload(numero_cargas=5))
-    assert con_cargas["score"] == sin_cargas["score"]
-    assert con_cargas["classification"] == sin_cargas["classification"]
+def test_datos_contacto_no_afectan_scoring():
+    base = calculate_score(base_payload())
+    con_contacto = calculate_score(
+        base_payload(
+            full_name="Persona Demo",
+            email="persona@example.com",
+            phone="+56912345678",
+        )
+    )
+    assert con_contacto["score"] == base["score"]
+    assert con_contacto["classification"] == base["classification"]
 
 
 if __name__ == "__main__":
     tests = [
         test_joven_indefinido_sin_morosidad_buen_ahorro,
-        test_edad_mas_plazo_genera_advertencia_sin_rechazo_automatico,
+        test_edad_mas_plazo_no_rechaza_ni_penaliza_en_backend,
         test_contrato_plazo_fijo_alerta_y_baja_score,
         test_morosidad_alta_y_antigua_genera_advertencia_fuerte,
         test_complementario_valido_sin_morosidad_se_considera,
@@ -239,7 +250,7 @@ if __name__ == "__main__":
         test_vehiculo_como_patrimonio_mejora_leve,
         test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto,
         test_patrimonio_no_compensa_morosidad_fuerte,
-        test_numero_cargas_antiguo_no_afecta_scoring,
+        test_datos_contacto_no_afectan_scoring,
     ]
     for test in tests:
         test()

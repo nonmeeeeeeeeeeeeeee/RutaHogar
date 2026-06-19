@@ -1,7 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { comunasMvp } from "../constants/comunas";
-import { roleLabels, updateStoredProfile } from "../services/auth";
+import { plazoLabels, propertyLabels } from "../constants";
+import { updateStoredProfile } from "../services/auth";
 import { upsertProfile } from "../services/profileService";
+import { formatScore } from "../utils/helpers";
 import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 const objetivoLabels = {
@@ -11,8 +13,36 @@ const objetivoLabels = {
   conocer_propiedad: "Conocer que tipo de propiedad podría buscar",
 };
 
-import { formatScore } from "../utils/helpers";
-import { plazoLabels, propertyLabels } from "../constants";
+const contractLabels = {
+  indefinido: "Indefinido",
+  independiente: "Independiente",
+  plazo_fijo: "Plazo fijo",
+  honorarios_variable: "Honorarios / variable",
+};
+
+const continuityLabels = {
+  menos_6_meses: "Menos de 6 meses",
+  entre_6_y_12_meses: "Entre 6 y 12 meses",
+  entre_1_y_3_anios: "Entre 1 y 3 años",
+  mas_3_anios: "Más de 3 años",
+};
+
+const morosityLabels = {
+  no: "No",
+  si: "Sí",
+};
+
+const relationLabels = {
+  conyuge: "Cónyuge",
+  pareja_conviviente: "Pareja conviviente",
+  pareja_hijos_comun: "Pareja con hijos en común",
+  padre_madre: "Padre/Madre",
+  hijo_hija: "Hijo/a",
+  hermano_hermana: "Hermano/a",
+  otro_familiar: "Otro familiar",
+  amigo: "Amigo/a",
+  otro: "Otro",
+};
 
 const normalizeOnboarding = (data) => ({
   objetivo_principal: data?.objetivo_principal || "",
@@ -21,6 +51,35 @@ const normalizeOnboarding = (data) => ({
   plazo_compra: data?.plazo_compra || "",
   comuna_alternativa: data?.comuna_alternativa || "",
 });
+
+const emptyValue = "No registrado";
+
+function money(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return emptyValue;
+  return `$${Math.round(numericValue).toLocaleString("es-CL")}`;
+}
+
+function uf(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return emptyValue;
+  return `${numericValue.toLocaleString("es-CL")} UF`;
+}
+
+function text(value, labels) {
+  if (value === undefined || value === null || value === "") return emptyValue;
+  return labels?.[value] || value;
+}
+
+function dividendOrigin(input = {}) {
+  if (input.dividendo_estimado_origen === "manual" || input.dividendo_estimado_manual != null) {
+    return "Editado manualmente";
+  }
+  if (input.dividendo_estimado_origen === "calculado_referencial" || input.dividendo_estimado_calculado != null) {
+    return "Calculado automáticamente";
+  }
+  return emptyValue;
+}
 
 function formatPhoneDisplay(phone) {
   if (!phone) return "";
@@ -37,6 +96,7 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
   const [form, setForm] = useState(savedOnboarding);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [selectedEvaluation, setSelectedEvaluation] = useState(null);
 
   // Estado para edición de contacto
   const [contactEditing, setContactEditing] = useState(false);
@@ -56,6 +116,24 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
   useEffect(() => {
     setForm(savedOnboarding);
   }, [savedOnboarding]);
+
+  useEffect(() => {
+    if (!selectedEvaluation) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setSelectedEvaluation(null);
+      }
+    };
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedEvaluation]);
 
   // Al abrir el formulario de contacto, cargar los valores actuales del perfil
   const openContactEdit = () => {
@@ -262,10 +340,6 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                 <dt>Fecha nacimiento</dt>
                 <dd>{profile?.birth_date ? new Date(`${profile.birth_date}T00:00:00`).toLocaleDateString("es-CL") : "No declarada"}</dd>
               </div>
-              <div>
-                <dt>Rol</dt>
-                <dd>{roleLabels[profile?.role] || profile?.role || "Usuario"}</dd>
-              </div>
             </dl>
           )}
           {contactSuccess && <div className="success-message" style={{ marginTop: "0.75rem" }}>{contactSuccess}</div>}
@@ -377,11 +451,18 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
                   {/* <button className="secondary-button compact-button" type="button" onClick={() => onDeleteEvaluation(item.id)}>
                     Eliminar
                   </button> */}
+                  <button
+                    className="secondary-button compact-button"
+                    type="button"
+                    onClick={() => setSelectedEvaluation(item)}
+                  >
+                    Detalles
+                  </button>
                 </div>
                 <dl>
                   <div>
                     <dt>Comuna objetivo</dt>
-                    <dd>{item.input.comuna_objetivo || item.onboarding?.comuna_interes || "No declarada"}</dd>
+                    <dd>{item.input?.comuna_objetivo || item.onboarding?.comuna_interes || "No declarada"}</dd>
                   </div>
                   <div>
                     <dt>Objetivo inmobiliario</dt>
@@ -404,6 +485,179 @@ export default function ProfilePage({ profile, onboarding, evaluations, onSaveOn
           </div>
         )}
       </section>
+
+      {selectedEvaluation && (
+        <div
+          className="profile-detail-modal-overlay"
+          role="presentation"
+          onClick={() => setSelectedEvaluation(null)}
+        >
+          <section
+            className="profile-detail-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-evaluation-detail-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <header className="profile-detail-modal-header">
+              <div>
+                <span className="eyebrow">
+                  {new Date(selectedEvaluation.created_at).toLocaleString("es-CL")}
+                </span>
+                <h2 id="profile-evaluation-detail-title">Detalle de scoring</h2>
+              </div>
+              <button
+                className="secondary-button compact-button"
+                type="button"
+                onClick={() => setSelectedEvaluation(null)}
+              >
+                Cerrar
+              </button>
+            </header>
+
+            <div className={`profile-score-highlight ${selectedEvaluation.result?.classification?.toLowerCase() || ""}`}>
+              <div>
+                <span>Score</span>
+                <strong>{formatScore(selectedEvaluation.result?.score) ?? emptyValue}</strong>
+              </div>
+              <div>
+                <span>Clasificación</span>
+                <strong>{text(selectedEvaluation.result?.classification)}</strong>
+              </div>
+              <div className="profile-score-date">
+                <span>Fecha evaluación</span>
+                <strong>{new Date(selectedEvaluation.created_at).toLocaleDateString("es-CL")}</strong>
+              </div>
+            </div>
+
+            <div className="evaluation-detail-panel">
+              <div className="evaluation-detail-section">
+                <h4>Preguntas preliminares</h4>
+                <dl className="detail-grid">
+                  <div>
+                    <dt>Objetivo</dt>
+                    <dd>{text(selectedEvaluation.onboarding?.objetivo_principal, objetivoLabels)}</dd>
+                  </div>
+                  <div>
+                    <dt>Comuna principal</dt>
+                    <dd>{text(selectedEvaluation.onboarding?.comuna_interes || selectedEvaluation.input?.comuna_objetivo)}</dd>
+                  </div>
+                  <div>
+                    <dt>Comuna alternativa</dt>
+                    <dd>{text(selectedEvaluation.onboarding?.comuna_alternativa)}</dd>
+                  </div>
+                  <div>
+                    <dt>Tipo vivienda</dt>
+                    <dd>{text(selectedEvaluation.onboarding?.tipo_propiedad, propertyLabels)}</dd>
+                  </div>
+                  <div>
+                    <dt>Plazo compra</dt>
+                    <dd>{text(selectedEvaluation.onboarding?.plazo_compra, plazoLabels)}</dd>
+                  </div>
+                  <div>
+                    <dt>Monto vivienda</dt>
+                    <dd>{selectedEvaluation.input?.property_value_uf ? uf(selectedEvaluation.input.property_value_uf) : money(selectedEvaluation.input?.property_value_clp)}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <div className="evaluation-detail-section">
+                <h4>Datos financieros</h4>
+                <dl className="detail-grid">
+                  <div>
+                    <dt>Ingreso mensual</dt>
+                    <dd>{money(selectedEvaluation.input?.ingreso_mensual)}</dd>
+                  </div>
+                  <div>
+                    <dt>Deuda mensual</dt>
+                    <dd>{money(selectedEvaluation.input?.deuda_mensual)}</dd>
+                  </div>
+                  <div>
+                    <dt>Deuda total</dt>
+                    <dd>{money(selectedEvaluation.input?.deuda_total)}</dd>
+                  </div>
+                  <div>
+                    <dt>Ahorro</dt>
+                    <dd>{money(selectedEvaluation.input?.ahorro_disponible)}</dd>
+                  </div>
+                  <div>
+                    <dt>Dividendo estimado</dt>
+                    <dd>{money(selectedEvaluation.input?.dividendo_estimado)}</dd>
+                  </div>
+                  <div>
+                    <dt>Origen dividendo</dt>
+                    <dd>{dividendOrigin(selectedEvaluation.input)}</dd>
+                  </div>
+                  <div>
+                    <dt>Plazo crédito</dt>
+                    <dd>{selectedEvaluation.input?.plazo_credito_hipotecario ? `${selectedEvaluation.input.plazo_credito_hipotecario} años` : emptyValue}</dd>
+                  </div>
+                  <div>
+                    <dt>Tipo contrato</dt>
+                    <dd>{text(selectedEvaluation.input?.tipo_contrato, contractLabels)}</dd>
+                  </div>
+                  <div>
+                    <dt>Continuidad laboral</dt>
+                    <dd>{text(selectedEvaluation.input?.continuidad_laboral, continuityLabels)}</dd>
+                  </div>
+                  <div>
+                    <dt>Morosidad</dt>
+                    <dd>{text(selectedEvaluation.input?.morosidad_actual, morosityLabels)}</dd>
+                  </div>
+                </dl>
+              </div>
+
+              {selectedEvaluation.input?.declara_patrimonio && (
+                <div className="evaluation-detail-section">
+                  <h4>Patrimonio</h4>
+                  <dl className="detail-grid">
+                    <div>
+                      <dt>Vehículos</dt>
+                      <dd>{money(selectedEvaluation.input?.valor_vehiculos)}</dd>
+                    </div>
+                    <div>
+                      <dt>Inmuebles / otros</dt>
+                      <dd>{money(selectedEvaluation.input?.valor_inmuebles)}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+
+              {selectedEvaluation.input?.complemento_renta && (
+                <div className="evaluation-detail-section">
+                  <h4>Complemento de renta</h4>
+                  <dl className="detail-grid">
+                    <div>
+                      <dt>Ingreso complementario</dt>
+                      <dd>{money(selectedEvaluation.input?.ingreso_mensual_complementario)}</dd>
+                    </div>
+                    <div>
+                      <dt>Deuda complementaria</dt>
+                      <dd>{money(selectedEvaluation.input?.deuda_mensual_complementario)}</dd>
+                    </div>
+                    <div>
+                      <dt>Contrato complementario</dt>
+                      <dd>{text(selectedEvaluation.input?.tipo_contrato_complementario, contractLabels)}</dd>
+                    </div>
+                    <div>
+                      <dt>Continuidad complementaria</dt>
+                      <dd>{text(selectedEvaluation.input?.continuidad_laboral_complementario, continuityLabels)}</dd>
+                    </div>
+                    <div>
+                      <dt>Morosidad complementaria</dt>
+                      <dd>{text(selectedEvaluation.input?.morosidad_complementario, morosityLabels)}</dd>
+                    </div>
+                    <div>
+                      <dt>Relación</dt>
+                      <dd>{text(selectedEvaluation.input?.relacion_complementario, relationLabels)}</dd>
+                    </div>
+                  </dl>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
     </section>
   );

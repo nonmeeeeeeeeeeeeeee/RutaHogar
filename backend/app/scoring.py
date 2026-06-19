@@ -64,6 +64,18 @@ def clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
+def _money_to_clp(value: float, unit: str) -> float:
+    if unit == "uf":
+        return value * VALOR_UF_CLP
+    return value
+
+
+def _bounded_support(value: float, reference: float, max_support: float) -> float:
+    if value <= 0 or reference <= 0:
+        return 0.0
+    return min(max_support, max_support * min(value / reference, 1.0))
+
+
 def _unique(items: List[str]) -> List[str]:
     seen = set()
     result = []
@@ -154,6 +166,12 @@ def calculate_score(data: Dict) -> Dict:
     comp_contrato = data.get("tipo_contrato_complementario", data.get("complemento_tipo_contrato", ""))
     comp_continuidad = data.get("continuidad_laboral_complementario", data.get("complemento_continuidad_laboral", ""))
     comp_relacion = data.get("relacion_complementario", data.get("complemento_relacion", ""))
+    edad = int(data.get("edad", 0) or 0)
+    plazo_credito = int(data.get("plazo_credito_hipotecario", 0) or 0)
+    declara_patrimonio = bool(data.get("declara_patrimonio", False))
+    patrimonio_unit = data.get("patrimonio_unit", "clp")
+    valor_vehiculos = _money_to_clp(float(data.get("valor_vehiculos", 0) or 0), patrimonio_unit)
+    valor_inmuebles = _money_to_clp(float(data.get("valor_inmuebles", 0) or 0), patrimonio_unit)
 
     # Base score
     score = 50.0
@@ -307,6 +325,45 @@ def calculate_score(data: Dict) -> Dict:
         risk_codes.append("morosidad_media")
         riesgos.append("Existe incertidumbre sobre la situación de pagos actual.")
         recomendaciones.append("Revisar tu situación financiera antes de avanzar.")
+
+    if edad > 0 and plazo_credito > 0 and edad + plazo_credito > 70:
+        components["perfil_compra"] -= 3
+        score -= 3
+        risk_codes.append("edad_plazo")
+        riesgos.append("La edad declarada y el plazo hipotecario podrían requerir una revisión adicional.")
+        recomendaciones.append("Validar el plazo hipotecario posible según edad y condiciones asociadas al crédito.")
+
+    if declara_patrimonio and (valor_vehiculos > 0 or valor_inmuebles > 0):
+        referencia_respaldo = max(
+            precio_objetivo_clp * 0.10 if precio_objetivo_clp > 0 else 0,
+            ingreso * 6,
+            dividendo * 12,
+            1,
+        )
+        respaldo = (
+            _bounded_support(valor_vehiculos, referencia_respaldo, 3.0)
+            + _bounded_support(valor_inmuebles, referencia_respaldo * 2, 8.0)
+        )
+        factores_riesgo_fuertes = {
+            "morosidad_alta",
+            "deuda_alta",
+            "contrato_plazo_fijo",
+            "contrato_honorarios_variable",
+            "ingreso_dividendo",
+        }
+        if factores_riesgo_fuertes.intersection(risk_codes):
+            respaldo = min(respaldo, 4.0)
+            recomendaciones.append(
+                "El patrimonio declarado puede apoyar el perfil, pero no reemplaza ingreso, deuda, morosidad ni estabilidad laboral."
+            )
+
+        if respaldo > 0:
+            components["perfil_compra"] += respaldo
+            score += respaldo
+            if valor_inmuebles > 0:
+                positivos.append("Patrimonio declarado como respaldo financiero adicional")
+            else:
+                positivos.append("Vehículo declarado como respaldo patrimonial complementario")
 
     # Complemento de renta con evaluacion completa del co-deudor
     if complemento:

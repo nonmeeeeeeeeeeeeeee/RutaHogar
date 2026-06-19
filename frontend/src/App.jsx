@@ -37,6 +37,24 @@ const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
 const ANON_RESULT_KEY = "scoreleads_anon_result";
 const ANON_INPUT_KEY = "scoreleads_anon_input";
 
+const evaluationMatchFields = [
+  "ingreso_mensual",
+  "deuda_mensual",
+  "edad",
+  "ahorro_disponible",
+  "property_value_uf",
+  "property_value_clp",
+  "plazo_credito_hipotecario",
+  "dividendo_estimado",
+  "comuna_objetivo",
+  "tipo_contrato",
+  "continuidad_laboral",
+  "morosidad_actual",
+  "complemento_renta",
+  "ingreso_mensual_complementario",
+  "deuda_mensual_complementario",
+];
+
 function getChannel() {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -80,6 +98,101 @@ const hasCompletedOnboarding = (data) => {
       data.comuna_interes &&
       data.plazo_compra,
   );
+};
+
+const buildResultSnapshot = (scoreResult = {}) => ({
+  score: scoreResult.score,
+  classification: scoreResult.classification,
+  risks: normalizeDisplayList(scoreResult.risks),
+  recommendations: normalizeDisplayList(scoreResult.recommendations),
+  ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
+  improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+  positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
+  executive_summary: normalizeDisplayText(scoreResult.executive_summary),
+  commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
+  algorithm_version: scoreResult.algorithm_version,
+  component_scores: scoreResult.component_scores,
+});
+
+const buildFinancialInput = (input = {}) => ({
+  birth_date: input.birth_date,
+  ingreso_mensual: input.ingreso_mensual,
+  deuda_mensual: input.deuda_mensual,
+  edad: input.edad,
+  ahorro_disponible: input.ahorro_disponible,
+  property_value: input.property_value,
+  property_value_unit: input.property_value_unit,
+  property_value_uf: input.property_value_uf,
+  property_value_clp: input.property_value_clp,
+  property_value_source: input.property_value_source,
+  plazo_credito_hipotecario: input.plazo_credito_hipotecario,
+  dividendo_estimado: input.dividendo_estimado,
+  dividendo_esperado: input.dividendo_esperado,
+  dividendo_estimado_origen: input.dividendo_estimado_origen,
+  dividendo_estimado_calculado: input.dividendo_estimado_calculado,
+  dividendo_estimado_manual: input.dividendo_estimado_manual,
+  dividendo_tasa_anual_referencial: input.dividendo_tasa_anual_referencial,
+  dividendo_monto_credito_estimado_clp: input.dividendo_monto_credito_estimado_clp,
+  dividendo_monto_credito_estimado_uf: input.dividendo_monto_credito_estimado_uf,
+  dividendo_uf_referencial_clp: input.dividendo_uf_referencial_clp,
+  anonymous_flow_id: input.anonymous_flow_id,
+  comuna_objetivo: input.comuna_objetivo,
+  tipo_contrato: input.tipo_contrato,
+  continuidad_laboral: input.continuidad_laboral,
+  morosidad_actual: input.morosidad_actual,
+  monto_morosidad: input.monto_morosidad,
+  antiguedad_morosidad: input.antiguedad_morosidad,
+  complemento_renta: input.complemento_renta,
+  ingreso_mensual_complementario: input.ingreso_mensual_complementario,
+  deuda_mensual_complementario: input.deuda_mensual_complementario,
+  tipo_contrato_complementario: input.tipo_contrato_complementario,
+  continuidad_laboral_complementario:
+    input.continuidad_laboral_complementario,
+  morosidad_complementario: input.morosidad_complementario,
+  relacion_complementario: input.relacion_complementario,
+  declara_patrimonio: input.declara_patrimonio,
+  valor_vehiculos: input.valor_vehiculos,
+  valor_inmuebles: input.valor_inmuebles,
+  patrimonio_unit: input.patrimonio_unit,
+  consentimiento: input.consentimiento,
+  uf_value_clp: input.uf_value_clp,
+});
+
+const normalizeMatchValue = (value) => {
+  if (value === "" || value == null) return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : value;
+};
+
+const findMatchingEvaluation = (evaluations = [], pendingInput, pendingResult) => {
+  if (!pendingInput || !pendingResult) return null;
+  const anonymousFlowId = pendingInput.anonymous_flow_id;
+  if (anonymousFlowId) {
+    return evaluations.find((item) => item?.input?.anonymous_flow_id === anonymousFlowId) || null;
+  }
+
+  return evaluations.find((item) => {
+    if (!item?.input || !item?.result) return false;
+    const sameResult =
+      normalizeMatchValue(item.result.score) === normalizeMatchValue(pendingResult.score) &&
+      item.result.classification === pendingResult.classification;
+    if (!sameResult) return false;
+
+    return evaluationMatchFields.every(
+      (field) =>
+        normalizeMatchValue(item.input[field]) === normalizeMatchValue(pendingInput[field]),
+    );
+  }) || null;
+};
+
+const mergeOnboardingData = (currentData, pendingData) => {
+  if (!pendingData) return currentData || null;
+  return {
+    ...(currentData || {}),
+    ...pendingData,
+    migrated_from_anonymous_flow: true,
+    updated_at: new Date().toISOString(),
+  };
 };
 
 const getInitialPageForProfile = (profile) => {
@@ -307,6 +420,86 @@ export default function App() {
     setAnonInput(null);
   };
 
+  const storeOnboardingForProfile = (nextProfile, answers) => {
+    const profileKey = isUUID(nextProfile?.id)
+      ? nextProfile.id
+      : isUUID(nextProfile?.user_id)
+        ? nextProfile.user_id
+        : nextProfile?.email || nextProfile?.id || "local-user";
+    const next = {
+      ...onboarding,
+      [profileKey]: answers,
+    };
+    setOnboarding(next);
+    localStorage.setItem(ONBOARDING_KEY, JSON.stringify(next));
+  };
+
+  const migrateAnonymousSession = async (nextAuth) => {
+    const pendingOnboarding = anonOnboarding;
+    const pendingResult = anonResult;
+    const pendingInput = anonInput;
+    const nextProfile = nextAuth?.profile;
+
+    if (
+      !nextProfile ||
+      nextProfile.role !== roles.user ||
+      (!pendingOnboarding && !pendingResult && !pendingInput)
+    ) {
+      return { auth: nextAuth, savedEvaluation: null, targetPage: getInitialPageForProfile(nextProfile) };
+    }
+
+    const nextUserId = isUUID(nextProfile?.id)
+      ? nextProfile.id
+      : isUUID(nextProfile?.user_id)
+        ? nextProfile.user_id
+        : nextProfile?.id || nextProfile?.email || null;
+    const onboardingToSave = mergeOnboardingData(nextProfile.onboarding_data, pendingOnboarding);
+    let migratedAuth = nextAuth;
+    let migratedProfile = nextProfile;
+
+    if (nextUserId && onboardingToSave) {
+      const savedProfile = await updateProfileOnboarding(nextUserId, onboardingToSave);
+      migratedProfile = updateStoredProfile({
+        ...nextProfile,
+        ...savedProfile,
+        email: nextProfile.email,
+        full_name: savedProfile?.full_name || nextProfile.full_name,
+        phone: savedProfile?.phone || nextProfile.phone,
+        role: savedProfile?.role || nextProfile.role,
+        onboarding_data: onboardingToSave,
+      });
+      migratedAuth = { ...nextAuth, profile: migratedProfile };
+      storeOnboardingForProfile(migratedProfile, onboardingToSave);
+    }
+
+    let savedEvaluation = null;
+    if (pendingResult && pendingInput) {
+      const financialInput = buildFinancialInput(pendingInput);
+      const existingEvaluations = nextUserId
+        ? await getEvaluations(nextUserId, migratedProfile?.role)
+        : [];
+      const existingEvaluation = findMatchingEvaluation(existingEvaluations, financialInput, pendingResult);
+      if (existingEvaluation) {
+        savedEvaluation = existingEvaluation;
+      } else {
+        savedEvaluation = await createEvaluation(nextUserId, {
+          email: migratedProfile?.email || "sin-email",
+          onboarding: onboardingToSave || null,
+          input: financialInput,
+          result: pendingResult,
+          channel: getChannel(),
+        });
+      }
+    }
+
+    clearAnonSession();
+    return {
+      auth: migratedAuth,
+      savedEvaluation,
+      targetPage: pendingResult && pendingInput ? "recommendations" : getInitialPageForProfile(migratedProfile),
+    };
+  };
+
   const handleAnonOnboardingComplete = (answers) => {
     const data = { ...answers, updated_at: new Date().toISOString() };
     sessionStorage.setItem(ANON_ONBOARDING_KEY, JSON.stringify(data));
@@ -315,27 +508,22 @@ export default function App() {
   };
 
   const handleAnonResult = (scoreResult, input) => {
-    const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: normalizeDisplayList(scoreResult.risks),
-      recommendations: normalizeDisplayList(scoreResult.recommendations),
-      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
-      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
-      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
-      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
-      algorithm_version: scoreResult.algorithm_version,
-      component_scores: scoreResult.component_scores,
-    };
+    const resultSnapshot = buildResultSnapshot(scoreResult);
+    const anonymousFlowId =
+      input.anonymous_flow_id ||
+      (window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()));
+    const financialInput = buildFinancialInput({
+      ...input,
+      anonymous_flow_id: anonymousFlowId,
+    });
     sessionStorage.setItem(ANON_RESULT_KEY, JSON.stringify(resultSnapshot));
-    sessionStorage.setItem(ANON_INPUT_KEY, JSON.stringify(input));
+    sessionStorage.setItem(ANON_INPUT_KEY, JSON.stringify(financialInput));
     setAnonResult(resultSnapshot);
-    setAnonInput(input);
+    setAnonInput(financialInput);
     setPage("signup-offer");
   };
 
-  const handleSignupFromOffer = async ({ full_name, email, password, birth_date, consentData }) => {
+  const handleSignupFromOffer = async ({ full_name, email, phone, password, birth_date, consentData }) => {
     setSignupOfferLoading(true);
     setSignupOfferError("");
     let nextAuth = null;
@@ -344,6 +532,7 @@ export default function App() {
         email,
         password,
         full_name,
+        phone,
         birth_date,
         role: roles.user,
       });
@@ -356,26 +545,16 @@ export default function App() {
         await saveConsent(newUserId, consentData);
       }
 
-      let savedEvaluation = null;
-      if (anonResult && anonInput) {
-        savedEvaluation = await createEvaluation(newUserId, {
-          email: newProfile?.email || "sin-email",
-          onboarding: anonOnboarding || null,
-          input: anonInput,
-          result: anonResult,
-          channel: getChannel(),
-        });
-      }
+      const migration = await migrateAnonymousSession(nextAuth);
+      nextAuth = migration.auth;
 
       // Batch all state updates together after all async work is done
-      clearAnonSession();
       setConsentGranted(true);
-      if (savedEvaluation) {
-        prependEvaluation(savedEvaluation);
-        setEvaluations([savedEvaluation]);
+      if (migration.savedEvaluation) {
+        prependEvaluation(migration.savedEvaluation);
       }
       setAuth(nextAuth);
-      setPage("recommendations");
+      setPage(migration.targetPage);
     } catch (err) {
       console.error(err);
       if (nextAuth?.profile) {
@@ -401,14 +580,27 @@ export default function App() {
   };
 
   const handleAuth = (nextAuth) => {
-    clearAnonSession();
-    setAuth(nextAuth);
     setResult(null);
     setResultSaved(null);
     setDataError("");
     setTrackingGoals([]);
     setConsentGranted(false);
-    setPage(getInitialPageForProfile(nextAuth.profile));
+    migrateAnonymousSession(nextAuth)
+      .then((migration) => {
+        if (migration.savedEvaluation) {
+          prependEvaluation(migration.savedEvaluation);
+        }
+        setAuth(migration.auth);
+        setPage(migration.targetPage);
+      })
+      .catch((err) => {
+        console.error(err);
+        setAuth(nextAuth);
+        setDataError(
+          "Iniciaste sesion, pero no pudimos migrar la preevaluación previa. Tus datos temporales se conservaron para reintentar.",
+        );
+        setPage(getInitialPageForProfile(nextAuth.profile));
+      });
   };
 
   const saveOnboardingAnswers = async (answers) => {
@@ -470,51 +662,8 @@ export default function App() {
   };
 
   const handleResult = async (scoreResult, input) => {
-    const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: normalizeDisplayList(scoreResult.risks),
-      recommendations: normalizeDisplayList(scoreResult.recommendations),
-      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
-      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
-      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
-      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
-      algorithm_version: scoreResult.algorithm_version,
-      component_scores: scoreResult.component_scores,
-    };
-
-    const financialInput = {
-      ingreso_mensual: input.ingreso_mensual,
-      deuda_mensual: input.deuda_mensual,
-      edad: input.edad,
-      ahorro_disponible: input.ahorro_disponible,
-      property_value: input.property_value,
-      property_value_unit: input.property_value_unit,
-      property_value_uf: input.property_value_uf,
-      property_value_clp: input.property_value_clp,
-      plazo_credito_hipotecario: input.plazo_credito_hipotecario,
-      dividendo_estimado: input.dividendo_estimado,
-      comuna_objetivo: input.comuna_objetivo,
-      tipo_contrato: input.tipo_contrato,
-      continuidad_laboral: input.continuidad_laboral,
-      morosidad_actual: input.morosidad_actual,
-      monto_morosidad: input.monto_morosidad,
-      antiguedad_morosidad: input.antiguedad_morosidad,
-      complemento_renta: input.complemento_renta,
-      ingreso_mensual_complementario: input.ingreso_mensual_complementario,
-      deuda_mensual_complementario: input.deuda_mensual_complementario,
-      tipo_contrato_complementario: input.tipo_contrato_complementario,
-      continuidad_laboral_complementario:
-        input.continuidad_laboral_complementario,
-      morosidad_complementario: input.morosidad_complementario,
-      relacion_complementario: input.relacion_complementario,
-      declara_patrimonio: input.declara_patrimonio,
-      valor_vehiculos: input.valor_vehiculos,
-      valor_inmuebles: input.valor_inmuebles,
-      patrimonio_unit: input.patrimonio_unit,
-      uf_value_clp: input.uf_value_clp,
-    };
+    const resultSnapshot = buildResultSnapshot(scoreResult);
+    const financialInput = buildFinancialInput(input);
 
     try {
       setResult(resultSnapshot);
@@ -724,6 +873,7 @@ export default function App() {
               <ScoreForm
                 targetCommune={anonOnboarding?.comuna_interes}
                 objective={anonOnboarding?.objetivo_principal}
+                onboardingData={anonOnboarding}
                 birthDate={null}
                 profile={null}
                 consentGranted={true}
@@ -888,6 +1038,7 @@ export default function App() {
           <ScoreForm
             targetCommune={userOnboarding?.comuna_interes}
             objective={userOnboarding?.objetivo_principal}
+            onboardingData={userOnboarding}
             birthDate={profile?.birth_date}
             profile={profile}
             consentGranted={consentGranted}
