@@ -126,57 +126,101 @@ async function sendFeedbackEmail(feedback: ReturnType<typeof normalizePayload>, 
     throw new Error("Faltan RESEND_API_KEY o FEEDBACK_TO_EMAIL.");
   }
 
-  const subject = feedback.name
-    ? `Nuevo feedback de ${feedback.name} - ScoreLeads`
-    : "Nuevo feedback anónimo - ScoreLeads";
-  const displayName = feedback.name || "Anónimo";
-  const contactEmail = feedback.email || "No informado";
-  const contactPhone = feedback.phone || "No informado";
-  const createdAtLabel = new Date(createdAt).toLocaleString("es-CL", { timeZone: "America/Santiago" });
+  const fallback = "No informado";
+  const testerType = feedback.tester_type || fallback;
+  const clarityRating = feedback.clarity_rating || fallback;
+  const subject = `Nuevo feedback ScoreLeads · ${testerType} · Nota ${clarityRating}/5`;
+  const displayName = feedback.name || fallback;
+  const contactEmail = feedback.email || fallback;
+  const contactPhone = feedback.phone || fallback;
+  const firstImpression = feedback.first_impression || fallback;
+  const confusingPart = feedback.confusing_part || fallback;
+  const improvementSuggestion = feedback.improvement_suggestion || fallback;
+  const createdAtLabel = new Date(createdAt).toLocaleString("es-CL", { timeZone: "America/Santiago" }) || fallback;
+
+  const safe = {
+    displayName: escapeHtml(displayName),
+    contactEmail: escapeHtml(contactEmail),
+    contactPhone: escapeHtml(contactPhone),
+    testerType: escapeHtml(testerType),
+    clarityRating: escapeHtml(String(clarityRating)),
+    createdAtLabel: escapeHtml(createdAtLabel),
+    firstImpression: escapeHtml(firstImpression),
+    confusingPart: escapeHtml(confusingPart),
+    improvementSuggestion: escapeHtml(improvementSuggestion),
+  };
 
   const html = `
-    <h2>Nuevo feedback recibido</h2>
-    <table style="border-collapse:collapse;width:100%;max-width:680px;">
-      <tr><td style="padding:8px;font-weight:bold;">Nombre</td><td style="padding:8px;">${escapeHtml(displayName)}</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Perfil tester</td><td style="padding:8px;">${escapeHtml(feedback.tester_type)}</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Nota claridad</td><td style="padding:8px;">${feedback.clarity_rating}/5</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Fecha</td><td style="padding:8px;">${escapeHtml(createdAtLabel)}</td></tr>
-    </table>
+    <div style="margin:0;padding:0;background-color:#eef3f8;color:#172033;font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;background-color:#eef3f8;">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;max-width:640px;border-collapse:collapse;background-color:#ffffff;border:1px solid #d7e0ea;border-radius:12px;">
+              <tr>
+                <td style="padding:28px 32px;background-color:#246354;border-radius:12px 12px 0 0;">
+                  <img src="https://score-leads-one.vercel.app/Logo%20ScoreLeads.png" alt="ScoreLeads" width="160" style="display:block;width:100%;max-width:160px;height:auto;border:0;margin:0 0 16px;">
+                  <div style="font-size:14px;line-height:20px;font-weight:700;letter-spacing:0.4px;color:#ffffff;">ScoreLeads</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:32px;">
+                  <h1 style="margin:0 0 8px;font-size:26px;line-height:34px;color:#172033;">Nuevo feedback recibido</h1>
+                  <p style="margin:0 0 28px;font-size:15px;line-height:23px;color:#526174;">Respuesta enviada desde la landing de ScoreLeads</p>
 
-    <h3>Comentarios</h3>
-    <p><strong>Primera impresión:</strong><br>${escapeHtml(feedback.first_impression || "No informado")}</p>
-    <p><strong>Parte confusa o difícil:</strong><br>${escapeHtml(feedback.confusing_part || "No informado")}</p>
-    <p><strong>Sugerencia de mejora:</strong><br>${escapeHtml(feedback.improvement_suggestion || "No informado")}</p>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;background-color:#f4fbf7;border:1px solid #a7dbc2;border-radius:8px;">
+                    <tr><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;font-weight:700;color:#246354;width:42%;">Nombre</td><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;line-height:20px;color:#172033;">${safe.displayName}</td></tr>
+                    <tr><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;font-weight:700;color:#246354;">Perfil tester</td><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;line-height:20px;color:#172033;">${safe.testerType}</td></tr>
+                    <tr><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;font-weight:700;color:#246354;">Nota claridad</td><td style="padding:13px 16px;border-bottom:1px solid #d7e0ea;font-size:14px;line-height:20px;color:#172033;"><strong>${safe.clarityRating}/5</strong></td></tr>
+                    <tr><td style="padding:13px 16px;font-size:14px;font-weight:700;color:#246354;">Fecha</td><td style="padding:13px 16px;font-size:14px;line-height:20px;color:#172033;">${safe.createdAtLabel}</td></tr>
+                  </table>
 
-    <h3>Contacto</h3>
-    <table style="border-collapse:collapse;width:100%;max-width:680px;">
-      <tr><td style="padding:8px;font-weight:bold;">Nombre</td><td style="padding:8px;">${escapeHtml(displayName)}</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Correo</td><td style="padding:8px;">${escapeHtml(contactEmail)}</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Teléfono</td><td style="padding:8px;">${escapeHtml(contactPhone)}</td></tr>
-      <tr><td style="padding:8px;font-weight:bold;">Perfil</td><td style="padding:8px;">${escapeHtml(feedback.tester_type)}</td></tr>
-    </table>
+                  <h2 style="margin:30px 0 14px;font-size:19px;line-height:26px;color:#172033;">Comentarios</h2>
+                  <div style="margin:0 0 12px;padding:16px;background-color:#fbfdff;border-left:4px solid #45a68e;"><div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#246354;">Primera impresión</div><div style="font-size:14px;line-height:22px;color:#334155;white-space:pre-wrap;">${safe.firstImpression}</div></div>
+                  <div style="margin:0 0 12px;padding:16px;background-color:#fbfdff;border-left:4px solid #45a68e;"><div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#246354;">Parte confusa o difícil</div><div style="font-size:14px;line-height:22px;color:#334155;white-space:pre-wrap;">${safe.confusingPart}</div></div>
+                  <div style="margin:0 0 28px;padding:16px;background-color:#fbfdff;border-left:4px solid #45a68e;"><div style="margin-bottom:6px;font-size:13px;font-weight:700;color:#246354;">Sugerencia de mejora</div><div style="font-size:14px;line-height:22px;color:#334155;white-space:pre-wrap;">${safe.improvementSuggestion}</div></div>
+
+                  <h2 style="margin:0 0 14px;font-size:19px;line-height:26px;color:#172033;">Contacto</h2>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%;border-collapse:collapse;border:1px solid #d7e0ea;">
+                    <tr><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;background-color:#f8fafc;font-size:13px;font-weight:700;color:#526174;width:32%;">Nombre</td><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;font-size:14px;color:#172033;">${safe.displayName}</td></tr>
+                    <tr><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;background-color:#f8fafc;font-size:13px;font-weight:700;color:#526174;">Correo</td><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;font-size:14px;color:#172033;">${safe.contactEmail}</td></tr>
+                    <tr><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;background-color:#f8fafc;font-size:13px;font-weight:700;color:#526174;">Teléfono</td><td style="padding:11px 14px;border-bottom:1px solid #d7e0ea;font-size:14px;color:#172033;">${safe.contactPhone}</td></tr>
+                    <tr><td style="padding:11px 14px;background-color:#f8fafc;font-size:13px;font-weight:700;color:#526174;">Perfil</td><td style="padding:11px 14px;font-size:14px;color:#172033;">${safe.testerType}</td></tr>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td align="center" style="padding:22px 32px;background-color:#f8fafc;border-top:1px solid #d7e0ea;border-radius:0 0 12px 12px;">
+                  <p style="margin:0 0 8px;font-size:12px;line-height:18px;color:#64748b;">Este correo fue generado automáticamente por ScoreLeads.</p>
+                  <a href="https://score-leads-one.vercel.app/" style="font-size:13px;line-height:20px;font-weight:700;color:#246354;text-decoration:underline;">Visitar ScoreLeads</a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </div>
   `;
 
   const text = [
     `Nombre: ${displayName}`,
-    `Perfil tester: ${feedback.tester_type}`,
-    `Nota claridad: ${feedback.clarity_rating}/5`,
+    `Perfil tester: ${testerType}`,
+    `Nota claridad: ${clarityRating}/5`,
     `Fecha: ${createdAtLabel}`,
     "",
     "Primera impresión:",
-    feedback.first_impression || "No informado",
+    firstImpression,
     "",
     "Parte confusa o difícil:",
-    feedback.confusing_part || "No informado",
+    confusingPart,
     "",
     "Sugerencia de mejora:",
-    feedback.improvement_suggestion || "No informado",
+    improvementSuggestion,
     "",
     "Contacto:",
     `Nombre: ${displayName}`,
     `Correo: ${contactEmail}`,
     `Teléfono: ${contactPhone}`,
-    `Perfil: ${feedback.tester_type}`,
+    `Perfil: ${testerType}`,
   ].join("\n");
 
   const response = await fetch("https://api.resend.com/emails", {
