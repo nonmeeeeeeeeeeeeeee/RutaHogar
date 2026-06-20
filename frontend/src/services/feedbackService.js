@@ -13,6 +13,7 @@ function normalizeFeedbackPayload(payload = {}) {
   return {
     name: cleanText(payload.name) || null,
     email: cleanText(payload.email) || null,
+    phone: cleanText(payload.phone) || null,
     tester_type: cleanText(payload.tester_type) || "Otro",
     first_impression: cleanText(payload.first_impression) || null,
     confusing_part: cleanText(payload.confusing_part) || null,

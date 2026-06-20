@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { submitFeedback } from "../services/feedbackService";
 
 export const landingStyles = `
@@ -37,6 +37,16 @@ export const landingStyles = `
   font-family: inherit;
 }
 .sl-nav-cta:hover { background: #142348; }
+.sl-nav-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.sl-nav-secondary,
+.sl-nav-link {
+  padding: 9px 14px; border-radius: 8px; min-height: unset; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+}
+.sl-nav-secondary { background: #fff; color: #1B2F5E; border: 1px solid #cbd5e1; }
+.sl-nav-secondary:hover { background: #EEF3F8; }
+.sl-nav-link { background: transparent; color: #4a5568; border: none; }
+.sl-nav-link:hover { background: #EEF3F8; color: #1B2F5E; }
 
 /* ── Hero ── */
 .sl-hero {
@@ -322,6 +332,9 @@ export const landingStyles = `
   .sl-hero h1        { font-size: 28px; }
   .sl-score-inner    { grid-template-columns: 1fr; }
   .sl-nav            { padding: .875rem 1.25rem; }
+  .sl-nav-actions    { gap: 4px; }
+  .sl-nav-secondary,
+  .sl-nav-link       { padding: 8px 10px; }
   .sl-hero           { padding: 3rem 1.25rem; }
   .sl-steps-section,
   .sl-benefits-section,
@@ -370,12 +383,29 @@ const testerTypes = ["Usuario", "Ejecutivo", "Banco", "Inmobiliaria", "Otro"];
 const initialFeedback = {
   name: "",
   email: "",
+  phone: "",
   tester_type: "Usuario",
   first_impression: "",
   confusing_part: "",
   improvement_suggestion: "",
   clarity_rating: "5",
 };
+
+const testerTypeByRole = {
+  usuario: "Usuario",
+  ejecutivo: "Ejecutivo",
+  admin: "Otro",
+};
+
+function buildInitialFeedback(profile) {
+  return {
+    ...initialFeedback,
+    name: profile?.full_name || "",
+    email: profile?.email || "",
+    phone: profile?.phone || "",
+    tester_type: profile ? testerTypeByRole[profile.role] || "Otro" : initialFeedback.tester_type,
+  };
+}
 
 function FaqItem({ question, answer }) {
   const [open, setOpen] = useState(false);
@@ -392,10 +422,15 @@ function FaqItem({ question, answer }) {
   );
 }
 
-function FeedbackSection() {
-  const [form, setForm] = useState(initialFeedback);
+function FeedbackSection({ profile }) {
+  const [form, setForm] = useState(() => buildInitialFeedback(profile));
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    setForm(buildInitialFeedback(profile));
+    setStatus(null);
+  }, [profile?.id, profile?.full_name, profile?.email, profile?.phone, profile?.role]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -422,7 +457,7 @@ function FeedbackSection() {
 
     try {
       await submitFeedback(form);
-      setForm(initialFeedback);
+      setForm(buildInitialFeedback(profile));
       setStatus({
         type: "ok",
         message: "Gracias, recibimos tu feedback.",
@@ -466,6 +501,7 @@ function FeedbackSection() {
                 value={form.name}
                 onChange={handleChange}
                 autoComplete="name"
+                placeholder="No informado"
               />
             </label>
             <label>
@@ -476,11 +512,23 @@ function FeedbackSection() {
                 value={form.email}
                 onChange={handleChange}
                 autoComplete="email"
+                placeholder="No informado"
               />
             </label>
           </div>
 
           <div className="sl-feedback-row">
+            <label>
+              Teléfono opcional
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                autoComplete="tel"
+                placeholder="No informado"
+              />
+            </label>
             <label>
               Perfil del tester
               <select name="tester_type" value={form.tester_type} onChange={handleChange}>
@@ -489,15 +537,16 @@ function FeedbackSection() {
                 ))}
               </select>
             </label>
-            <label>
-              Nota de claridad
-              <select name="clarity_rating" value={form.clarity_rating} onChange={handleChange}>
-                {[5, 4, 3, 2, 1].map((rating) => (
-                  <option key={rating} value={rating}>{rating}</option>
-                ))}
-              </select>
-            </label>
           </div>
+
+          <label>
+            Nota de claridad
+            <select name="clarity_rating" value={form.clarity_rating} onChange={handleChange}>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <option key={rating} value={rating}>{rating}</option>
+              ))}
+            </select>
+          </label>
 
           <label>
             Primera impresión: ¿qué entendiste que hace ScoreLeads?
@@ -542,7 +591,22 @@ function FeedbackSection() {
   );
 }
 
-export default function LandingPage({ onStart, onLogin }) {
+export default function LandingPage({
+  profile,
+  onStart,
+  onLogin,
+  onRegister,
+  onDashboard,
+  onProfile,
+  onLogout,
+}) {
+  const isLoggedIn = Boolean(profile);
+  const primaryActionLabel = !isLoggedIn
+    ? "Evalúa tu perfil gratis"
+    : profile.role === "usuario"
+      ? "Continuar con mi perfil"
+      : "Ir al dashboard";
+
   return (
     <>
       <style>{landingStyles}</style>
@@ -551,9 +615,21 @@ export default function LandingPage({ onStart, onLogin }) {
         {/* Nav */}
         <nav className="sl-nav">
           <img src="/Logo ScoreLeads.png" alt="ScoreLeads" className="sl-logo-img" />
-          <button type="button" className="sl-nav-cta" onClick={onLogin}>
-            Iniciar sesión
-          </button>
+          <div className="sl-nav-actions">
+            {isLoggedIn ? (
+              <>
+                {onProfile && (
+                  <button type="button" className="sl-nav-secondary" onClick={onProfile}>Perfil</button>
+                )}
+                <button type="button" className="sl-nav-link" onClick={onLogout}>Cerrar sesión</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="sl-nav-secondary" onClick={onRegister}>Registrarse</button>
+                <button type="button" className="sl-nav-cta" onClick={onLogin}>Iniciar sesión</button>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* 1. Hero */}
@@ -569,13 +645,13 @@ export default function LandingPage({ onStart, onLogin }) {
             </p>
             <div className="sl-hero-btns">
               <button type="button" className="sl-btn-primary" onClick={onStart}>
-                Evalúa tu perfil gratis
+                {primaryActionLabel}
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <button type="button" className="sl-btn-ghost" onClick={onLogin}>
-                Ya tengo cuenta
+              <button type="button" className="sl-btn-ghost" onClick={isLoggedIn ? onDashboard : onLogin}>
+                {isLoggedIn ? "Ir al dashboard" : "Ya tengo cuenta"}
               </button>
             </div>
             <div className="sl-hero-trust">
@@ -633,9 +709,6 @@ export default function LandingPage({ onStart, onLogin }) {
                   </li>
                 ))}
               </ul>
-              <button type="button" className="sl-btn-primary" onClick={onStart}>
-                Evalúa tu perfil ahora
-              </button>
             </div>
 
             <div className="sl-score-card">
@@ -768,15 +841,19 @@ export default function LandingPage({ onStart, onLogin }) {
           </div>
         </section>
 
-        <FeedbackSection />
+        <FeedbackSection profile={profile} />
 
         {/* Final CTA */}
         <section className="sl-cta-section">
           <div className="sl-cta-inner">
             <h2>¿Listo para conocer tu score?</h2>
-            <p>Es gratis, toma unos minutos y no necesitas crear una cuenta para empezar.</p>
+            <p>
+              {isLoggedIn
+                ? "Tu sesión está activa y puedes continuar con tu precalificación."
+                : "Es gratis, toma unos minutos y no necesitas crear una cuenta para empezar."}
+            </p>
             <button type="button" className="sl-btn-white" onClick={onStart}>
-              Evalúa tu perfil gratis
+              {primaryActionLabel}
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -809,8 +886,8 @@ export default function LandingPage({ onStart, onLogin }) {
           <p className="sl-footer-note">
             © 2025 ScoreLeads · Herramienta orientativa, no constituye evaluación crediticia formal.
           </p>
-          <button type="button" className="sl-footer-link" onClick={onLogin}>
-            Iniciar sesión
+          <button type="button" className="sl-footer-link" onClick={isLoggedIn ? onDashboard : onLogin}>
+            {isLoggedIn ? "Ir al dashboard" : "Iniciar sesión"}
           </button>
         </footer>
 

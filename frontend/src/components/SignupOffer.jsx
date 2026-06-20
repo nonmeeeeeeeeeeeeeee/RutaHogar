@@ -207,7 +207,7 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
             <div className="consent-required">
               <p>Para crear tu cuenta debes aceptar la autorización de tratamiento de datos personales.</p>
               <button type="button" className="consent-accept-btn" onClick={() => setShowConsent(true)}>
-                Aceptar términos de datos
+                Ver términos y condiciones
               </button>
             </div>
           )}

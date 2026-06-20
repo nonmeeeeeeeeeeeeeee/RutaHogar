@@ -212,7 +212,7 @@ const getInitialPageForProfile = (profile) => {
 };
 
 const getPublicPageForPath = (pathname, profile, hasAnonOnboarding) => {
-  if (pathname === "/") return profile ? getInitialPageForProfile(profile) : "landing";
+  if (pathname === "/") return "landing";
   if (pathname === "/login" || pathname === "/registro") {
     return profile ? getInitialPageForProfile(profile) : "auth";
   }
@@ -495,6 +495,12 @@ export default function App() {
   useEffect(() => {
     if (page === "leads" && (profile?.role === roles.sales || profile?.role === roles.admin)) markLeadsSeen();
   }, [page]);
+
+  useEffect(() => {
+    if (page === "signup-offer" && anonResult) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [page, anonResult]);
 
   useEffect(() => {
     let active = true;
@@ -922,6 +928,28 @@ export default function App() {
   const handleNotificationClick = () => navigateToPage("leads");
 
   const handleDismissNotification = () => markLeadsSeen();
+
+  if (page === "landing") {
+    const openDashboard = () => navigate(getDefaultRouteForProfile(profile));
+
+    return (
+      <LandingPage
+        profile={profile}
+        onStart={
+          !profile
+            ? () => navigateToPage("anon-onboarding")
+            : profile.role === roles.user
+              ? startEvaluation
+              : openDashboard
+        }
+        onLogin={() => navigateToPage("auth")}
+        onRegister={() => navigateToPage("auth", { authMode: "signup" })}
+        onDashboard={openDashboard}
+        onProfile={profile?.role === roles.user ? () => navigateToPage("profile") : null}
+        onLogout={handleLogout}
+      />
+    );
+  }
 
   if (!profile) {
     if (page === "auth") {
