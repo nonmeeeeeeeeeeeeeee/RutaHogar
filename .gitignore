@@ -3,6 +3,10 @@ backend/.venv/
 frontend/.env
 backend/ .env
 .env
+.env.local
+supabase/functions/.env.local
+supabase/.env
+supabase/.temp/
 
 # Dependencies
 node_modules/
@@ -19,6 +23,8 @@ frontend/dist/
 **/.obsidian/workspace.json
 .vercel
 .env*
+!.env.example
+!**/.env.example
 
 stuff.txt
 
