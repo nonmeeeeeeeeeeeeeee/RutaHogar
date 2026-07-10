@@ -19,7 +19,7 @@ import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
-import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
+import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
@@ -115,7 +115,7 @@ const buildResultSnapshot = (scoreResult = {}) => ({
   risks: normalizeDisplayList(scoreResult.risks),
   recommendations: normalizeDisplayList(scoreResult.recommendations),
   ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-  improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+  improvement_plan: normalizeImprovementPlan(scoreResult.improvement_plan),
   positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
   executive_summary: normalizeDisplayText(scoreResult.executive_summary),
   commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
