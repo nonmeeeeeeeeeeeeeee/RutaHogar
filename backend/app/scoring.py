@@ -11,8 +11,9 @@ SCORING_VERSION = "1.0.1"
 # Valor configurable usado para convertir los precios referenciales desde UF a CLP.
 VALOR_UF_CLP = 40695
 
-# Tabla simple para el MVP. Representa precios promedio referenciales de propiedades
-# objetivo por comuna, no tasaciones reales ni valores comerciales garantizados.
+# Tabla referencial heredada para estimacion inicial. Representa precios promedio
+# referenciales de propiedades objetivo por comuna, no tasaciones reales ni
+# valores comerciales garantizados.
 PRECIOS_REFERENCIA_UF = {
     "Buin": 2800,
     "Calera de Tango": 4300,
