@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import AcademiaFinanciera from "./components/AcademiaFinanciera";
 import AdminPanel from "./components/AdminPanel";
 import AnonHeader from "./components/AnonHeader";
 import AuthPanel from "./components/AuthPanel";
@@ -261,6 +262,7 @@ const getRouteForPage = (page, profile, options = {}) => {
   if (page === "anon-onboarding" || page === "anon-evaluate") return "/pre-evaluacion";
   if (page === "home" || page === "admin" || page === "tracking") return "/dashboard";
   if (page === "recommendations") return "/recomendaciones";
+  if (page === "academia") return "/academia";
   if (page === "profile") return "/perfil";
   if (page === "leads") return "/ejecutivo/leads";
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/pre-evaluacion";
@@ -1230,6 +1232,8 @@ export default function App() {
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
         />
+      ) : page === "academia" && profile.role === roles.user ? (
+        <AcademiaFinanciera evaluation={currentEvaluation} onNavigate={navigateToPage} />
       ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (

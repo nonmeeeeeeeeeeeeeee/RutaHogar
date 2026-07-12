@@ -1,9 +1,23 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { buildRecommendations } from "../services/recommendationService";
 import { formatScore } from "../utils/helpers";
+import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
+
+function LinkedText({ text, onOpenArticle }) {
+  return splitTextWithGlossaryTerms(text).map((part, i) =>
+    typeof part === "string" ? (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    ) : (
+      <GlossaryTerm key={i} term={part.term} onOpenArticle={onOpenArticle} />
+    )
+  );
+}
 
 export default function Recommendations({ evaluation, onStartEvaluation, onNavigate }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
+
+  // HU12 - E3: los términos financieros detectados en el texto abren la Academia.
+  const openInAcademy = () => onNavigate?.("academia");
 
   if (!data) {
     return (
@@ -50,7 +64,7 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           <strong>Recomendaciones personalizadas</strong>
           <ul>
             {data.recommendations.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}><LinkedText text={item} onOpenArticle={openInAcademy} /></li>
             ))}
           </ul>
         </section>
@@ -59,7 +73,7 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           <strong>Acciones sugeridas</strong>
           <ul>
             {data.actions.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}><LinkedText text={item} onOpenArticle={openInAcademy} /></li>
             ))}
           </ul>
         </section>

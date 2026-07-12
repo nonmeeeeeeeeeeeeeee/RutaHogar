@@ -2344,3 +2344,409 @@ th {
   margin: 0;
   line-height: 1.5;
 }
+
+/* ===== HU12 - Academia financiera contextual ===== */
+
+.academia-panel {
+  max-width: 1120px;
+}
+
+.academy-topic-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+/* --- Sugerido para ti (E2) --- */
+.academy-suggested {
+  margin-bottom: 26px;
+  padding: 22px;
+  border: 1px solid rgba(36, 99, 84, 0.28);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(36, 99, 84, 0.06), rgba(36, 99, 84, 0.02));
+}
+
+.academy-suggested-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+
+.academy-suggested-header h3 {
+  margin: 4px 0 6px;
+  font-size: 1.3rem;
+}
+
+.academy-suggested-header p {
+  margin-bottom: 0;
+  max-width: 520px;
+}
+
+.academy-suggested-header .score-badge-wrap {
+  min-width: 140px;
+  flex-shrink: 0;
+}
+
+.academy-suggested-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* --- Toolbar: filtros por tema (E1) + búsqueda --- */
+.academy-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.academy-topic-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.academy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid #d7e0ea;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #526174;
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.academy-pill:hover {
+  background: #f4f7fa;
+}
+
+.academy-pill.is-active {
+  border-color: #246354;
+  background: #eaf5f0;
+  color: #246354;
+}
+
+.academy-search {
+  position: relative;
+  min-width: 260px;
+  flex: 1;
+  max-width: 360px;
+}
+
+.academy-search i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a9bb0;
+}
+
+.academy-search input {
+  padding-left: 36px;
+  margin-top: 0;
+}
+
+/* --- Grilla de artículos (E1) --- */
+.academy-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.academy-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 190px;
+  padding: 18px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  text-align: left;
+  color: inherit;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.academy-card:hover {
+  border-color: rgba(36, 99, 84, 0.5);
+  transform: translateY(-1px);
+  background: #ffffff;
+}
+
+.academy-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.academy-level-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #eef2f6;
+  color: #526174;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.academy-card h3 {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.3;
+}
+
+.academy-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  flex: 1;
+}
+
+.academy-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8a9bb0;
+}
+
+/* --- Modal de artículo --- */
+.academy-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(17, 24, 39, 0.55);
+  z-index: 60;
+}
+
+.academy-modal {
+  position: relative;
+  width: min(680px, 100%);
+  max-height: 86vh;
+  overflow-y: auto;
+  padding: 30px;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
+}
+
+.academy-modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  min-height: 36px;
+  width: 36px;
+  padding: 0;
+  border-radius: 8px;
+  background: #eef2f6;
+  color: #172033;
+}
+
+.academy-modal-close:hover {
+  background: #e2e8f0;
+}
+
+.academy-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 6px;
+  padding-right: 40px;
+}
+
+.academy-modal-header h2 {
+  margin: 2px 0 0;
+  font-size: 1.5rem;
+}
+
+.academy-modal-meta {
+  display: flex;
+  gap: 16px;
+  margin: 14px 0 18px;
+  color: #64748b;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.academy-modal-meta i {
+  margin-right: 4px;
+}
+
+.academy-modal-body p {
+  margin-bottom: 14px;
+}
+
+.academy-modal-terms,
+.academy-modal-related {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #e6ebf1;
+}
+
+.academy-modal-terms strong,
+.academy-modal-related strong {
+  display: block;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.academy-term-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.academy-related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* --- Glosario contextual (E3) --- */
+.glossary-term-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.glossary-term {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px dotted #246354;
+  border-radius: 0;
+  background: transparent;
+  color: #246354;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.glossary-term:hover,
+.glossary-term.is-open {
+  background: rgba(36, 99, 84, 0.1);
+}
+
+.glossary-popover {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 40;
+  width: 260px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #172033;
+  color: #ffffff;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.3);
+}
+
+.glossary-popover p {
+  margin-bottom: 10px;
+  color: #e2e8f0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.glossary-popover-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  min-height: 0;
+  background: transparent;
+  color: #7fd6b7;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.glossary-popover-link:hover {
+  color: #a6e6cc;
+  background: transparent;
+}
+
+/* --- Vista previa contextual (demo de E3) --- */
+.academy-context-demo {
+  margin-top: 10px;
+  padding: 22px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.academy-context-demo h3 {
+  margin: 4px 0 14px;
+  font-size: 1.15rem;
+}
+
+.academy-context-example {
+  padding: 16px;
+  border-radius: 8px;
+  background: #ffffff;
+  border: 1px solid #e6ebf1;
+}
+
+.academy-context-example p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.7;
+}
+
+.academy-context-note {
+  margin: 12px 0 0;
+  color: #8a9bb0;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 860px) {
+  .academy-suggested-grid,
+  .academy-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .academy-suggested-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .academy-related-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .academy-suggested-grid,
+  .academy-grid,
+  .academy-related-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .academy-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .academy-search {
+    max-width: none;
+  }
+}
