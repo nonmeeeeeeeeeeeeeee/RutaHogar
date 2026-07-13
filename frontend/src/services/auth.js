@@ -119,7 +119,7 @@ export async function signIn({ email, password, role = roles.user }) {
   }
 
   const user = { id: `local-${email}`, email, created_at: new Date().toISOString(), user_metadata: { role } };
-  return saveSession({ user, access_token: "local-mvp-session" }, buildProfile(user, role));
+  return saveSession({ user, access_token: "local-scoreleads-session" }, buildProfile(user, role));
 }
 
 export async function signUp({ email, password, role = roles.user, full_name = "", phone = "", birth_date = "" }) {
@@ -168,7 +168,7 @@ export async function signUp({ email, password, role = roles.user, full_name = "
     created_at: new Date().toISOString(),
     user_metadata: { role: normalizedRole, full_name, phone: normalizedPhone, birth_date: normalizedBirthDate },
   };
-  return saveSession({ user, access_token: "local-mvp-session" }, buildProfile(user, normalizedRole));
+  return saveSession({ user, access_token: "local-scoreleads-session" }, buildProfile(user, normalizedRole));
 }
 
 export function getStoredAuth() {

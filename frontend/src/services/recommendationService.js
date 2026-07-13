@@ -22,10 +22,17 @@ const primaryRecommendations = {
 export function buildRecommendations(evaluation) {
   if (!evaluation) return null;
 
-  const classification = evaluation.result?.classification || "Bajo";
+  const result = evaluation.result || {};
+  const classification = result.classification || "Bajo";
   const input = evaluation.input || {};
   const onboarding = evaluation.onboarding || {};
-  const recommendations = [...(primaryRecommendations[classification] || primaryRecommendations.Bajo)];
+  const backendRecommendations = Array.isArray(result.recommendations)
+    ? result.recommendations
+    : [];
+  const recommendations = [
+    ...(primaryRecommendations[classification] || primaryRecommendations.Bajo),
+    ...backendRecommendations,
+  ];
   const actions = [];
 
   if (input.morosidad_actual === "si" || input.morosidad_actual === "no_lo_se") {
@@ -58,10 +65,19 @@ export function buildRecommendations(evaluation) {
   actions.push("Solicitar una evaluación bancaria formal solo cuando tengas antecedentes actualizados.");
 
   return {
-    score: evaluation.result?.score,
+    blockers: Array.isArray(result.blockers) ? result.blockers : [],
+    original_classification: result.original_classification || "",
+    score_adjustment_reason: result.score_adjustment_reason || "",
+    score: result.score,
     classification,
     summary: summaries[classification] || summaries.Bajo,
     recommendations: [...new Set(recommendations)],
     actions: [...new Set(actions)],
+    main_blocker: result.main_blocker || null,
+    project_fit: result.project_fit || null,
+    structured_improvement_plan: Array.isArray(result.structured_improvement_plan)
+      ? result.structured_improvement_plan
+      : [],
+    user_explanation_deterministic: result.user_explanation_deterministic || "",
   };
 }

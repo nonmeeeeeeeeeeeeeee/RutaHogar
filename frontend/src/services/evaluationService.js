@@ -4,6 +4,7 @@ import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logS
 import { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory } from "./getScoringHistory";
 
 const EVALUATIONS_KEY = "scoreleads_evaluations";
+const SUPABASE_CLASSIFICATIONS = new Set(["Alto", "Medio", "Bajo"]);
 
 function readLocalEvaluations() {
   try {
@@ -17,6 +18,48 @@ function writeLocalEvaluations(evaluations) {
   localStorage.setItem(EVALUATIONS_KEY, JSON.stringify(evaluations));
 }
 
+function cloneJson(value, fallback) {
+  if (value === undefined || value === null) return fallback;
+
+  try {
+    return JSON.parse(JSON.stringify(value));
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeScoreForSupabase(score) {
+  const numericScore = Number(score);
+  if (!Number.isFinite(numericScore)) return 0;
+  return Math.max(0, Math.min(100, Math.round(numericScore)));
+}
+
+function normalizeClassificationForSupabase(result = {}) {
+  if (SUPABASE_CLASSIFICATIONS.has(result.classification)) return result.classification;
+  if (SUPABASE_CLASSIFICATIONS.has(result.original_classification)) return result.original_classification;
+  return "Bajo";
+}
+
+function resolveCalculationReason(evaluationPayload) {
+  return evaluationPayload.calculation_reason || evaluationPayload.calculationReason || evaluationPayload.reason || "new_evaluation";
+}
+
+function buildFinancialDataSnapshot(evaluationPayload) {
+  const input = cloneJson(evaluationPayload.input, {});
+  const result = cloneJson(evaluationPayload.result, {});
+  const calculationReason = resolveCalculationReason(evaluationPayload);
+
+  return {
+    ...input,
+    input,
+    input_snapshot: input,
+    result,
+    result_snapshot: result,
+    calculation_reason: calculationReason,
+    calculated_at: new Date().toISOString(),
+  };
+}
+
 export function normalizeEvaluation(row, profilesMap = {}) {
   if (!row) return null;
 
@@ -24,6 +67,8 @@ export function normalizeEvaluation(row, profilesMap = {}) {
   const recommendations = Array.isArray(recommendationData)
     ? recommendationData
     : recommendationData.items || [];
+  const financialData = row.financial_data || {};
+  const storedResult = financialData.result || financialData.result_snapshot || {};
 
   const onboarding = {
     objetivo_principal: row.objective || "",
@@ -41,17 +86,18 @@ export function normalizeEvaluation(row, profilesMap = {}) {
     full_name: profilesMap[row.user_id] || null,
     user_id: row.user_id,
     onboarding,
-    input: row.financial_data || {},
+    input: financialData.input || financialData.input_snapshot || financialData,
     result: {
-      score: row.score,
-      classification: row.classification,
-      risks: normalizeDisplayList(recommendationData.risks),
-      recommendations: normalizeDisplayList(recommendations),
-      ai_explanation: normalizeDisplayText(row.explanation || ""),
-      improvement_plan: normalizeDisplayList(recommendationData.improvement_plan),
-      positive_indicators: normalizeDisplayList(recommendationData.positive_indicators),
-      executive_summary: normalizeDisplayText(row.executive_summary || ""),
-      commercial_guidance: normalizeDisplayText(row.commercial_guidance || ""),
+      ...storedResult,
+      score: storedResult.score ?? row.score,
+      classification: storedResult.classification || row.classification,
+      risks: normalizeDisplayList(storedResult.risks ?? recommendationData.risks),
+      recommendations: normalizeDisplayList(storedResult.recommendations ?? recommendations),
+      ai_explanation: normalizeDisplayText(storedResult.ai_explanation ?? row.explanation ?? ""),
+      improvement_plan: normalizeDisplayList(storedResult.improvement_plan ?? recommendationData.improvement_plan),
+      positive_indicators: normalizeDisplayList(storedResult.positive_indicators ?? recommendationData.positive_indicators),
+      executive_summary: normalizeDisplayText(storedResult.executive_summary ?? row.executive_summary ?? ""),
+      commercial_guidance: normalizeDisplayText(storedResult.commercial_guidance ?? row.commercial_guidance ?? ""),
     },
   };
 }
@@ -82,15 +128,15 @@ function buildRow(userId, evaluationPayload) {
   return {
     user_id: userId,
     email: evaluationPayload.email || null,
-    score: Math.round(Number(result.score) || 0),
-    classification: result.classification,
+    score: normalizeScoreForSupabase(result.score),
+    classification: normalizeClassificationForSupabase(result),
     created_at: new Date().toISOString(),
     objective: onboarding.objetivo_principal || null,
     property_type: onboarding.tipo_propiedad || null,
     target_commune: onboarding.comuna_interes || evaluationPayload.input?.comuna_objetivo || null,
     alternative_commune: onboarding.comuna_alternativa || null,
     purchase_timeline: onboarding.plazo_compra || null,
-    financial_data: evaluationPayload.input || {},
+    financial_data: buildFinancialDataSnapshot(evaluationPayload),
     explanation: result.ai_explanation || "",
     recommendations: {
       items: result.recommendations || [],
@@ -142,7 +188,7 @@ export async function createEvaluation(userId, evaluationPayload) {
       id: window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()),
       created_at: new Date().toISOString(),
     };
-    const historyNext = [historyEntry, ...readLocalScoringHistory()].slice(0, 25);
+    const historyNext = [historyEntry, ...readLocalScoringHistory()];
     writeLocalScoringHistory(historyNext);
 
     return normalizeLocalEvaluation(entry);

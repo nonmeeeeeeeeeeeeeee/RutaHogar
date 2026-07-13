@@ -1,9 +1,22 @@
 import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
-import { formatScore } from "../utils/helpers";
+import {
+  formatBooleanText,
+  formatClp,
+  formatScore,
+  getClassificationAdjustment,
+  getScoreBadgeClass,
+  getUserResultFactors,
+} from "../utils/helpers";
+
+function hasObjectData(value) {
+  return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0;
+}
 
 export default function Recommendations({ evaluation, onStartEvaluation, onNavigate }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
+  const adjustment = useMemo(() => getClassificationAdjustment(data), [data]);
+  const factors = useMemo(() => getUserResultFactors(data), [data]);
 
   if (!data) {
     return (
@@ -26,17 +39,32 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
       <div className="section-heading">
         <span className="eyebrow">Recomendaciones inteligentes</span>
         <h1>Orientación personalizada</h1>
-        <p>Recomendaciones generales basadas en tu última preevaluación, sin exponer reglas internas del score.</p>
+        <p>Resumen basado en tu última preevaluación, incluyendo compatibilidad, factores principales y recomendaciones generales.</p>
       </div>
 
       <div className="recommendation-summary">
-        <div className={`score-badge-wrap ${data.classification === "Alto" ? "score-high" : data.classification === "Medio" ? "score-medium" : "score-low"}`}>
-          <span>Score actual</span>
+        <div className={`score-badge-wrap ${getScoreBadgeClass(data.classification)}`}>
+          <span>Score financiero</span>
           <strong>{formatScore(data.score, "Sin score")}</strong>
-          <small>{data.classification}</small>
+          <small>Clasificación final: {data.classification || "Sin clasificación"}</small>
         </div>
-        <p>{data.summary}</p>
+        <div>
+          <p>{data.summary}</p>
+          {adjustment ? (
+            <div className="score-adjustment-note">
+              <strong>{adjustment.message}</strong>
+              {adjustment.detail ? <p>{adjustment.detail}</p> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
+
+      {data.user_explanation_deterministic ? (
+        <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
+          <strong>Explicación orientativa</strong>
+          <p>{data.user_explanation_deterministic}</p>
+        </section>
+      ) : null}
 
       {evaluation?.result?.ai_explanation ? (
         <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
@@ -44,6 +72,36 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           <p>{evaluation.result.ai_explanation}</p>
         </section>
       ) : null}
+
+      {(factors.length || hasObjectData(data.project_fit)) && (
+        <div className="recommendation-grid">
+          {factors.length ? (
+            <section>
+              <strong>Factores determinantes de tu resultado</strong>
+              <ul>
+                {factors.map((factor, index) => (
+                  <li key={`${factor.title}-${index}`}>
+                    <strong>{factor.title}</strong>
+                    {factor.description ? <p>{factor.description}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {hasObjectData(data.project_fit) ? (
+            <section>
+              <strong>Compatibilidad con tu objetivo inmobiliario</strong>
+              <ul>
+                <li>Estado: {data.project_fit.classification || data.project_fit.status || "Sin dato"}</li>
+                <li>Brecha de ingreso: {formatClp(data.project_fit.income_gap)}</li>
+                <li>Brecha de pie: {formatClp(data.project_fit.down_payment_gap)}</li>
+                <li>Compatible actualmente: {formatBooleanText(data.project_fit.compatible)}</li>
+              </ul>
+            </section>
+          ) : null}
+        </div>
+      )}
 
       <div className="recommendation-grid">
         <section>
@@ -69,13 +127,11 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
         Esta orientación no reemplaza una evaluación bancaria formal.
       </div>
 
-      {data.classification === "Bajo" && (
-        <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
-          <button className="primary-button" type="button" onClick={() => onNavigate?.("tracking")}>
-            Ver Plan de Mejora
-          </button>
-        </div>
-      )}
+      <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+        <button className="primary-button" type="button" onClick={() => onNavigate?.("tracking")}>
+          Ir al plan de mejora
+        </button>
+      </div>
     </section>
   );
 }

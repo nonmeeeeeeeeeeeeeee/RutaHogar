@@ -143,7 +143,7 @@ Esta etapa permite aterrizar expectativas y contextualizar el scoring.
 
 El usuario completa un formulario guiado.
 
-Los datos considerados inicialmente para el MVP son:
+Los datos considerados para la plataforma profesional son:
 
 - Ingreso mensual.
 - Deuda mensual.
@@ -357,9 +357,9 @@ Esto agrega muchísimo valor al producto.
 
 ---
 
-# 11. MVP Definido
+# 11. Alcance Profesional Definido
 
-El MVP del proyecto se enfocará principalmente en:
+El alcance actual del proyecto se enfoca principalmente en:
 
 - Flujo de preevaluación financiera.
 - Formulario guiado.
@@ -502,13 +502,13 @@ En etapas posteriores el proyecto podría evolucionar hacia:
 Actualmente el proyecto se encuentra en:
 
 - definición funcional,
-- consolidación del MVP,
+- consolidación de la plataforma profesional,
 - refinamiento de historias de usuario,
 - definición tecnológica,
 - estructuración del scoring,
 - y preparación del sprint de desarrollo.
 
-Las historias de usuario principales seleccionadas para el MVP son:
+Las historias de usuario principales seleccionadas para el alcance activo son:
 
 - HdU1 – Flujo de pre-evaluación financiera guiada.
 - HdU3 – Generación de Scoring.

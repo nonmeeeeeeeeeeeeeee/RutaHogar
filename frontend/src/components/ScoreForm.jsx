@@ -42,6 +42,19 @@ function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
   return `${year}-${month}-${day}`;
 }
 
+function normalizeBirthDate(value) {
+  const raw = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+
+  return "";
+}
+
 function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, options, activeDropdown, onOpen, onClose, onBlur, onChange, onSelect }) {
   const isOpen = activeDropdown === name;
   return (
@@ -158,6 +171,26 @@ const integerFormattedFields = new Set([
 
 function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function formatPercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return null;
+  return `${Math.round(numericValue * 1000) / 10}%`;
+}
+
+function normalizePurchaseTermForScore(value) {
+  const labels = {
+    "0_3_meses": "inmediato",
+    "3_6_meses": "3_a_6_meses",
+    "6_12_meses": "6_a_12_meses",
+    "3_a_6_meses": "3_a_6_meses",
+    "6_a_12_meses": "6_a_12_meses",
+    inmediato: "inmediato",
+    mas_12_meses: "mas_12_meses",
+    solo_explorando: "solo_explorando",
+  };
+  return labels[value] || undefined;
 }
 
 function buildPropertyValues(value, unit, ufValueClp) {
@@ -287,13 +320,17 @@ export default function ScoreForm({
   onResult,
   onConsentAccept,
   onViewConsent,
+  onBirthDateSave,
 }) {
   const debtIncomeMessage =
     "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
-  const needsBirthDate = birthDate == null || birthDate === "";
+  const storedBirthDate = normalizeBirthDate(
+    birthDate || profile?.birth_date || profile?.fecha_nacimiento || "",
+  );
+  const needsBirthDate = !storedBirthDate;
   const [birthFields, setBirthFields] = useState({ birth_day: "", birth_month: "", birth_year: "" });
   const [activeDateDropdown, setActiveDateDropdown] = useState(null);
-  const effectiveBirthDate = needsBirthDate ? buildBirthDateIso(birthFields) : birthDate;
+  const effectiveBirthDate = needsBirthDate ? buildBirthDateIso(birthFields) : storedBirthDate;
   const declaredAge = useMemo(() => calculateAge(effectiveBirthDate), [effectiveBirthDate]);
   const asksPropertyValue = buyerObjectives.has(objective);
 
@@ -322,6 +359,7 @@ export default function ScoreForm({
     valor_vehiculos: "",
     valor_inmuebles: "",
     patrimonio_unit: "clp",
+    subsidio_habitacional: "no",
   });
 
   // Estado paralelo solo para mostrar los valores formateados en pantalla
@@ -407,6 +445,20 @@ export default function ScoreForm({
       form.plazo_credito_hipotecario,
     ],
   );
+  const savingsDownPaymentRatio = useMemo(() => {
+    const propertyValueClp = Number(propertyValuesForDividend.property_value_clp);
+    const savingsClp = Number(form.ahorro_disponible);
+    if (
+      !Number.isFinite(propertyValueClp) ||
+      propertyValueClp <= 0 ||
+      !Number.isFinite(savingsClp) ||
+      savingsClp < 0
+    ) {
+      return null;
+    }
+    return savingsClp / propertyValueClp;
+  }, [propertyValuesForDividend.property_value_clp, form.ahorro_disponible]);
+  const savingsDownPaymentLabel = formatPercent(savingsDownPaymentRatio);
   const calculatedDividend = mortgageEstimate.dividend;
   const effectiveDividend =
     dividendWasManuallyEdited || calculatedDividend == null
@@ -872,8 +924,19 @@ export default function ScoreForm({
             : 0,
         patrimonio_unit: form.patrimonio_unit,
         uf_value_clp: ufValueClp,
+        subsidio_habitacional: form.subsidio_habitacional || "no",
+        plazo_compra: normalizePurchaseTermForScore(onboardingData?.plazo_compra),
+        tiene_propiedad_vista: onboardingData?.tiene_propiedad_vista === true,
       };
       scorePayload = payload;
+
+      if (needsBirthDate && effectiveBirthDate && onBirthDateSave) {
+        try {
+          await onBirthDateSave(effectiveBirthDate);
+        } catch (saveError) {
+          console.warn("No se pudo guardar la fecha de nacimiento en el perfil.", saveError);
+        }
+      }
 
       const invalidNumbers = findInvalidScoringNumbers(payload);
       if (invalidNumbers.length) {
@@ -1044,7 +1107,7 @@ export default function ScoreForm({
           <div className="field-wrap">
             <div className="field-label-row">
               <label htmlFor="deuda_mensual">Deuda mensual</label>
-              <FieldTooltip text="Considera el total de tus compromisos financieros mensuales vigentes: créditos de consumo, automotrices e hipotecarios, cuota mínima de tarjetas de crédito, avances o superavances, créditos estudiantiles, préstamos de cooperativas, cajas de compensación, casas comerciales y pensiones alimenticias. No considera gastos comunes, servicios básicos, alimentación ni otros gastos cotidianos." />
+              <FieldTooltip text="Considera el total de tus compromisos financieros mensuales vigentes: créditos de consumo, automotrices e hipotecarios, cuota mínima de tarjetas de crédito, línea de crédito, avances o superavances, créditos estudiantiles, préstamos de cooperativas, cajas de compensación, casas comerciales y pensiones alimenticias. No considera gastos comunes, servicios básicos, alimentación ni otros gastos cotidianos." />
             </div>
             <input
               type="text"
@@ -1067,7 +1130,7 @@ export default function ScoreForm({
           <div className="field-wrap">
             <div className="field-label-row">
               <label htmlFor="ahorro_disponible">Ahorro disponible</label>
-              <FieldTooltip text="Dinero disponible para el pago inicial de la vivienda. Incluye todo lo que puedas aportar hoy: APV, Cuenta 2, ahorros propios o subsidio habitacional. Los bancos generalmente exigen entre un 10% y 20% del valor de la propiedad." />
+              <FieldTooltip text="Dinero disponible hoy para el pago inicial de la vivienda: ahorros propios, APV o Cuenta 2 que puedas usar. No incluyas subsidios o apoyos no confirmados como si ya fueran ahorro disponible." />
             </div>
             <input
               type="text"
@@ -1078,6 +1141,11 @@ export default function ScoreForm({
               onChange={handleChange}
               placeholder="Ej: 3.000.000"
             />
+            {savingsDownPaymentLabel && (
+              <span className="field-help">
+                Equivale aproximadamente al {savingsDownPaymentLabel} del valor objetivo.
+              </span>
+            )}
           </div>
 
           {/* Monto estimado de la vivienda */}
@@ -1116,6 +1184,22 @@ export default function ScoreForm({
               </span>
             </div>
           )}
+
+          <div className="field-wrap">
+            <div className="field-label-row">
+              <label htmlFor="subsidio_habitacional">Subsidio habitacional</label>
+              <FieldTooltip text="Opcional. Solo se usa para orientar recomendaciones; no aumenta el score ni implica aprobación." />
+            </div>
+            <select
+              id="subsidio_habitacional"
+              name="subsidio_habitacional"
+              value={form.subsidio_habitacional}
+              onChange={handleChange}
+            >
+              <option value="no">No</option>
+              <option value="si">Sí, tengo o estoy postulando</option>
+            </select>
+          </div>
 
           {/* Plazo estimado */}
           <div
@@ -1174,7 +1258,7 @@ export default function ScoreForm({
               bancaria formal.
             </span>
             <span className="field-help">
-              Puedes modificarlo si ya tienes una simulación bancaria.
+              Si no lo sabes, puedes usar esta estimación desde valor, pie y plazo. Puedes modificarlo si ya tienes una simulación bancaria.
             </span>
             {dividendWasManuallyEdited && calculatedDividend != null && (
               <button
@@ -1187,6 +1271,7 @@ export default function ScoreForm({
             )}
           </div>
         </div>
+
       </div>
 
       {/* ── Trabajo y antecedentes ── */}
