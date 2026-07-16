@@ -52,5 +52,13 @@ export function normalizeDisplayText(value) {
 }
 
 export function normalizeDisplayList(items) {
-  return (Array.isArray(items) ? items : []).map(normalizeDisplayText).filter(Boolean);
+  return (Array.isArray(items) ? items : [])
+    .map((item) => {
+      if (typeof item === "string") return normalizeDisplayText(item);
+      if (item && typeof item === "object" && item.text) {
+        return { ...item, text: normalizeDisplayText(item.text), benefit: item.benefit ? item.benefit : null };
+      }
+      return item;
+    })
+    .filter(Boolean);
 }

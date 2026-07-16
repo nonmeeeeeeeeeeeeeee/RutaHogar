@@ -31,7 +31,14 @@ def base_payload(**overrides):
 
 
 def joined(result, key):
-    return " ".join(result.get(key, []))
+    items = result.get(key, [])
+    texts = []
+    for item in items:
+        if isinstance(item, dict):
+            texts.append(item.get("text", str(item)))
+        else:
+            texts.append(str(item))
+    return " ".join(texts)
 
 
 def test_joven_indefinido_sin_morosidad_buen_ahorro():

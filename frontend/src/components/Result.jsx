@@ -6,7 +6,7 @@ export default function Result({ data }) {
   const visibleScore = Number.isFinite(Number(score)) ? Math.round(Number(score)) : score;
   const tone = classification === "Alto" ? "high" : classification === "Medio" ? "medium" : "low";
   const visibleRisks = normalizeDisplayList(risks);
-  const briefRecommendations = normalizeDisplayList(recommendations).slice(0, 3);
+  const briefRecommendations = (Array.isArray(recommendations) ? recommendations : []).slice(0, 3);
 
   return (
     <div className="result-panel">
@@ -39,7 +39,12 @@ export default function Result({ data }) {
           <strong>Recomendaciones breves</strong>
           <ul>
             {briefRecommendations.length ? (
-              briefRecommendations.map((step, i) => <li key={i}>{step}</li>)
+              briefRecommendations.map((step, i) => (
+                <li key={i}>
+                  {typeof step === "string" ? step : step.text}
+                  {typeof step !== "string" && step.benefit && <p className="benefit">Beneficio esperado: {step.benefit}</p>}
+                </li>
+              ))
             ) : (
               <li>Revisa tu situación con antecedentes formales antes de tomar una decisión.</li>
             )}

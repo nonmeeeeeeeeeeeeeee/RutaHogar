@@ -122,7 +122,7 @@ def generate_commercial_guidance(
     Sugiere una acción comercial concreta al ejecutivo según el perfil del lead.
     """
     riesgos_txt        = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos relevantes"
-    recomendaciones_txt = "\n".join(f"- {r}" for r in recommendations) or "- Sin recomendaciones"
+    recomendaciones_txt = "\n".join(f"- {r['text'] if isinstance(r, dict) else r}" for r in recommendations) or "- Sin recomendaciones"
     positive_indicators_txt = "\n".join(f"- {p}" for p in positive_indicators) or"- Sin indicadores positivos"
     
 

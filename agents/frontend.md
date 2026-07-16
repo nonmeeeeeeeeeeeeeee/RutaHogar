@@ -15,7 +15,7 @@ frontend/src/
 │   ├── ProfilePage.jsx       # Perfil + historial evaluaciones + scoring_history
 │   ├── FinancialTracking.jsx # Seguimiento financiero con metas
 │   ├── MonthlyPlan.jsx       # Plan mensual de una meta
-│   ├── Recommendations.jsx   # Recomendaciones basadas en última evaluación
+│   ├── Recommendations.jsx   # Recomendaciones basadas en última evaluación (text + benefit)
 │   ├── ObjectiveReview.jsx   # Revisión objetivo inmobiliario
 │   ├── Navbar.jsx            # Navegación según rol
 │   ├── AdminPanel.jsx        # Vista admin
@@ -29,7 +29,7 @@ frontend/src/
 │   ├── getScoringHistory.js  # Historial inmutable scoring_history
 │   ├── goalsService.js       # CRUD metas
 │   ├── financialTracking.js  # buildFinancialTracking()
-│   ├── recommendationService.js
+│   ├── recommendationService.js  # Retorna {text, benefit} en recommendations
 │   └── monthlyPlanService.js
 ├── utils/
 │   ├── supabase.ts           # Cliente Supabase (null si faltan env vars)
