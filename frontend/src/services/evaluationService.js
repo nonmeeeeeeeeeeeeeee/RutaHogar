@@ -1,5 +1,5 @@
 import { supabase } from "../utils/supabase";
-import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
+import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan } from "../utils/text";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 import { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory } from "./getScoringHistory";
 
@@ -48,7 +48,7 @@ export function normalizeEvaluation(row, profilesMap = {}) {
       risks: normalizeDisplayList(recommendationData.risks),
       recommendations: normalizeDisplayList(recommendations),
       ai_explanation: normalizeDisplayText(row.explanation || ""),
-      improvement_plan: normalizeDisplayList(recommendationData.improvement_plan),
+      improvement_plan: normalizeImprovementPlan(recommendationData.improvement_plan),
       positive_indicators: normalizeDisplayList(recommendationData.positive_indicators),
       executive_summary: normalizeDisplayText(row.executive_summary || ""),
       commercial_guidance: normalizeDisplayText(row.commercial_guidance || ""),
@@ -67,7 +67,7 @@ function normalizeLocalEvaluation(entry) {
       risks: normalizeDisplayList(result.risks),
       recommendations: normalizeDisplayList(result.recommendations),
       ai_explanation: normalizeDisplayText(result.ai_explanation || ""),
-      improvement_plan: normalizeDisplayList(result.improvement_plan),
+      improvement_plan: normalizeImprovementPlan(result.improvement_plan),
       positive_indicators: normalizeDisplayList(result.positive_indicators),
       executive_summary: normalizeDisplayText(result.executive_summary || ""),
       commercial_guidance: normalizeDisplayText(result.commercial_guidance || ""),

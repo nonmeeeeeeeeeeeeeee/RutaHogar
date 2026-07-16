@@ -38,9 +38,9 @@ export default function FinancialTracking({
 
   const displayedGoals = goals.length
     ? tracking.goals.map((goal) => {
-        const storedGoal = goals.find((item) => item.title === goal.title || item.id === goal.id);
-        return storedGoal ? { ...storedGoal, ...goal, id: storedGoal.id, status: storedGoal.status } : goal;
-      })
+      const storedGoal = goals.find((item) => item.title === goal.title || item.id === goal.id);
+      return storedGoal ? { ...storedGoal, ...goal, id: storedGoal.id, status: storedGoal.status } : goal;
+    })
     : tracking.goals.map((goal) => ({ ...goal, status: "pendiente" }));
 
   return (

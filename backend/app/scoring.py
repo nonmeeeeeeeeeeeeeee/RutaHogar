@@ -64,9 +64,9 @@ def clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
-def _money_to_clp(value: float, unit: str) -> float:
+def _money_to_clp(value: float, unit: str, uf_value: float = VALOR_UF_CLP) -> float:
     if unit == "uf":
-        return value * VALOR_UF_CLP
+        return value * uf_value
     return value
 
 
@@ -303,10 +303,11 @@ def calculate_score(data: Dict) -> Dict:
     comp_relacion = data.get("relacion_complementario", data.get("complemento_relacion", ""))
     edad = int(data.get("edad", 0) or 0)
     plazo_credito = int(data.get("plazo_credito_hipotecario", 0) or 0)
+    uf_value_clp = float(data.get("uf_value_clp", VALOR_UF_CLP))
     declara_patrimonio = bool(data.get("declara_patrimonio", False))
     patrimonio_unit = data.get("patrimonio_unit", "clp")
-    valor_vehiculos = _money_to_clp(float(data.get("valor_vehiculos", 0) or 0), patrimonio_unit)
-    valor_inmuebles = _money_to_clp(float(data.get("valor_inmuebles", 0) or 0), patrimonio_unit)
+    valor_vehiculos = _money_to_clp(float(data.get("valor_vehiculos", 0) or 0), patrimonio_unit, uf_value_clp)
+    valor_inmuebles = _money_to_clp(float(data.get("valor_inmuebles", 0) or 0), patrimonio_unit, uf_value_clp)
 
     # Base score
     score = 50.0
@@ -372,7 +373,7 @@ def calculate_score(data: Dict) -> Dict:
     pie_recomendado_clp = 0.0
 
     if property_value_clp > 0 or precio_referencia_uf:
-        precio_objetivo_clp = property_value_clp if property_value_clp > 0 else precio_referencia_uf * VALOR_UF_CLP
+        precio_objetivo_clp = property_value_clp if property_value_clp > 0 else precio_referencia_uf * uf_value_clp
         pie_minimo_clp = precio_objetivo_clp * 0.10
         pie_recomendado_clp = precio_objetivo_clp * 0.20
 

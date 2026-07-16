@@ -240,6 +240,10 @@ const getPrivatePageForPath = (pathname, profile) => {
     return profile.role === roles.user ? "recommendations" : getInitialPageForProfile(profile);
   }
 
+  if (pathname === "/plan-de-mejora") {
+    return profile.role === roles.user ? "tracking" : getInitialPageForProfile(profile);
+  }
+
   if (pathname === "/ejecutivo/leads") {
     return profile.role === roles.sales || profile.role === roles.admin
       ? "leads"
@@ -250,7 +254,7 @@ const getPrivatePageForPath = (pathname, profile) => {
 };
 
 const isPrivatePath = (pathname) =>
-  ["/dashboard", "/perfil", "/historial", "/recomendaciones", "/ejecutivo/leads"].includes(pathname);
+  ["/dashboard", "/perfil", "/historial", "/recomendaciones", "/plan-de-mejora", "/ejecutivo/leads"].includes(pathname);
 
 const getDefaultRouteForProfile = (profile) =>
   profile?.role === roles.sales ? "/ejecutivo/leads" : "/dashboard";
@@ -259,7 +263,8 @@ const getRouteForPage = (page, profile, options = {}) => {
   if (page === "landing") return "/";
   if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
   if (page === "anon-onboarding" || page === "anon-evaluate") return "/pre-evaluacion";
-  if (page === "home" || page === "admin" || page === "tracking") return "/dashboard";
+  if (page === "home" || page === "admin") return "/dashboard";
+  if (page === "tracking") return "/plan-de-mejora";
   if (page === "recommendations") return "/recomendaciones";
   if (page === "profile") return "/perfil";
   if (page === "leads") return "/ejecutivo/leads";
