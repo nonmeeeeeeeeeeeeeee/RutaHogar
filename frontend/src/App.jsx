@@ -1233,7 +1233,7 @@ export default function App() {
           onNavigate={navigateToPage}
         />
       ) : page === "academia" && profile.role === roles.user ? (
-        <AcademiaFinanciera evaluation={currentEvaluation} onNavigate={navigateToPage} />
+        <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} />
       ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (

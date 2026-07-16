@@ -2,11 +2,15 @@ import React, { useMemo, useState } from "react";
 import {
   ACADEMY_ARTICLES,
   ACADEMY_TOPICS,
-  MOCK_USER_CONTEXT,
+  CASE_STUDIES,
+  STARTER_ARTICLE_IDS,
+  classifyRiskText,
+  findMatchingCase,
 } from "../constants/academyContent";
 import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
 
 const LEVEL_ORDER = { Básico: 0, Intermedio: 1, Avanzado: 2 };
+const CLASSIFICATION_CLASS = { Alto: "score-high", Medio: "score-medium", Bajo: "score-low" };
 
 function TopicIcon({ topicId }) {
   const topic = ACADEMY_TOPICS.find((t) => t.id === topicId);
@@ -92,22 +96,9 @@ function ArticleModal({ article, onClose, onOpenArticle, related }) {
   );
 }
 
-export default function AcademiaFinanciera({ evaluation, onNavigate }) {
+function ConceptosTab({ onOpenArticle }) {
   const [activeTopic, setActiveTopic] = useState("todos");
   const [query, setQuery] = useState("");
-  const [openArticleId, setOpenArticleId] = useState(null);
-
-  // HU12 - E2: usa el bloqueador financiero real si viene por props;
-  // si no hay evaluación disponible, se simula con datos de prueba.
-  const userContext = evaluation?.mainBlocker ? evaluation : MOCK_USER_CONTEXT;
-
-  const suggestedArticles = useMemo(
-    () =>
-      userContext.recommendedArticleIds
-        .map((id) => ACADEMY_ARTICLES.find((a) => a.id === id))
-        .filter(Boolean),
-    [userContext]
-  );
 
   const filteredArticles = useMemo(() => {
     return ACADEMY_ARTICLES.filter((article) => {
@@ -121,43 +112,8 @@ export default function AcademiaFinanciera({ evaluation, onNavigate }) {
     }).sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
   }, [activeTopic, query]);
 
-  const openArticle = (id) => setOpenArticleId(id);
-  const closeArticle = () => setOpenArticleId(null);
-
-  const activeArticle = ACADEMY_ARTICLES.find((a) => a.id === openArticleId) || null;
-  const relatedArticles = activeArticle
-    ? ACADEMY_ARTICLES.filter((a) => a.topic === activeArticle.topic && a.id !== activeArticle.id).slice(0, 2)
-    : [];
-
   return (
-    <section className="section-block academia-panel">
-      <div className="section-heading">
-        <span className="eyebrow">Academia financiera</span>
-        <h1>Prepárate antes de comprar</h1>
-        <p>Cápsulas breves sobre crédito hipotecario, pie, subsidios, tasas y tipos de vivienda, pensadas para quien está dando sus primeros pasos.</p>
-      </div>
-
-      {/* HU12 - E2: contenido sugerido según el bloqueador financiero del lead */}
-      <div className="academy-suggested">
-        <div className="academy-suggested-header">
-          <div>
-            <span className="eyebrow">Sugerido para ti</span>
-            <h3>Tu bloqueador principal: {userContext.blockerLabel}</h3>
-            <p>{userContext.blockerDetail}</p>
-          </div>
-          <div className={`score-badge-wrap ${userContext.classification === "Alto" ? "score-high" : userContext.classification === "Medio" ? "score-medium" : "score-low"}`}>
-            <span>Score actual</span>
-            <strong>{userContext.score}</strong>
-            <small>{userContext.classification}</small>
-          </div>
-        </div>
-        <div className="academy-suggested-grid">
-          {suggestedArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} onOpen={openArticle} />
-          ))}
-        </div>
-      </div>
-
+    <div>
       {/* HU12 - E1: catálogo educativo organizado por tema */}
       <div className="academy-toolbar">
         <div className="academy-topic-pills">
@@ -194,7 +150,7 @@ export default function AcademiaFinanciera({ evaluation, onNavigate }) {
       {filteredArticles.length ? (
         <div className="academy-grid">
           {filteredArticles.map((article) => (
-            <ArticleCard key={article.id} article={article} onOpen={openArticle} />
+            <ArticleCard key={article.id} article={article} onOpen={onOpenArticle} />
           ))}
         </div>
       ) : (
@@ -204,25 +160,225 @@ export default function AcademiaFinanciera({ evaluation, onNavigate }) {
         </div>
       )}
 
-      {/* HU12 - E3: demostración de enlaces contextuales dentro de otras pantallas */}
-      <div className="academy-context-demo">
-        <span className="eyebrow">Vista previa contextual</span>
-        <h3>Así se vería dentro de Resultado o Plan de mejora</h3>
-        <div className="academy-context-example">
-          <p>
-            {splitTextWithGlossaryTerms(
-              "Tu carga financiera actual está dentro del rango aceptable, pero tu pie cubre solo el 64% de lo requerido. Si mejoras tu ahorro o exploras un subsidio, podrías reducir tu dividendo mensual y acceder a un plazo más corto."
-            ).map((part, i) =>
-              typeof part === "string" ? (
-                <React.Fragment key={i}>{part}</React.Fragment>
-              ) : (
-                <GlossaryTerm key={i} term={part.term} onOpenArticle={openArticle} />
-              )
-            )}
-          </p>
-        </div>
-        <p className="academy-context-note">Los términos subrayados son interactivos: al hacer clic se abre una explicación breve con acceso directo al artículo completo.</p>
+    </div>
+  );
+}
+
+function InterpretaTab({ evaluation, onStartEvaluation, onOpenArticle }) {
+  const result = evaluation?.result;
+
+  const risks = result?.risks || [];
+  const positives = result?.positive_indicators || [];
+
+  const suggestedArticleIds = useMemo(() => {
+    if (!result) return [];
+    const topics = [];
+    risks.forEach((risk) => {
+      const { topic } = classifyRiskText(risk);
+      if (topic && !topics.includes(topic)) topics.push(topic);
+    });
+    const fromRisks = topics
+      .map((topicId) => ACADEMY_ARTICLES.find((a) => a.topic === topicId))
+      .filter(Boolean)
+      .map((a) => a.id);
+    const withFallback = fromRisks.length ? fromRisks : STARTER_ARTICLE_IDS;
+    return [...new Set(withFallback)].slice(0, 3);
+  }, [result, risks]);
+
+  if (!result) {
+    return (
+      <div className="empty-state">
+        <strong>Aún no tienes una preevaluación.</strong>
+        <p>Completa tu preevaluación financiera para ver aquí qué significa tu score, tus riesgos y qué contenido te conviene revisar primero.</p>
+        <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
       </div>
+    );
+  }
+
+  const suggestedArticles = suggestedArticleIds
+    .map((id) => ACADEMY_ARTICLES.find((a) => a.id === id))
+    .filter(Boolean);
+
+  return (
+    <div>
+      <div className="academy-suggested">
+        <div className="academy-suggested-header">
+          <div>
+            <span className="eyebrow">Tu resultado</span>
+            <h3>{risks.length ? "Esto está influyendo en tu score" : "Tu perfil no muestra riesgos relevantes"}</h3>
+            <p>
+              {result.ai_explanation
+                ? splitTextWithGlossaryTerms(result.ai_explanation).map((part, i) =>
+                  typeof part === "string" ? (
+                    <React.Fragment key={i}>{part}</React.Fragment>
+                  ) : (
+                    <GlossaryTerm
+                      key={i}
+                      term={part.term}
+                      onOpenArticle={onOpenArticle}
+                    />
+                  )
+                )
+                : "Revisa el detalle de tu evaluación más reciente."}
+            </p>
+          </div>
+          <div className={`score-badge-wrap ${CLASSIFICATION_CLASS[result.classification] || "score-medium"}`}>
+            <span>Score actual</span>
+            <strong>{result.score}</strong>
+            <small>{result.classification}</small>
+          </div>
+        </div>
+
+        {risks.length > 0 && (
+          <div className="academy-risk-list">
+            <strong>Riesgos identificados en tu evaluación</strong>
+            <ul>
+              {risks.map((risk) => {
+                const { term } = classifyRiskText(risk);
+                return (
+                  <li key={risk}>
+                    {term ? (
+                      splitTextWithGlossaryTerms(risk).map((part, i) =>
+                        typeof part === "string" ? (
+                          <React.Fragment key={i}>{part}</React.Fragment>
+                        ) : (
+                          <GlossaryTerm key={i} term={part.term} onOpenArticle={onOpenArticle} />
+                        )
+                      )
+                    ) : (
+                      risk
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
+        {positives.length > 0 && (
+          <div className="academy-positive-list">
+            <strong>Lo que ya juega a tu favor</strong>
+            <ul>
+              {positives.map((item) => (
+                <li key={item}><i className="ti ti-circle-check" /> {item}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="academy-suggested-grid">
+          {suggestedArticles.map((article) => (
+            <ArticleCard key={article.id} article={article} onOpen={onOpenArticle} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CasosTab({ evaluation, onOpenArticle }) {
+  const matchingCase = useMemo(() => findMatchingCase(evaluation), [evaluation]);
+  const [openCaseId, setOpenCaseId] = useState(matchingCase?.id || null);
+
+  return (
+    <div>
+      <div className="section-heading compact">
+        <h3>Casos "de borde": cuando el resultado no es obvio</h3>
+        <p>Ejemplos ilustrativos de situaciones frecuentes donde un buen score convive con un bloqueador puntual, o viceversa.</p>
+      </div>
+
+      <div className="academy-cases">
+        {CASE_STUDIES.map((item) => {
+          const isOpen = openCaseId === item.id;
+          const isMatch = matchingCase?.id === item.id;
+          return (
+            <div key={item.id} className={`academy-case ${isMatch ? "is-match" : ""}`}>
+              <button
+                type="button"
+                className="academy-case-header"
+                onClick={() => setOpenCaseId(isOpen ? null : item.id)}
+              >
+                <div>
+                  {isMatch && <span className="academy-case-match">Se parece a tu situación</span>}
+                  <strong>{item.title}</strong>
+                </div>
+                <i className={`ti ${isOpen ? "ti-chevron-up" : "ti-chevron-down"}`} />
+              </button>
+
+              {isOpen && (
+                <div className="academy-case-body">
+                  <p><strong>La situación:</strong> {item.situation}</p>
+                  <p><strong>Por qué pasa esto:</strong> {item.why}</p>
+                  <p><strong>Qué conviene hacer:</strong> {item.action}</p>
+                  {item.relatedArticleIds?.length > 0 && (
+                    <div className="academy-case-links">
+                      {item.relatedArticleIds.map((id) => {
+                        const article = ACADEMY_ARTICLES.find((a) => a.id === id);
+                        if (!article) return null;
+                        return (
+                          <button key={id} type="button" className="secondary-button" onClick={() => onOpenArticle(id)}>
+                            {article.title}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const TABS = [
+  { id: "conceptos", label: "Conceptos", icon: "ti-books" },
+  { id: "interpretar", label: "Interpreta tu score", icon: "ti-chart-bar" },
+  { id: "casos", label: "Casos prácticos", icon: "ti-list-details" },
+];
+
+export default function AcademiaFinanciera({ evaluation, onStartEvaluation, onNavigate }) {
+  const [activeTab, setActiveTab] = useState("conceptos");
+  const [openArticleId, setOpenArticleId] = useState(null);
+
+  const openArticle = (id) => setOpenArticleId(id);
+  const closeArticle = () => setOpenArticleId(null);
+
+  const activeArticle = ACADEMY_ARTICLES.find((a) => a.id === openArticleId) || null;
+  const relatedArticles = activeArticle
+    ? ACADEMY_ARTICLES.filter((a) => a.topic === activeArticle.topic && a.id !== activeArticle.id).slice(0, 2)
+    : [];
+
+  return (
+    <section className="section-block academia-panel">
+      <div className="section-heading">
+        <span className="eyebrow">Academia financiera</span>
+        <h1>Prepárate antes de comprar</h1>
+        <p>Conceptos clave, una lectura de tu score real y ejemplos de casos límite frecuentes.</p>
+      </div>
+
+      <div className="academy-tabs" role="tablist">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab.id}
+            className={`academy-tab ${activeTab === tab.id ? "is-active" : ""}`}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            <i className={`ti ${tab.icon}`} /> {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "conceptos" && <ConceptosTab onOpenArticle={openArticle} />}
+      {activeTab === "interpretar" && (
+        <InterpretaTab evaluation={evaluation} onStartEvaluation={onStartEvaluation} onOpenArticle={openArticle} />
+      )}
+      {activeTab === "casos" && <CasosTab evaluation={evaluation} onOpenArticle={openArticle} />}
 
       <ArticleModal
         article={activeArticle}

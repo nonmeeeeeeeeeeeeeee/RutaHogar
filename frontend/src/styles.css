@@ -2750,3 +2750,162 @@ th {
     max-width: none;
   }
 }
+
+/* ===== HU12 - Academia: tabs, riesgos reales y casos prácticos ===== */
+
+.academy-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid #e6ebf1;
+}
+
+.academy-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 4px;
+  margin-bottom: -1px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #64748b;
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.academy-tab:hover {
+  background: transparent;
+  color: #172033;
+}
+
+.academy-tab.is-active {
+  border-bottom-color: #246354;
+  color: #246354;
+}
+
+.academy-risk-list,
+.academy-positive-list {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(36, 99, 84, 0.16);
+}
+
+.academy-risk-list strong,
+.academy-positive-list strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #111827;
+  font-size: 0.9rem;
+}
+
+.academy-risk-list ul,
+.academy-positive-list ul {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.academy-risk-list li {
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.academy-positive-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.academy-positive-list li i {
+  color: #246354;
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+/* --- Casos prácticos --- */
+.academy-cases {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.academy-case {
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.academy-case.is-match {
+  border-color: rgba(36, 99, 84, 0.5);
+  background: #f9fdfb;
+}
+
+.academy-case-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  text-align: left;
+  color: #172033;
+  font-weight: 400;
+}
+
+.academy-case-header strong {
+  display: block;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.academy-case-match {
+  display: inline-block;
+  margin-bottom: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #eaf5f0;
+  color: #246354;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.academy-case-body {
+  padding: 0 18px 18px;
+  border-top: 1px solid #e6ebf1;
+}
+
+.academy-case-body p {
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #334155;
+}
+
+.academy-case-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+@media (max-width: 700px) {
+  .academy-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

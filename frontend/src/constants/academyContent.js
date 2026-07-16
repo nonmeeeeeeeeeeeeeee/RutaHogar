@@ -1,7 +1,16 @@
-// Datos de prueba (mock) para HU12 - Academia financiera contextual.
-// Todo el contenido de este archivo es simulado para maquetar la vista.
-// Cuando exista backend real, reemplazar ACADEMY_ARTICLES y MOCK_USER_CONTEXT
-// por datos provenientes de Supabase / del motor de scoring.
+// HU12 - Academia financiera contextual.
+//
+// El CATÁLOGO educativo (temas, artículos, glosario, casos prácticos) es
+// contenido de apoyo y se mantiene como texto fijo: no requiere estar
+// conectado a Supabase ni actualizado en tiempo real.
+//
+// Lo que SÍ debe ser real (y ya no se simula) es la situación del usuario:
+// score, clasificación, riesgos e indicadores positivos. Esos datos vienen
+// directamente del resultado guardado por el backend (ver
+// backend/app/scoring.py -> calculate_score) a través del prop `evaluation`
+// que recibe <AcademiaFinanciera />, con la misma forma que ya usan
+// Result.jsx y Recommendations.jsx: evaluation.result.{score,
+// classification, risks[], positive_indicators[]}.
 
 export const ACADEMY_TOPICS = [
   {
@@ -44,7 +53,7 @@ export const ACADEMY_ARTICLES = [
     summary: "Los cinco factores principales que revisa una entidad financiera: renta, deudas, continuidad laboral, ahorro y comportamiento de pago.",
     level: "Básico",
     minutes: 4,
-    tags: ["dti", "renta"],
+    tags: ["carga financiera", "morosidad", "continuidad laboral"],
     body:
       "Antes de aprobar un crédito hipotecario, el banco arma una foto completa de tu situación financiera. No basta con tener el pie ahorrado: también revisa cuánto ganas, cuánto debes y hace cuánto tiempo trabajas.\n\nLos cinco factores más relevantes son la renta líquida mensual, la carga financiera o dti (qué porcentaje de tu renta ya está comprometido en otras deudas), la continuidad laboral (idealmente 12 meses o más en el mismo empleo o rubro), el ahorro disponible para el pie, y el comportamiento de pago histórico reflejado en tu comportamiento crediticio.\n\nCada banco pondera estos factores de forma distinta, por eso es normal que la misma persona reciba ofertas diferentes en distintas instituciones.",
   },
@@ -55,7 +64,7 @@ export const ACADEMY_ARTICLES = [
     summary: "Qué es la evaluación conjunta o codeudor, cuándo conviene usarla y qué documentos suele pedir el banco.",
     level: "Intermedio",
     minutes: 5,
-    tags: ["codeudor"],
+    tags: ["codeudor", "morosidad"],
     body:
       "Si tu renta individual no alcanza para el crédito que necesitas, puedes evaluar en conjunto con otra persona (pareja, familiar directo). A esto se le llama renta complementada o evaluación con codeudor.\n\nEl banco suma ambas rentas y también ambas deudas, por lo que conviene hacerlo solo si la otra persona tiene una carga financiera baja. El codeudor queda igualmente responsable de la deuda, así que es una decisión que conviene conversar con calma.\n\nEn general se solicitan las liquidaciones de sueldo de ambas personas, certificado de cotizaciones y cédula de identidad vigente.",
   },
@@ -237,15 +246,131 @@ export const ACADEMY_GLOSSARY = {
     definition: "Porcentaje de tu renta que ya está comprometido en el pago de deudas vigentes.",
     articleId: "credito-1",
   },
+  morosidad: {
+    label: "morosidad",
+    definition: "Historial de pagos atrasados o pendientes. Un banco revisa tu comportamiento de pago reciente.",
+    articleId: "credito-1",
+  },
+  "continuidad laboral": {
+    label: "continuidad laboral",
+    definition: "Tiempo que llevas en tu trabajo actual o rubro. A mayor continuidad, mejor evaluación de estabilidad.",
+    articleId: "credito-1",
+  },
+  codeudor: {
+    label: "codeudor",
+    definition: "Persona que evalúa el crédito junto a ti, sumando renta y también deudas y riesgos.",
+    articleId: "credito-2",
+  },
 };
 
-// Contexto simulado del lead autenticado (HU12 - E2). En producción este dato
-// vendría de la última evaluación del usuario (ver HU3 y HU7).
-export const MOCK_USER_CONTEXT = {
-  classification: "Medio",
-  score: 612,
-  mainBlocker: "pie",
-  blockerLabel: "Pie insuficiente",
-  blockerDetail: "Tu ahorro actual cubre un 64% del pie requerido para tu objetivo inmobiliario.",
-  recommendedArticleIds: ["pie-1", "pie-3", "subsidios-1"],
-};
+// HU12 - E2 / E3: mapeo entre los textos reales de riesgo que devuelve el
+// backend (ver backend/app/scoring.py -> riesgos.append(...)) y el tema /
+// término de glosario más relevante para explicarlos. No inventa el riesgo:
+// solo interpreta el texto real que ya viene en evaluation.result.risks.
+export function classifyRiskText(riskText = "") {
+  const text = riskText.toLowerCase();
+
+  if (text.includes("co-deudor") || text.includes("complementari") || text.includes("complemento"))
+    return { topic: "credito", term: "codeudor" };
+  if (text.includes("moros") || text.includes("pagos"))
+    return { topic: "credito", term: "morosidad" };
+  if (text.includes("ahorro"))
+    return { topic: "pie", term: "pie" };
+  if (text.includes("dividendo"))
+    return { topic: "tasas", term: "dividendo" };
+  if (text.includes("deuda") || text.includes("carga") || text.includes("tarjetas"))
+    return { topic: "credito", term: "carga financiera" };
+  if (text.includes("continuidad") || text.includes("contrato") || text.includes("independiente") || text.includes("honorarios"))
+    return { topic: "credito", term: "continuidad laboral" };
+  if (text.includes("edad") || text.includes("plazo"))
+    return { topic: "credito", term: "plazo" };
+
+  return { topic: "credito", term: null };
+}
+
+// Artículos genéricos de entrada para quien todavía no tiene una
+// preevaluación (no hay score real que interpretar todavía).
+export const STARTER_ARTICLE_IDS = ["credito-1", "pie-1", "subsidios-1"];
+
+// HU12 (mejora) - Casos prácticos "de borde": situaciones donde el resultado
+// no es obvio a simple vista (ej. score alto con un bloqueador puntual). El
+// contenido narrativo es de apoyo/no crítico; el `tag` de cada caso sí se
+// contrasta contra evaluation.result real para detectar si el caso del
+// usuario se parece a uno de estos ejemplos.
+export const CASE_STUDIES = [
+  {
+    id: "caso-pie-insuficiente",
+    title: "Score alto, pero sin el pie del 15%",
+    tag: { classification: "Alto", riskKeyword: "ahorro" },
+    situation:
+      "Un usuario con ingresos altos, sin deudas y contrato indefinido obtiene un score de 80 puntos (Alto). Sin embargo, su ahorro solo cubre un 8% del valor de la propiedad que le interesa, por debajo del 10%-20% que suelen exigir los bancos.",
+    why:
+      "El motor de scoring pondera con fuerza la relación entre ingreso y dividendo, además de la estabilidad laboral. Un ahorro insuficiente queda registrado como un riesgo puntual, pero no siempre baja la clasificación general a Medio si el resto del perfil es sólido.",
+    action:
+      "Aunque la clasificación sea Alto, conviene reforzar el ahorro antes de una evaluación bancaria formal: el pie bajo suele ser la primera objeción real del banco, incluso con buen puntaje.",
+    relatedArticleIds: ["pie-1", "pie-3"],
+  },
+  {
+    id: "caso-dividendo-ajustado",
+    title: "Score medio por un dividendo muy ajustado",
+    tag: { classification: "Medio", riskKeyword: "dividendo" },
+    situation:
+      "El ingreso mensual alcanza a cubrir el dividendo estimado, pero con muy poco margen. El sistema marca que 'el dividendo objetivo podría exigir más holgura financiera', y el score baja a la banda Medio.",
+    why:
+      "La regla interna exige que el ingreso cubra cómodamente el dividendo (no solo lo justo). Un margen ajustado es señal de riesgo ante cualquier imprevisto o alza de tasa.",
+    action:
+      "Simular un dividendo más bajo (plazo más largo, propiedad de menor valor o mayor pie) puede acercar a este perfil a una clasificación Alto sin cambiar sus ingresos.",
+    relatedArticleIds: ["tasas-1", "tasas-3"],
+  },
+  {
+    id: "caso-continuidad-corta",
+    title: "Score bajo por continuidad laboral corta",
+    tag: { classification: "Bajo", riskKeyword: "continuidad" },
+    situation:
+      "Un usuario recién cambió a un contrato a plazo fijo hace algunos meses. Aunque su renta es razonable, el sistema indica que 'el contrato a plazo fijo puede dificultar una evaluación hipotecaria formal'.",
+    why:
+      "La continuidad laboral es uno de los cinco factores centrales de cualquier evaluación hipotecaria: a los bancos les interesa ver ingresos sostenidos en el tiempo, no solo el monto actual.",
+    action:
+      "Mantener el mismo empleo por más tiempo, o reunir respaldos de continuidad en el rubro (contratos anteriores, boletas), suele mejorar este bloqueador de forma natural en pocos meses.",
+    relatedArticleIds: ["credito-1", "credito-3"],
+  },
+  {
+    id: "caso-codeudor-debil",
+    title: "Renta complementada con un codeudor con antecedentes débiles",
+    tag: { classification: "Medio", riskKeyword: "co-deudor" },
+    situation:
+      "Un usuario suma la renta de su pareja para calificar. El sistema detecta que 'el co-deudor tiene una carga de deuda elevada en relación a sus ingresos', por lo que el aporte del complemento no mejora tanto como se esperaba.",
+    why:
+      "Al evaluar en conjunto, el banco (y el motor de scoring) suma también las deudas del codeudor, no solo su renta. Un codeudor con carga alta puede incluso restar respecto de una evaluación individual limpia.",
+    action:
+      "Antes de complementar renta, vale la pena revisar la carga financiera del codeudor por separado, o evaluar primero si la evaluación individual ya es suficiente.",
+    relatedArticleIds: ["credito-2"],
+  },
+  {
+    id: "caso-morosidad-incierta",
+    title: "Morosidad declarada como 'no lo sé'",
+    tag: { classification: "Bajo", riskKeyword: "incertidumbre" },
+    situation:
+      "Un usuario no está seguro de si tiene alguna deuda impaga y responde 'no lo sé' en el formulario. El sistema registra 'existe incertidumbre sobre la situación de pagos actual' y penaliza el score de forma preventiva.",
+    why:
+      "El motor de scoring trata la incertidumbre de forma conservadora: es más seguro asumir que hay algo que revisar, que asumir que todo está en orden sin evidencia.",
+    action:
+      "Revisar el propio historial de pagos (por ejemplo a través de plataformas de información comercial) antes de completar el formulario evita este castigo evitable.",
+    relatedArticleIds: ["credito-1"],
+  },
+];
+
+// Busca, entre los casos prácticos, el que más se parece a la situación real
+// del usuario (misma clasificación + un riesgo real que calza con el caso).
+export function findMatchingCase(evaluation) {
+  const result = evaluation?.result;
+  if (!result?.classification || !Array.isArray(result.risks)) return null;
+
+  return (
+    CASE_STUDIES.find(
+      (item) =>
+        item.tag.classification === result.classification &&
+        result.risks.some((risk) => risk.toLowerCase().includes(item.tag.riskKeyword))
+    ) || null
+  );
+}
