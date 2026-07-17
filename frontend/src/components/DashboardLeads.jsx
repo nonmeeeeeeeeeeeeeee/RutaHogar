@@ -88,18 +88,6 @@ function purchaseTermLabel(value) {
   return labels[value] || "Sin dato";
 }
 
-function hasSupportProgramPath(input, indicators) {
-  const propertyValueUf = Number(indicators?.property_value_uf);
-  const pieRatio = Number(indicators?.pie_ratio);
-  return (
-    input?.vivienda_nueva !== false &&
-    Number.isFinite(propertyValueUf) &&
-    propertyValueUf <= 4000 &&
-    Number.isFinite(pieRatio) &&
-    pieRatio >= 0.10
-  );
-}
-
 function getDateThreshold(value) {
   const now = new Date();
   switch (value) {
@@ -137,7 +125,6 @@ export default function DashboardLeads({ evaluations }) {
   const selectedPhone = selectedLead?.phone || selectedLead?.profile?.phone || "";
   const selectedBaseScore = selectedResult.base_score ?? selectedResult.score;
   const selectedFinalScore = selectedResult.adjusted_score ?? selectedResult.score;
-  const selectedSupportProgramPath = hasSupportProgramPath(selectedInput, selectedFinancialIndicators);
   const hasActiveFilters =
     filter !== DEFAULT_CLASSIFICATION_FILTER ||
     filterCommune !== "todas" ||
@@ -494,14 +481,6 @@ export default function DashboardLeads({ evaluations }) {
                     <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
                       <dt>Pie estimado</dt>
                       <dd style={{ margin: 0, textAlign: "right" }}>{formatPercent(selectedFinancialIndicators.pie_ratio)}</dd>
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
-                      <dt>Camino subsidio/FOGAES</dt>
-                      <dd style={{ margin: 0, textAlign: "right" }}>
-                        {selectedSupportProgramPath
-                          ? "Revisar como recomendación contextual"
-                          : "No sugerido con los datos actuales"}
-                      </dd>
                     </div>
                   </dl>
                 </div>

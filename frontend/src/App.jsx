@@ -159,11 +159,9 @@ const buildFinancialInput = (input = {}) => ({
   valor_vehiculos: input.valor_vehiculos,
   valor_inmuebles: input.valor_inmuebles,
   patrimonio_unit: input.patrimonio_unit,
-  subsidio_habitacional: input.subsidio_habitacional,
   plazo_compra: input.plazo_compra,
   tiene_propiedad_vista: input.tiene_propiedad_vista,
   vivienda_nueva: input.vivienda_nueva,
-  fogaes_interes: input.fogaes_interes,
   pie_en_cuotas_interes: input.pie_en_cuotas_interes,
   consentimiento: input.consentimiento,
   uf_value_clp: input.uf_value_clp,
@@ -264,7 +262,8 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
 
   if (profile.role === roles.user) {
     if (unknownRoute) return { page: "home", path: "/inicio" };
-    if (path === "/" || path === "/inicio") return { page: "home", path: path === "/" ? "/inicio" : undefined };
+    if (path === "/") return { page: "landing" };
+    if (path === "/inicio") return { page: "home" };
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return {
         page: hasCompletedOnboarding(getOnboardingData(profile)) ? "evaluate" : "onboarding",
@@ -281,16 +280,18 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
   }
 
   if (profile.role === roles.sales) {
-    if (path === "/dashboard" || path === "/ejecutivo/leads" || path === "/" || path === "/inicio") {
+    if (path === "/") return { page: "landing" };
+    if (path === "/dashboard" || path === "/ejecutivo/leads" || path === "/inicio") {
       return { page: "leads", path: path === "/dashboard" ? undefined : "/dashboard" };
     }
     return { page: "leads", path: "/dashboard" };
   }
 
   if (profile.role === roles.admin) {
+    if (path === "/") return { page: "landing" };
     if (path === "/admin") return { page: "admin" };
     if (path === "/dashboard" || path === "/ejecutivo/leads") return { page: "leads", path: "/dashboard" };
-    if (path === "/" || path === "/inicio") return { page: "admin", path: "/admin" };
+    if (path === "/inicio") return { page: "admin", path: "/admin" };
     return { page: "admin", path: "/admin" };
   }
 
@@ -362,6 +363,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
+  const [dismissedError, setDismissedError] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
   const [onboarding, setOnboarding] = useState(() => {
@@ -395,7 +397,8 @@ export default function App() {
     removeEvaluation,
     prependEvaluation,
   } = useLeads({ userId, profile });
-  const visibleError = dataError || leadsError;
+  const currentError = dataError || leadsError;
+  const visibleError = currentError && currentError !== dismissedError ? currentError : "";
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
@@ -452,6 +455,10 @@ export default function App() {
       updateBrowserPath(route.path || pathname, { replace: true });
     }
   }, [pathname, profile?.role, anonOnboarding]);
+
+  useEffect(() => {
+    setDismissedError("");
+  }, [currentError]);
 
   useEffect(() => {
     let active = true;
@@ -1116,7 +1123,18 @@ export default function App() {
         }
         onLogout={handleLogout}
       />
-      {visibleError && <div className="error-message">{visibleError}</div>}
+      {visibleError && (
+        <div className="error-message dismissible-message">
+          <span>{visibleError}</span>
+          <button
+            type="button"
+            aria-label="Cerrar mensaje"
+            onClick={() => setDismissedError(visibleError)}
+          >
+            x
+          </button>
+        </div>
+      )}
 
       {/* Notificación para ejecutivos */}
       <NotificationToast

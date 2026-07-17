@@ -359,7 +359,6 @@ export default function ScoreForm({
     valor_vehiculos: "",
     valor_inmuebles: "",
     patrimonio_unit: "clp",
-    subsidio_habitacional: "no",
   });
 
   // Estado paralelo solo para mostrar los valores formateados en pantalla
@@ -924,7 +923,6 @@ export default function ScoreForm({
             : 0,
         patrimonio_unit: form.patrimonio_unit,
         uf_value_clp: ufValueClp,
-        subsidio_habitacional: form.subsidio_habitacional || "no",
         plazo_compra: normalizePurchaseTermForScore(onboardingData?.plazo_compra),
         tiene_propiedad_vista: onboardingData?.tiene_propiedad_vista === true,
       };
@@ -1130,7 +1128,7 @@ export default function ScoreForm({
           <div className="field-wrap">
             <div className="field-label-row">
               <label htmlFor="ahorro_disponible">Ahorro disponible</label>
-              <FieldTooltip text="Dinero disponible hoy para el pago inicial de la vivienda: ahorros propios, APV o Cuenta 2 que puedas usar. No incluyas subsidios o apoyos no confirmados como si ya fueran ahorro disponible." />
+              <FieldTooltip text="Dinero disponible hoy para el pago inicial de la vivienda: ahorros propios, APV o Cuenta 2 que puedas usar. No incluyas apoyos no confirmados como si ya fueran ahorro disponible." />
             </div>
             <input
               type="text"
@@ -1184,22 +1182,6 @@ export default function ScoreForm({
               </span>
             </div>
           )}
-
-          <div className="field-wrap">
-            <div className="field-label-row">
-              <label htmlFor="subsidio_habitacional">Subsidio habitacional</label>
-              <FieldTooltip text="Opcional. Solo se usa para orientar recomendaciones; no aumenta el score ni implica aprobación." />
-            </div>
-            <select
-              id="subsidio_habitacional"
-              name="subsidio_habitacional"
-              value={form.subsidio_habitacional}
-              onChange={handleChange}
-            >
-              <option value="no">No</option>
-              <option value="si">Sí, tengo o estoy postulando</option>
-            </select>
-          </div>
 
           {/* Plazo estimado */}
           <div
@@ -1280,7 +1262,6 @@ export default function ScoreForm({
           <span className="eyebrow">Trabajo y antecedentes declarados</span>
           <p>
             La morosidad es autodeclarada y sólo se usa como señal orientativa.
-            No consultamos CMF, DICOM ni APIs externas.
           </p>
         </div>
         <div className="form-grid">

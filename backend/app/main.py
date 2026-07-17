@@ -11,7 +11,6 @@ VALID_DELINQUENCY_VALUES = {"si", "no"}
 VALID_DELINQUENCY_AGE_VALUES = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
 VALID_PROPERTY_UNITS = {"uf", "clp"}
 VALID_MORTGAGE_TERMS = {10, 15, 20, 25, 30}
-VALID_SUBSIDY_VALUES = {"si", "no", "no_lo_se"}
 VALID_PURCHASE_TERMS = {
     "inmediato",
     "3_a_6_meses",
@@ -90,8 +89,6 @@ class ScoreRequest(BaseModel):
     morosidad_complementario: Optional[str] = None
     relacion_complementario: Optional[str] = None
     vivienda_nueva: Optional[bool] = None
-    subsidio_habitacional: Optional[str] = None
-    fogaes_interes: Optional[bool] = None
     plazo_compra: Optional[str] = None
     tiene_propiedad_vista: Optional[bool] = None
     pie_en_cuotas_interes: Optional[bool] = None
@@ -116,9 +113,6 @@ class ScoreRequest(BaseModel):
             )
             if dividend is not None:
                 data["dividendo_estimado"] = dividend
-
-        if data.get("subsidio_habitacional") in {"", "no_lo_se", "prefiero_no_indicar"}:
-            data["subsidio_habitacional"] = "no"
 
         purchase_term_aliases = {
             "0_3_meses": "inmediato",
@@ -206,13 +200,6 @@ class ScoreRequest(BaseModel):
     def validate_property_value_unit(cls, value):
         if value is not None and value not in VALID_PROPERTY_UNITS:
             raise ValueError("Unidad de monto de vivienda inválida")
-        return value
-
-    @field_validator("subsidio_habitacional")
-    @classmethod
-    def validate_subsidy_status(cls, value):
-        if value is not None and value not in VALID_SUBSIDY_VALUES:
-            raise ValueError("Estado de subsidio habitacional inválido")
         return value
 
     @field_validator("plazo_compra")

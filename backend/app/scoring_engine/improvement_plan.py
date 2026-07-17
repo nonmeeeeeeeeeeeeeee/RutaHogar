@@ -182,27 +182,6 @@ def build_structured_improvement_plan(data: dict, indicators: dict, blockers: li
             )
         )
 
-    property_value_uf = _positive_float(safe_indicators.get("property_value_uf"))
-    pie_ratio = _positive_float(safe_indicators.get("pie_ratio"))
-    if (
-        safe_data.get("vivienda_nueva") is not False
-        and property_value_uf > 0
-        and property_value_uf <= 4000
-        and pie_ratio >= 0.10
-    ):
-        actions.append(
-            _action(
-                "evaluate_subsidy_fogaes",
-                "Evaluar subsidio habitacional o FOGAES",
-                "Podría existir una ruta de apoyo para vivienda nueva bajo 4.000 UF. Debe revisarse como orientación, sin asumir aprobación ni garantía.",
-                property_value_uf,
-                4000.0,
-                0.0,
-                "medium",
-                1,
-            )
-        )
-
     if _is_truthy(safe_data.get("pie_en_cuotas_interes")):
         actions.append(
             _action(

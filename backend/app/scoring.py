@@ -108,23 +108,8 @@ def _is_truthy(value) -> bool:
     return value is True or str(value).strip().lower() in {"true", "1", "si", "sí", "yes"}
 
 
-def _eligible_for_support_context(data: Dict, indicators: Dict) -> bool:
-    property_value_uf = _positive_float(indicators.get("property_value_uf"))
-    pie_ratio = _positive_float(indicators.get("pie_ratio"))
-    return (
-        data.get("vivienda_nueva") is not False
-        and property_value_uf > 0
-        and property_value_uf <= 4000
-        and pie_ratio >= 0.10
-    )
-
-
 def _contextual_recommendations(data: Dict, indicators: Dict) -> List[str]:
     recommendations = []
-    if _eligible_for_support_context(data, indicators):
-        recommendations.append(
-            "Evalúa si un subsidio habitacional o FOGAES podría aplicar a tu caso. Es una recomendación contextual y no garantiza aprobación ni aumenta el score por sí sola."
-        )
     if _is_truthy(data.get("pie_en_cuotas_interes")):
         recommendations.append(
             "Consulta si el proyecto permite pago del pie en cuotas; depende de condiciones comerciales de la inmobiliaria y no debe contarse como ahorro disponible ya acumulado."
