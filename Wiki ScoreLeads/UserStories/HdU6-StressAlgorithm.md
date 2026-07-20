@@ -1,6 +1,6 @@
 # HdU 6 — Stress Algorithm
 
-> ⏸ **Out of scope for the current MVP.** Documented here for future planning. Do not implement without explicit team instruction.
+> ⏸ **Out of current active scope.** Documented here for future planning. Do not implement without explicit team instruction.
 
 Lets the user simulate how macroeconomic changes — rising interest rates or UF fluctuations — would affect their purchasing capacity, giving them a realistic picture of financial risk before committing to the purchase process.
 

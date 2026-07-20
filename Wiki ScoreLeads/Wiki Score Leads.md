@@ -21,7 +21,7 @@
 
 ## 1. ¿Qué es ScoreLeads?
 
-ScoreLeads es un MVP web que permite a un usuario interesado en comprar una vivienda ingresar sus datos financieros básicos y recibir en segundos:
+ScoreLeads es una plataforma profesional de precalificación financiera inmobiliaria que permite a un usuario interesado en comprar una vivienda ingresar sus datos financieros básicos y recibir en segundos:
 
 - Un **score de 0 a 100** basado en reglas del mundo hipotecario real.
 - Una **clasificación**: Alto, Medio o Bajo.
@@ -30,7 +30,7 @@ ScoreLeads es un MVP web que permite a un usuario interesado en comprar una vivi
 
 Para la inmobiliaria, los leads con score Alto quedan disponibles en un panel priorizado para que el ejecutivo comercial los contacte directamente.
 
-El sistema **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana.
+El sistema **no aprueba créditos** y **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana. La IA no decide el score: solo redacta explicaciones a partir del resultado calculado por reglas auditables.
 
 ---
 

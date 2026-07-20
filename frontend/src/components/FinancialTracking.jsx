@@ -1,14 +1,10 @@
 import React, { useMemo } from "react";
 import { buildFinancialTracking, goalStatuses } from "../services/financialTracking";
-import { formatScore } from "../utils/helpers";
-
-const scoreColorClass = (score) => {
-  const n = Number(score);
-  if (!Number.isFinite(n)) return "";
-  if (n >= 60) return "score-high";
-  if (n <= 40) return "score-low";
-  return "score-medium";
-};
+import {
+  formatScore,
+  getClassificationAdjustment,
+  getScoreBadgeClass,
+} from "../utils/helpers";
 
 export default function FinancialTracking({
   evaluation,
@@ -19,6 +15,10 @@ export default function FinancialTracking({
   onStartEvaluation,
 }) {
   const tracking = useMemo(() => buildFinancialTracking(evaluation), [evaluation]);
+  const adjustment = useMemo(
+    () => getClassificationAdjustment(evaluation?.result),
+    [evaluation?.result],
+  );
 
   if (!tracking) {
     return (
@@ -52,12 +52,20 @@ export default function FinancialTracking({
       </div>
 
       <div className="tracking-summary">
-        <div className={`score-badge-wrap ${scoreColorClass(tracking.score)}`}>
-          <span>Score actual</span>
+        <div className={`score-badge-wrap ${getScoreBadgeClass(tracking.classification)}`}>
+          <span>Score financiero</span>
           <strong>{formatScore(tracking.score, "Sin score")}</strong>
-          <small>{tracking.classification}</small>
+          <small>Clasificación final: {tracking.classification || "Sin clasificación"}</small>
         </div>
-        <p>{tracking.message}</p>
+        <div>
+          <p>{tracking.message}</p>
+          {adjustment ? (
+            <div className="score-adjustment-note">
+              <strong>{adjustment.message}</strong>
+              {adjustment.detail ? <p>{adjustment.detail}</p> : null}
+            </div>
+          ) : null}
+        </div>
       </div>
 
       {tracking.warning && <div className="warning-note">{tracking.warning}</div>}
@@ -72,8 +80,8 @@ export default function FinancialTracking({
 
       {displayedGoals.length === 0 ? (
         <div className="empty-state">
-          <strong>No hay información suficiente para generar un plan detallado.</strong>
-          <p>Realiza una preevaluación completa para generar metas mensuales y acciones sugeridas.</p>
+          <strong>Aún no tienes metas de seguimiento guardadas.</strong>
+          <p>Puedes usar el plan sugerido de tu última preevaluación como guía inicial.</p>
           <button type="button" onClick={onStartEvaluation}>Ir a precalificación</button>
         </div>
       ) : null}

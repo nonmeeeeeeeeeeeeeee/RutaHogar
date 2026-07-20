@@ -1,5 +1,6 @@
 import os
 import re
+import json
 from pathlib import Path
 
 try:
@@ -73,11 +74,59 @@ def _clean_generated_text(text: str) -> str:
     return cleaned
 
 
+def _format_json_context(value) -> str:
+    if value in (None, [], {}):
+        return "No disponible"
+    try:
+        return json.dumps(value, ensure_ascii=False, indent=2, default=str)
+    except TypeError:
+        return str(value)
+
+
+def _main_blocker_label(main_blocker) -> str:
+    if not isinstance(main_blocker, dict) or not main_blocker:
+        return "No hay bloqueador principal informado."
+    title = main_blocker.get("title") or main_blocker.get("code") or "Bloqueador principal"
+    description = main_blocker.get("description") or "Sin descripción adicional."
+    severity = main_blocker.get("severity") or "sin severidad"
+    return f"{title} ({severity}): {description}"
+
+
+def _professional_context(
+    financial_indicators=None,
+    blockers=None,
+    main_blocker=None,
+    project_fit=None,
+    commercial_priority_detail=None,
+    structured_improvement_plan=None,
+) -> str:
+    return f"""Contexto profesional calculado por reglas del sistema:
+- Indicadores financieros:
+{_format_json_context(financial_indicators)}
+- Bloqueador principal:
+{_main_blocker_label(main_blocker)}
+- Bloqueadores:
+{_format_json_context(blockers)}
+- Compatibilidad con objetivo inmobiliario (project_fit):
+{_format_json_context(project_fit)}
+- Prioridad comercial calculada:
+{_format_json_context(commercial_priority_detail)}
+- Plan estructurado de mejora:
+{_format_json_context(structured_improvement_plan)}
+"""
+
+
 def generate_executive_summary(
     classification: str,
     score: float,
     positive_indicators: list,
     risks: list,
+    financial_indicators=None,
+    blockers=None,
+    main_blocker=None,
+    project_fit=None,
+    commercial_priority_detail=None,
+    structured_improvement_plan=None,
 ) -> str:
     """
     Resumen ejecutivo para el ejecutivo comercial.
@@ -85,9 +134,19 @@ def generate_executive_summary(
     """
     positivos_txt = "\n".join(f"- {p}" for p in positive_indicators) or "- Sin indicadores positivos"
     riesgos_txt   = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos detectados"
+    professional_context = _professional_context(
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
+    )
 
     prompt = f"""Eres un analista/ejecutivo comercial inmobiliario experto.
 Redacta un resumen ejecutivo breve (máximo 100 palabras) dirigido a un ejecutivo comercial, NO al cliente.
+El score, la clasificación, los bloqueadores y la prioridad ya fueron calculados por reglas del sistema.
+La IA solo redacta explicaciones; no puede calcular ni modificar el resultado.
 
 Datos del lead:
 - Score: {score}/100
@@ -99,13 +158,20 @@ Indicadores positivos:
 Riesgos detectados:
 {riesgos_txt}
 
+{professional_context}
+
 El resumen debe:
 1. Explicar en una frase por qué obtuvo la clasificación "{classification}".
-2. Indicar qué tan preparado está el lead para avanzar en un proceso hipotecario.
-3. Ser directo y útil para que el ejecutivo decida cómo priorizar este lead.
+2. Resumir bloqueadores, project fit y prioridad comercial si están disponibles.
+3. Indicar si el lead parece contactable, requiere revisión o conviene trabajarlo con plan de mejora.
+4. Ser directo y útil para que el ejecutivo decida cómo priorizar este lead.
 
 NO debes:
-1. Hablar en primera persona por ningún motivo
+1. Hablar en primera persona por ningún motivo.
+2. Calcular, modificar o cuestionar el score o la clasificación.
+3. Decir que ScoreLeads aprueba créditos.
+4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
+5. Reemplazar la evaluación bancaria formal.
 Responde solo el resumen, sin títulos ni encabezados."""
 
     return _clean_generated_text(_ask_groq(prompt, max_tokens=200))
@@ -117,6 +183,12 @@ def generate_commercial_guidance(
     positive_indicators: list,
     risks: list,
     recommendations: list,
+    financial_indicators=None,
+    blockers=None,
+    main_blocker=None,
+    project_fit=None,
+    commercial_priority_detail=None,
+    structured_improvement_plan=None,
 ) -> str:
     """
     Sugiere una acción comercial concreta al ejecutivo según el perfil del lead.
@@ -124,9 +196,19 @@ def generate_commercial_guidance(
     riesgos_txt        = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos relevantes"
     recomendaciones_txt = "\n".join(f"- {r}" for r in recommendations) or "- Sin recomendaciones"
     positive_indicators_txt = "\n".join(f"- {p}" for p in positive_indicators) or"- Sin indicadores positivos"
+    professional_context = _professional_context(
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
+    )
     
 
     prompt = f"""Eres un ejecutivo comercial inmobiliario experimentado.
+Tu tarea es redactar una guía comercial. El score y la clasificación ya fueron calculados por reglas del sistema.
+La IA solo redacta explicaciones; no puede calcular ni modificar el score, la clasificación, bloqueadores o prioridad.
 
 Lead a evaluar:
 - Clasificación: {classification}
@@ -142,16 +224,21 @@ Indicadores positivos del lead:
 Recomendaciones del sistema:
 {recomendaciones_txt}
 
-Indica UNA sola acción comercial concreta para este lead.
-Debe ser una de estas: "Contactar pronto", "Agendar reunión", "Mantener seguimiento", o "Recontactar en algunos meses", o algo del estilo
-Luego debes explicar la razón del por qué esa recomendación, considerando toda la evaluación.
+{professional_context}
+
+Indica UNA sola acción comercial concreta para este lead, usando especialmente commercial_priority_detail si está disponible.
+No ejecutes derivaciones reales ni digas que se enviará a CRM; solo orienta.
+Luego explica la razón considerando toda la evaluación.
 
 Formato de respuesta (respeta exactamente este formato):
 Acción: [nombre de la acción]\n
 Motivo: [explicación en máximo 30 palabras]
 
 NO debes:
-1. Hablar en primera persona por ningún motivo
+1. Hablar en primera persona por ningún motivo.
+2. Calcular, modificar o cuestionar el score o la clasificación.
+3. Decir que ScoreLeads aprueba créditos.
+4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
 """
 
     return _clean_generated_text(_ask_groq(prompt, max_tokens=120))
@@ -162,12 +249,27 @@ def generate_user_explanation(
     score: float,
     positive_indicators: list,
     risks: list,
+    financial_indicators=None,
+    blockers=None,
+    main_blocker=None,
+    project_fit=None,
+    commercial_priority_detail=None,
+    structured_improvement_plan=None,
 ) -> str:
     positivos_txt = "\n".join(f"- {p}" for p in positive_indicators) or "- Sin indicadores positivos"
     riesgos_txt   = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos detectados"
+    professional_context = _professional_context(
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
+    )
 
     prompt = f"""Eres un asesor financiero hipotecario que habla directamente con una persona interesada en comprar vivienda.
 Redacta UN párrafo de entre 80 y 120 palabras explicando los principales factores que influyeron en su evaluación.
+El score y la clasificación ya fueron calculados por reglas del sistema. La IA solo redacta la explicación.
 
 Datos de la evaluación:
 - Score: {score}/100
@@ -179,13 +281,23 @@ Factores positivos:
 Factores de riesgo:
 {riesgos_txt}
 
+{professional_context}
+
 El párrafo debe:
 1. Mencionar brevemente lo que jugó a su favor.
 2. Explicar de manera constructiva los factores de riesgo.
-3. Considerar, cuando aparezcan en los datos, ingreso y deuda, dividendo esperado, ahorro o pie, contrato y continuidad, morosidad, edad y plazo, complemento de renta, patrimonio y objetivo de vivienda.
-4. Usar un tono empático e informativo, sin tecnicismos ni fórmulas.
-5. Hablar directamente al usuario en segunda persona (tú).
-6. No mencionar el puntaje exacto ni los umbrales del sistema.
+3. Usar bloqueador principal, project_fit y plan estructurado de mejora si existen.
+4. Considerar, cuando aparezcan en los datos, ingreso y deuda, dividendo esperado, ahorro o pie, contrato y continuidad, morosidad, edad y plazo, complemento de renta, patrimonio y objetivo de vivienda.
+5. Usar un tono empático, claro, profesional y prudente, sin tecnicismos ni fórmulas.
+6. Hablar directamente al usuario en segunda persona (tú).
+7. No mencionar el puntaje exacto ni los umbrales del sistema.
+
+NO debes:
+1. Calcular, modificar o cuestionar el score o la clasificación.
+2. Decir que la persona está aprobada.
+3. Decir que ScoreLeads aprueba créditos.
+4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
+5. Reemplazar una evaluación bancaria formal.
 
 Responde solo el párrafo, sin títulos ni encabezados."""
 

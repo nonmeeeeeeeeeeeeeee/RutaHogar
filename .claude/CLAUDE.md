@@ -6,7 +6,9 @@ ScoreLeads es una plataforma web de precalificación financiera para el sector i
 
 Para la inmobiliaria, los leads con score Alto quedan disponibles en un panel priorizado para que el ejecutivo comercial los contacte.
 
-El sistema **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana.
+ScoreLeads **ya no debe tratarse ni documentarse como MVP**. Es una plataforma profesional de precalificación financiera inmobiliaria, con scoring explicable, reglas versionadas, trazabilidad, privacidad, priorización comercial y plan de mejora financiero.
+
+El sistema **no aprueba créditos** y **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana. La IA no decide el score: solo redacta explicaciones, resúmenes o guías a partir del resultado calculado por reglas auditables.
 
 ## Cliente y equipo
 
@@ -28,7 +30,7 @@ El sistema **no reemplaza** una evaluación bancaria formal. Es una herramienta 
 | Frontend | React + Vite |
 | Backend | FastAPI + Python |
 | Base de datos | Supabase + PostgreSQL (omitida en desarrollo local) |
-| IA | Placeholder — proveedor LLM por definir |
+| IA | Groq para explicaciones y orientación comercial |
 
 ## Estructura del repositorio
 
@@ -69,7 +71,7 @@ App en `http://localhost:5173`
 
 Supabase **no es necesaria** para desarrollo local. El backend calcula scores sin base de datos. El frontend muestra errores silenciosos cuando Supabase no está configurada — eso es esperado en local.
 
-## Alcance activo — HdU 1 a 4 únicamente
+## Alcance activo — plataforma profesional
 
 | HdU | Descripción |
 | :-- | :---------- |
@@ -86,6 +88,7 @@ Supabase **no es necesaria** para desarrollo local. El backend calcula scores si
 - OCR de documentos
 - Modelos ML entrenados propios para scoring
 - Almacenamiento de credenciales bancarias o documentos sensibles
+- Consulta de datos financieros externos sin consentimiento explícito
 
 ## Convenciones de código
 
@@ -104,12 +107,14 @@ Supabase **no es necesaria** para desarrollo local. El backend calcula scores si
 5. No romper el contrato del endpoint `POST /score` (ver sección Backend)
 6. No agregar funcionalidades fuera de HdU 1–4 sin instrucción explícita del equipo
 7. No modificar `PRECIOS_REFERENCIA_UF` en `scoring.py` sin contexto del negocio
+8. No romper localStorage, Supabase condicional, Groq ni los flujos de auditoría/historial
+9. No consultar datos financieros externos sin consentimiento explícito y alcance aprobado
 
 ## Variables de entorno
 
 ```env
 # Backend
-ANTHROPIC_API_KEY=sk-...       # Placeholder — proveedor LLM por definir
+GROQ_API_KEY=gsk_...           # Opcional para explicaciones y orientación comercial
 
 # Frontend
 VITE_SUPABASE_URL=https://...
@@ -192,9 +197,11 @@ Score clampado a [0, 100]. Clasificación: Alto ≥ 70, Medio ≥ 40, Bajo < 40.
 
 ### Capa de IA
 
-`generate_ai_explanation` y `generate_improvement_plan` son funciones mock — generan texto determinístico a partir de `risk_codes` internos. El proveedor LLM real no está definido aún. La capa está aislada para facilitar la conexión futura sin cambiar la firma de las funciones.
+La IA debe limitarse a redactar explicaciones, resúmenes ejecutivos y orientación comercial a partir del resultado calculado por reglas. No debe decidir ni recalcular el score.
 
 `risk_codes` disponibles: `ingreso_dividendo`, `deuda_alta`, `ahorro_bajo`, `precio_objetivo`, `contrato_independiente`, `continuidad_baja`, `continuidad_media`, `morosidad_alta`, `morosidad_media`.
+
+Evolución esperada: el scoring debe avanzar con reglas versionadas, bloqueadores, componentes ponderados, compatibilidad con proyecto inmobiliario, prioridad comercial, auditoría e historial de versiones. No reemplazar reglas por ML sin instrucción explícita.
 
 ### Cómo agregar una regla de scoring
 

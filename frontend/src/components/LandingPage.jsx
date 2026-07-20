@@ -658,7 +658,7 @@ export default function LandingPage({
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 2l6 2v5c0 4-3 6-6 7-3-1-6-3-6-7V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
               </svg>
-              Orientativo · No consultamos DICOM ni CMF
+              Orientativo · No consultamos
             </div>
           </div>
         </section>

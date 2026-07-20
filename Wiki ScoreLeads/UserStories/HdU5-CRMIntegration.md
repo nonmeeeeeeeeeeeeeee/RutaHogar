@@ -1,6 +1,6 @@
 # HdU 5 — CRM Integration
 
-> ⏸ **Out of scope for the current MVP.** Documented here for future planning. Do not implement without explicit team instruction.
+> ⏸ **Out of current active scope.** Documented here for future planning. Do not implement without explicit team instruction.
 
 Allows qualified leads to be pushed from ScoreLeads directly into the real estate company's CRM, giving the sales team a prioritized pipeline with no manual data entry.
 
@@ -54,5 +54,5 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 ## Notes
 
 - This story requires knowledge of the target CRM's API (endpoint, authentication, field mapping). That information is not yet available.
-- The internal lead dashboard ([[HdU2-LeadPrioritization|HdU 2]]) covers the prioritization need for the MVP without this integration.
+- The internal lead dashboard ([[HdU2-LeadPrioritization|HdU 2]]) covers the current prioritization need without this integration.
 - When this story is eventually implemented, the sync logic should be event-driven (score update triggers a CRM write) rather than a manual export.

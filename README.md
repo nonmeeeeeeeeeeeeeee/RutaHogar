@@ -1,9 +1,24 @@
 # ScoreLeads
 
-Software for pre-evaluating real-estate leads (React frontend + FastAPI backend).
-The current project focus is moving toward a final product version for year-end,
-prioritizing data consistency, correct persistence, traceability, and real user
-flows.
+Professional platform for real-estate financial prequalification (React
+frontend + FastAPI backend). ScoreLeads is no longer documented as an MVP: it is
+a product-oriented system for explainable scoring, versioned rules,
+traceability, privacy, commercial prioritization, and financial improvement
+planning.
+
+ScoreLeads does not approve mortgage loans and does not replace a formal bank
+evaluation. The score is orientative and explainable. AI-generated text may help
+summarize explanations or commercial guidance, but the score itself must remain
+determined by auditable rules unless the team explicitly instructs otherwise.
+
+Core safeguards:
+
+- Do not replace scoring rules with ML without explicit instruction.
+- Do not break the `POST /score` contract, localStorage fallback, conditional
+  Supabase behavior, or Groq integration.
+- Do not hardcode API keys or secrets.
+- Do not query external financial sources, banks, CMF, Dicom, or similar
+  services without explicit user consent and approved scope.
 
 Run backend:
 

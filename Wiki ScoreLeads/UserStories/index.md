@@ -1,6 +1,6 @@
 # User Stories — ScoreLeads
 
-All user stories for the ScoreLeads platform. HdU 1–4 are in scope for the current MVP. HdU 5–6 are documented but deferred.
+All user stories for the ScoreLeads platform. HdU 1–4 are the current active scope. HdU 5–6 are documented but deferred.
 
 ---
 
