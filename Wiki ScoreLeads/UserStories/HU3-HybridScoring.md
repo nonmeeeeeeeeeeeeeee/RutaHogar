@@ -1,6 +1,6 @@
-# HdU 3 — Hybrid Scoring with Intelligent Explanation
+# HU 3 — Hybrid Scoring with Intelligent Explanation
 
-The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, computes a 0–100 score using parametric rules, classifies the lead, and generates an AI-assisted explanation of the key factors behind the result. Every evaluation is stored as an immutable record.
+The core engine of ScoreLeads. Processes the financial data submitted in HU 1, computes a 0–100 score using parametric rules, classifies the lead, and generates an AI-assisted explanation of the key factors behind the result. Every evaluation is stored as an immutable record.
 
 ---
 
@@ -8,12 +8,13 @@ The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, 
 
 | Field | Value |
 | :---- | :---- |
-| **Category** | Important |
+| **Category** | Very complex |
 | **Story Points** | 8 |
 | **Actor** | Lead |
-| **Status** | ✅ In scope |
-| **Depends on** | [[HdU1-FinancialDataEntry\|HdU 1]] |
-| **Required by** | [[HdU2-LeadPrioritization\|HdU 2]], [[HdU4-ImprovementPlan\|HdU 4]] |
+| **Status** | ✅ Implemented (PMV) |
+| **Sprint** | PMV (completed) |
+| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]] |
+| **Required by** | [[HU2-LeadPrioritization\|HU 2]], [[HU7-ImprovementPlan\|HU 7]] |
 
 ---
 
@@ -45,7 +46,7 @@ The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, 
 
 **Given** the system presents the assessment result,  
 **When** the user views their credit classification,  
-**Then** the system, through an AI agent or module, must display a detailed explanation of the main factors that influenced the score.
+**Then** the system, through an AI agent, must display a detailed explanation of the main factors that influenced the score.
 
 ---
 
@@ -53,7 +54,7 @@ The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, 
 
 **Given** the user views their result,  
 **When** the scoring explanation is displayed,  
-**Then** the system must indicate that the score is indicative only and does not replace a formal bank assessment.
+**Then** the system must indicate explicitly that the score is indicative only and does not replace a formal bank assessment.
 
 ---
 
@@ -61,15 +62,15 @@ The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, 
 
 **Given** the scoring calculation is successful,  
 **When** the system saves the evaluation,  
-**Then** it must persist an immutable record containing the timestamp, numeric score, classification, input snapshot, algorithm version, and per-component breakdown with their explanations — ensuring this history cannot be modified afterwards, and that if the save fails, the result display is blocked and an error with a retry option is shown.
+**Then** it must generate an immutable record containing the timestamp, numeric score, classification, input snapshot, algorithm version, and per-component breakdown.
 
 ---
 
-### E6 — Sales executive notification
+### E6 — Education flow / sales executive notification
 
 **Given** a lead submits their financial data,  
 **When** the system evaluates them and determines they do not meet the minimum qualifying score,  
-**Then** they must be automatically redirected to a financial education flow without executive intervention; and conversely, if the score is High, the sales executive must be notified.
+**Then** they must be able to enter a financial education flow without executive intervention; and conversely, if the score is High, the sales executive must be notified.
 
 ---
 
@@ -78,4 +79,6 @@ The core engine of ScoreLeads. Processes the financial data submitted in HdU 1, 
 - The scoring engine is implemented in `backend/app/scoring.py`. Base score is 50; adjustments range from −30 to +25. Final score is clamped to [0, 100].
 - The AI explanation layer (`generate_ai_explanation`) is currently a deterministic mock. The real LLM provider is not yet defined — the interface is isolated so the provider can be swapped without changing the function signature.
 - Classification thresholds: Alto ≥ 70, Medio ≥ 40, Bajo < 40.
-- The immutable record described in E5 maps to the `evaluations` table. See [[../Database/evaluations|evaluations]] for the full schema, including `algoritmo_version` and `component_breakdown` columns.
+- The immutable record described in E5 maps to the `evaluations` table. See [[../Database/evaluations\|evaluations]] for the full schema, including `algoritmo_version` and `component_breakdown` columns. Full versioning/lineage is expanded in [[HU33-ImmutableEvaluationHistory\|HU 33]].
+- The E6 education flow redirect is documented in [[../Functionalities/e6-score-redirect\|e6-score-redirect]].
+- **Numbering note:** documented as `HdU 3` in the E2 informe; renumbered to `HU 3` following the E4 plan.

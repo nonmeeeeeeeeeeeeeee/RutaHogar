@@ -54,7 +54,7 @@ ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, *
 | Tecnología | Rol |
 | :--------- | :-- |
 | **Claude Code** | Apoyo al desarrollo, documentación y generación de componentes |
-| **Agente IA / LLM** | Explicación personalizada del score al usuario (HdU 3) |
+| **Agente IA / LLM** | Explicación personalizada del score al usuario (HU 3) |
 
 **Nota:** Las herramientas de IA generativa no forman parte crítica de la arquitectura del sistema en el MVP. Su rol principal es asistir al equipo de desarrollo y generar las explicaciones textuales del scoring para el usuario final.
 
@@ -69,7 +69,7 @@ Estas tecnologías **no forman parte del MVP**. Se evaluarán en fases posterior
 | **OCR** | Fase 2 | Procesar documentos subidos voluntariamente por el usuario (liquidaciones, certificados) para reforzar la confiabilidad del perfil |
 | **API CMF** | Fase 2+ | Incorporar datos externos para mejorar la precisión del modelo de scoring |
 | **Dicom / Historial crediticio** | Fase 2+ | Validación crediticia más precisa |
-| **CRM de la inmobiliaria** | Fase 2 | Integración para replicar leads calificados (score Alto) directamente en el flujo comercial (HdU 5) |
+| **CRM de la inmobiliaria** | Fase 2 | Integración para replicar leads calificados (score Alto) directamente en el flujo comercial (HU 4) |
 
 ---
 
@@ -80,7 +80,7 @@ Estas tecnologías **no forman parte del MVP**. Se evaluarán en fases posterior
 - Sin solicitud de credenciales bancarias ni documentos sensibles en el MVP
 - HTTPS obligatorio
 - Datos utilizados exclusivamente para fines de evaluación; no se comparten con terceros sin autorización explícita del usuario
-- Consentimiento explícito del usuario antes del envío de datos (criterio de aceptación obligatorio, HdU 1 — E3)
+- Consentimiento explícito del usuario antes del envío de datos (criterio de aceptación obligatorio, HU 1 — E3)
 
 ---
 

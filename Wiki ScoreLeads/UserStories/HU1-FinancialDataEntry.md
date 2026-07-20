@@ -1,4 +1,4 @@
-# HdU 1 — Financial Data Entry
+# HU 1 — Financial Data Entry
 
 Covers the initial data capture step: a guided, multi-step web form that collects the lead's core financial and employment information, validates it in real time, and routes the user to the scoring result — all without requiring documents or contact with a sales executive.
 
@@ -8,12 +8,13 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 
 | Field | Value |
 | :---- | :---- |
-| **Category** | Important |
+| **Category** | Complex |
 | **Story Points** | 5 |
 | **Actor** | Lead |
-| **Status** | ✅ In scope |
+| **Status** | ✅ Implemented (PMV) |
+| **Sprint** | PMV (completed) |
 | **Depends on** | — |
-| **Required by** | [[HdU3-HybridScoring\|HdU 3]] |
+| **Required by** | [[HU3-HybridScoring\|HU 3]] |
 
 ---
 
@@ -28,7 +29,7 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 ### E1 — Successful form completion
 
 **Given** the user accesses the ScoreLeads platform for the first time,  
-**When** they complete all required fields (income, debts, contract type, number of dependants, age) and accept the data consent,  
+**When** they complete all required fields (income, debts, contract type, age) and accept the data consent,  
 **Then** the system registers their profile and automatically redirects them to their assessment result.
 
 ---
@@ -43,9 +44,9 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 
 ### E3 — Data consent
 
-**Given** the service receives a pre-qualification request where the data processing consent flag is false or absent,  
-**When** the security middleware evaluates the integrity of the request before initiating the calculation,  
-**Then** the system must immediately abort the transaction, return a validation error, block any persistence attempt in the database, and log the rejection event exclusively as anonymous traffic.
+**Given** a pre-qualification request is received where the data-processing consent has not been accepted,  
+**When** the system validates the requirements of the request,  
+**Then** the assessment and the data must not be stored, in order to protect the privacy of the information.
 
 ---
 
@@ -59,6 +60,8 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 
 ## Notes
 
-- The form is deliberately lightweight — no document upload in this stage.
+- The form is deliberately lightweight — no document upload in this stage. Document upload is a separate, deferred story ([[HU19-SupportingDocuments\|HU 19]]).
 - Rent supplement (`complemento_renta`) activates additional required fields: `complemento_nombre`, `complemento_monto`, `complemento_relacion`.
-- Consent validation (E3) is enforced at the middleware level in the backend, not only in the UI. See `POST /score` contract in [[../../.claude/CLAUDE|CLAUDE.md]].
+- Consent validation (E3) is enforced at the middleware level in the backend, not only in the UI. See `POST /score` contract in [[../../.claude/CLAUDE\|CLAUDE.md]].
+- A mobile-optimized version of this flow is tracked as [[HU29-MobileLeadExperience\|HU 29]].
+- **Numbering note:** in the E2 informe this story was documented as `HdU 1`; the wiki now follows the E4 plan's `HU` numbering.
