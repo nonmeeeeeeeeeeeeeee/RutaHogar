@@ -1,6 +1,7 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { buildFinancialTracking, goalStatuses } from "../services/financialTracking";
 import { formatScore } from "../utils/helpers";
+import MilestoneModal from "./MilestoneModal";
 
 const scoreColorClass = (score) => {
   const n = Number(score);
@@ -17,7 +18,9 @@ export default function FinancialTracking({
   onGoalStatusChange,
   onOpenGoalPlan,
   onStartEvaluation,
+  onRegisterMilestone,
 }) {
+  const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
   const tracking = useMemo(() => buildFinancialTracking(evaluation), [evaluation]);
 
   if (!tracking) {
@@ -61,6 +64,12 @@ export default function FinancialTracking({
       </div>
 
       {tracking.warning && <div className="warning-note">{tracking.warning}</div>}
+
+      <div className="tracking-actions" style={{ marginBottom: "1rem" }}>
+        <button type="button" className="primary-button" onClick={() => setMilestoneModalOpen(true)}>
+          Registrar Avance / Hito Financiero
+        </button>
+      </div>
 
       {evaluation?.plan_accepted_at ? (
         <div className="success-message">Plan activado. Podrás volver a precalificar después de avanzar en tus metas.</div>
@@ -109,9 +118,20 @@ export default function FinancialTracking({
             </label>
           </article>
         ))}
+
+        {tracking.ufNote && <p className="field-help">{tracking.ufNote}</p>}
       </div>
 
-      {tracking.ufNote && <p className="tracking-footnote">{tracking.ufNote}</p>}
+      {milestoneModalOpen && (
+        <MilestoneModal
+          evaluation={evaluation}
+          onClose={() => setMilestoneModalOpen(false)}
+          onSubmit={(data) => {
+            setMilestoneModalOpen(false);
+            onRegisterMilestone?.(data);
+          }}
+        />
+      )}
     </section>
   );
 }

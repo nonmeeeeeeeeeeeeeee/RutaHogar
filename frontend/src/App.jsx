@@ -919,6 +919,53 @@ export default function App() {
     }
   };
 
+  const handleRegisterMilestone = async (milestoneData) => {
+    if (!currentEvaluation) return;
+    try {
+      setDataError("");
+      
+      const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
+      const scoreUrl = `${apiBase.replace(/\/$/, "")}/score`;
+
+      const newFinancialInput = buildFinancialInput({
+        ...currentEvaluation.input,
+        ...milestoneData,
+      });
+
+      const res = await fetch(scoreUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newFinancialInput),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error en el scoring: ${res.status}`);
+      }
+
+      const scoreResult = await res.json();
+      const resultSnapshot = buildResultSnapshot(scoreResult);
+
+      const savedEvaluation = await createEvaluation(isUUID(userId) ? userId : null, {
+        email: profile?.email || "sin-email",
+        onboarding: userOnboarding ? { ...userOnboarding } : null,
+        input: newFinancialInput,
+        result: resultSnapshot,
+        channel: getChannel(),
+      });
+
+      setEvaluations((prev) => {
+        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
+        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
+      });
+      prependEvaluation(savedEvaluation);
+
+      setPage("tracking"); 
+    } catch (err) {
+      console.error("Error registrando hito", err);
+      setDataError("Hubo un problema registrando el hito. Por favor intenta de nuevo.");
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     setAuth({ session: null, profile: null });
