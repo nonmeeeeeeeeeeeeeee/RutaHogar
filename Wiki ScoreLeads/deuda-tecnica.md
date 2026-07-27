@@ -7,7 +7,7 @@ Registro de decisiones tomadas conscientemente que implican un riesgo técnico o
 ## CORS abierto en el backend (`allow_origins=["*"]`)
 
 **Archivo:** `backend/app/main.py`
-**Decisión:** Mantener `allow_origins=["*"]` durante el MVP para simplificar el despliegue inicial.
+**Decisión:** Mantener `allow_origins=["*"]` temporalmente para simplificar el despliegue inicial.
 **Riesgo:** Cualquier origen puede hacer peticiones al endpoint `/score`. En producción esto no es un problema crítico dado que el endpoint no expone datos sensibles, pero sí es una superficie de abuso.
 
 **Acción pendiente:** Una vez estabilizado el dominio de producción en Vercel, reemplazar:

@@ -136,8 +136,8 @@ function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, option
   );
 }
 
-export default function AuthPanel({ onAuth, onBack }) {
-  const [mode, setMode] = useState("signin");
+export default function AuthPanel({ onAuth, onBack, onModeChange, initialMode = "signin" }) {
+  const [mode, setMode] = useState(initialMode);
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -156,6 +156,15 @@ export default function AuthPanel({ onAuth, onBack }) {
   const formRef = useRef(null);
   const weakPasswordConfirmedRef = useRef(false);
   const passwordStrength = useMemo(() => getPasswordStrength(form.password), [form.password]);
+
+  React.useEffect(() => {
+    setMode(initialMode);
+  }, [initialMode]);
+
+  const changeMode = (nextMode) => {
+    setMode(nextMode);
+    if (onModeChange) onModeChange(nextMode);
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -286,10 +295,10 @@ export default function AuthPanel({ onAuth, onBack }) {
 
       <form ref={formRef} className="auth-form" onSubmit={submit}>
         <div className="segmented-control" aria-label="Modo de acceso">
-          <button type="button" className={mode === "signin" ? "is-active" : ""} onClick={() => setMode("signin")}>
+          <button type="button" className={mode === "signin" ? "is-active" : ""} onClick={() => changeMode("signin")}>
             Entrar
           </button>
-          <button type="button" className={mode === "signup" ? "is-active" : ""} onClick={() => setMode("signup")}>
+          <button type="button" className={mode === "signup" ? "is-active" : ""} onClick={() => changeMode("signup")}>
             Crear cuenta
           </button>
         </div>

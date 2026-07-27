@@ -1,3 +1,5 @@
+import { formatClp, isMonetaryPlanAction } from "../utils/helpers";
+
 export const goalStatuses = {
   pendiente: "Pendiente",
   en_progreso: "En progreso",
@@ -195,6 +197,35 @@ function goalsFromEvaluation(evaluation, months) {
   return goals;
 }
 
+function goalsFromStructuredPlan(result, fallbackMonths) {
+  const plan = Array.isArray(result?.structured_improvement_plan)
+    ? result.structured_improvement_plan
+    : [];
+
+  return plan
+    .map((action, index) => {
+      if (!action || typeof action !== "object") return null;
+
+      const title = action.title || `Acción sugerida ${index + 1}`;
+      const estimatedMonths = Number(action.estimated_months);
+      const months = Number.isFinite(estimatedMonths) && estimatedMonths > 0
+        ? Math.round(estimatedMonths)
+        : Math.max(1, fallbackMonths);
+      const details = [];
+
+      if (action.description) details.push(action.description);
+      if (isMonetaryPlanAction(action.type) && Number(action.gap) > 0) {
+        details.push(`Brecha estimada: ${formatClp(action.gap)}.`);
+      }
+      return buildGoal(
+        title,
+        details.join(" ") || "Acción sugerida desde tu última preevaluación.",
+        months,
+      );
+    })
+    .filter(Boolean);
+}
+
 export function buildFinancialTracking(evaluation) {
   if (!evaluation) return null;
   const input = evaluation.input || {};
@@ -205,14 +236,17 @@ export function buildFinancialTracking(evaluation) {
   const months = getTimelineMonths(onboarding);
   const classification = evaluation.result?.classification || "Bajo";
   const unrealisticTimeline = isShortTimelineUnrealistic({ classification, input, months });
+  const structuredGoals = goalsFromStructuredPlan(evaluation.result, months);
 
   if (!hasMinimumData) {
     return {
       score: evaluation.result?.score,
       classification,
-      message: "No hay información suficiente para generar un plan detallado. Realiza una preevaluación completa.",
+      message: structuredGoals.length
+        ? "Usa el plan sugerido de tu última preevaluación como guía inicial mientras completas tus metas de seguimiento."
+        : "Aún no tienes metas de seguimiento guardadas. Puedes usar el plan sugerido de tu última preevaluación como guía inicial.",
       months,
-      goals: [],
+      goals: structuredGoals,
       warning: "",
       ufNote: "",
     };
@@ -227,7 +261,7 @@ export function buildFinancialTracking(evaluation) {
     months,
     targetCommune: onboarding.comuna_interes || input.comuna_objetivo || "",
     propertyType: onboarding.tipo_propiedad || "",
-    goals: goalsFromEvaluation(evaluation, months),
+    goals: structuredGoals.length ? structuredGoals : goalsFromEvaluation(evaluation, months),
     warning: unrealisticTimeline
       ? "Esto no significa rechazo ni imposibilidad definitiva; es una señal para ajustar el objetivo antes de una evaluación formal."
       : "",

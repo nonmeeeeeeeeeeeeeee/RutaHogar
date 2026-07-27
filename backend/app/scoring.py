@@ -4,15 +4,25 @@ from .ai import (
     generate_commercial_guidance,
     generate_user_explanation,
 )
+from .scoring_engine.blockers import detect_blockers
+from .scoring_engine.commercial_priority import calculate_commercial_priority
+from .scoring_engine.components import calculate_component_scores
+from .scoring_engine.constants import SCORING_WEIGHTS
+from .scoring_engine.explanations import build_deterministic_explanations
+from .scoring_engine.indicators import calculate_financial_indicators
+from .scoring_engine.improvement_plan import build_structured_improvement_plan
+from .scoring_engine.project_fit import calculate_project_fit
+from .scoring_engine.property_value import resolve_property_value_clp
 
 
-SCORING_VERSION = "1.0.1"
+SCORING_VERSION = "1.1.0"
 
 # Valor configurable usado para convertir los precios referenciales desde UF a CLP.
 VALOR_UF_CLP = 40695
 
-# Tabla simple para el MVP. Representa precios promedio referenciales de propiedades
-# objetivo por comuna, no tasaciones reales ni valores comerciales garantizados.
+# Tabla referencial heredada para estimacion inicial. Representa precios promedio
+# referenciales de propiedades objetivo por comuna, no tasaciones reales ni
+# valores comerciales garantizados.
 PRECIOS_REFERENCIA_UF = {
     "Buin": 2800,
     "Calera de Tango": 4300,
@@ -64,6 +74,26 @@ def clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
+def _money_to_clp(value: float, unit: str) -> float:
+    if unit == "uf":
+        return value * VALOR_UF_CLP
+    return value
+
+
+def _positive_float(value) -> float:
+    try:
+        numeric_value = float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+    return numeric_value if numeric_value > 0 else 0.0
+
+
+def _bounded_support(value: float, reference: float, max_support: float) -> float:
+    if value <= 0 or reference <= 0:
+        return 0.0
+    return min(max_support, max_support * min(value / reference, 1.0))
+
+
 def _unique(items: List[str]) -> List[str]:
     seen = set()
     result = []
@@ -72,6 +102,201 @@ def _unique(items: List[str]) -> List[str]:
             seen.add(item)
             result.append(item)
     return result
+
+
+def _is_truthy(value) -> bool:
+    return value is True or str(value).strip().lower() in {"true", "1", "si", "sí", "yes"}
+
+
+def _contextual_recommendations(data: Dict, indicators: Dict) -> List[str]:
+    recommendations = []
+    if _is_truthy(data.get("pie_en_cuotas_interes")):
+        recommendations.append(
+            "Consulta si el proyecto permite pago del pie en cuotas; depende de condiciones comerciales de la inmobiliaria y no debe contarse como ahorro disponible ya acumulado."
+        )
+    return recommendations
+
+
+def _get_first(data: Dict, *keys):
+    for key in keys:
+        value = data.get(key)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _valid_complement_income(data: Dict) -> float:
+    if not _is_truthy(data.get("complemento_renta")):
+        return 0.0
+
+    comp_income = _positive_float(_get_first(data, "ingreso_mensual_complementario", "complemento_ingreso_mensual"))
+    comp_debt_raw = _get_first(data, "deuda_mensual_complementario", "complemento_deuda_mensual")
+    comp_delinquency = _get_first(data, "morosidad_complementario", "complemento_morosidad")
+    comp_contract = _get_first(data, "tipo_contrato_complementario", "complemento_tipo_contrato")
+    comp_continuity = _get_first(data, "continuidad_laboral_complementario", "complemento_continuidad_laboral")
+    comp_relation = _get_first(data, "relacion_complementario", "complemento_relacion")
+
+    if (
+        comp_income > 0
+        and comp_debt_raw not in (None, "")
+        and comp_delinquency == "no"
+        and comp_contract
+        and comp_continuity
+        and comp_relation not in {"amigo", "otro", None, ""}
+    ):
+        return comp_income
+
+    return 0.0
+
+
+def _fallback_financial_indicators(data: Dict, property_value_clp: float) -> Dict:
+    ingreso_principal = _positive_float(data.get("ingreso_mensual"))
+    ingreso_complementario = _valid_complement_income(data)
+    ingreso = ingreso_principal + ingreso_complementario
+    deuda = _positive_float(data.get("deuda_mensual"))
+    ahorro = _positive_float(data.get("ahorro_disponible"))
+    dividendo = _positive_float(data.get("dividendo_estimado"))
+    edad = _positive_float(data.get("edad"))
+    plazo_credito = _positive_float(data.get("plazo_credito_hipotecario"))
+
+    pie_minimo = property_value_clp * 0.10 if property_value_clp > 0 else 0.0
+    pie_recomendado = property_value_clp * 0.20 if property_value_clp > 0 else 0.0
+
+    ratio_carga_total = (deuda + dividendo) / ingreso if ingreso > 0 else None
+
+    return {
+        "property_value_clp": property_value_clp,
+        "property_value_uf": property_value_clp / VALOR_UF_CLP if property_value_clp > 0 else 0.0,
+        "ingreso_total": ingreso,
+        "ingreso_principal": ingreso_principal,
+        "ingreso_complementario_considerado": ingreso_complementario,
+        "ratio_dividendo_ingreso": dividendo / ingreso if ingreso > 0 else None,
+        "ratio_deuda_ingreso": deuda / ingreso if ingreso > 0 else None,
+        "ratio_carga_total": ratio_carga_total,
+        "total_burden_ratio": ratio_carga_total,
+        "pie_ratio": ahorro / property_value_clp if property_value_clp > 0 else 0.0,
+        "pie_minimo_clp": pie_minimo,
+        "pie_intermedio_clp": property_value_clp * 0.15 if property_value_clp > 0 else 0.0,
+        "pie_recomendado_clp": pie_recomendado,
+        "cobertura_pie_minimo": ahorro / pie_minimo if pie_minimo > 0 else 0.0,
+        "cobertura_pie_intermedio": ahorro / (property_value_clp * 0.15) if property_value_clp > 0 else 0.0,
+        "cobertura_pie_recomendado": ahorro / pie_recomendado if pie_recomendado > 0 else 0.0,
+        "brecha_pie_minimo": max(pie_minimo - ahorro, 0.0) if pie_minimo > 0 else 0.0,
+        "brecha_pie_intermedio": max(property_value_clp * 0.15 - ahorro, 0.0) if property_value_clp > 0 else 0.0,
+        "brecha_pie_recomendado": max(pie_recomendado - ahorro, 0.0) if pie_recomendado > 0 else 0.0,
+        "edad_fin_credito": edad + plazo_credito if edad > 0 and plazo_credito > 0 else None,
+    }
+
+
+def _resolve_financial_indicators(data: Dict, property_value_clp: float) -> Dict:
+    financial_indicators = calculate_financial_indicators(data, property_value_clp)
+    if financial_indicators:
+        return financial_indicators
+    return _fallback_financial_indicators(data, property_value_clp)
+
+
+def _calculate_weighted_score(component_scores: Dict) -> float:
+    weighted_score = sum(
+        float(component_scores.get(component, 0) or 0) * weight
+        for component, weight in SCORING_WEIGHTS.items()
+    )
+    return round(clamp(weighted_score), 1)
+
+
+def _classify_weighted_score(score: float) -> str:
+    if score >= 75:
+        return "Alto"
+    if score >= 50:
+        return "Medio"
+    return "Bajo"
+
+
+def _select_main_blocker(blockers: List[Dict]) -> Dict | None:
+    severity_rank = {
+        "critical": 5,
+        "high": 4,
+        "medium": 3,
+        "low": 2,
+        "info": 1,
+    }
+    if not blockers:
+        return None
+    return max(blockers, key=lambda blocker: severity_rank.get(blocker.get("severity"), 0))
+
+
+def _apply_blocker_classification(original_classification: str, blockers: List[Dict]) -> tuple[str, str]:
+    blocker_codes = {blocker.get("code") for blocker in blockers}
+
+    if "complemento_incompleto" in blocker_codes:
+        return (
+            "Requiere antecedentes",
+            "La clasificación requiere antecedentes adicionales por complemento de renta incompleto.",
+        )
+
+    downgrade_codes = {
+        "morosidad_vigente",
+        "carga_total_alta",
+        "pie_insuficiente",
+        "dividendo_exigente",
+    }
+    if original_classification == "Alto" and blocker_codes.intersection(downgrade_codes):
+        return (
+            "Medio",
+            "La clasificación original era Alto, pero fue ajustada por antecedentes detectados.",
+        )
+
+    return (
+        original_classification,
+        "Se mantiene la clasificación original porque no hay bloqueadores relevantes para ajustarla.",
+    )
+
+
+def _apply_blocker_score_caps(base_score: float, blockers: List[Dict]) -> tuple[float, str]:
+    blocker_codes = {blocker.get("code") for blocker in blockers}
+    score_caps = {
+        "pie_insuficiente": (
+            74.0,
+            "El score final fue limitado porque el ahorro disponible no alcanza el pie minimo estimado.",
+        ),
+        "dividendo_exigente": (
+            69.0,
+            "El score final fue limitado porque el dividendo estimado es exigente frente al ingreso declarado.",
+        ),
+        "carga_total_alta": (
+            59.0,
+            "El score final fue limitado porque la carga financiera total estimada es alta.",
+        ),
+        "morosidad_vigente": (
+            59.0,
+            "El score final fue limitado porque existe morosidad vigente declarada.",
+        ),
+    }
+    active_caps = [
+        (cap, reason)
+        for code, (cap, reason) in score_caps.items()
+        if code in blocker_codes
+    ]
+
+    if not active_caps:
+        return round(base_score, 1), ""
+
+    cap, reason = min(active_caps, key=lambda item: item[0])
+    return round(min(base_score, cap), 1), reason
+
+
+def _apply_final_classification(score: float, blockers: List[Dict]) -> tuple[str, str]:
+    blocker_codes = {blocker.get("code") for blocker in blockers}
+
+    if "complemento_incompleto" in blocker_codes:
+        return (
+            "Requiere antecedentes",
+            "La clasificación requiere antecedentes adicionales por complemento de renta incompleto.",
+        )
+
+    return (
+        _classify_weighted_score(score),
+        "La clasificación final se calculó desde el score ajustado por antecedentes detectados.",
+    )
 
 
 
@@ -154,6 +379,12 @@ def calculate_score(data: Dict) -> Dict:
     comp_contrato = data.get("tipo_contrato_complementario", data.get("complemento_tipo_contrato", ""))
     comp_continuidad = data.get("continuidad_laboral_complementario", data.get("complemento_continuidad_laboral", ""))
     comp_relacion = data.get("relacion_complementario", data.get("complemento_relacion", ""))
+    edad = int(data.get("edad", 0) or 0)
+    plazo_credito = int(data.get("plazo_credito_hipotecario", 0) or 0)
+    declara_patrimonio = bool(data.get("declara_patrimonio", False))
+    patrimonio_unit = data.get("patrimonio_unit", "clp")
+    valor_vehiculos = _money_to_clp(float(data.get("valor_vehiculos", 0) or 0), patrimonio_unit)
+    valor_inmuebles = _money_to_clp(float(data.get("valor_inmuebles", 0) or 0), patrimonio_unit)
 
     # Base score
     score = 50.0
@@ -308,6 +539,45 @@ def calculate_score(data: Dict) -> Dict:
         riesgos.append("Existe incertidumbre sobre la situación de pagos actual.")
         recomendaciones.append("Revisar tu situación financiera antes de avanzar.")
 
+    if edad > 0 and plazo_credito > 0 and edad + plazo_credito > 70:
+        components["perfil_compra"] -= 3
+        score -= 3
+        risk_codes.append("edad_plazo")
+        riesgos.append("La edad declarada y el plazo hipotecario podrían requerir una revisión adicional.")
+        recomendaciones.append("Validar el plazo hipotecario posible según edad y condiciones asociadas al crédito.")
+
+    if declara_patrimonio and (valor_vehiculos > 0 or valor_inmuebles > 0):
+        referencia_respaldo = max(
+            precio_objetivo_clp * 0.10 if precio_objetivo_clp > 0 else 0,
+            ingreso * 6,
+            dividendo * 12,
+            1,
+        )
+        respaldo = (
+            _bounded_support(valor_vehiculos, referencia_respaldo, 3.0)
+            + _bounded_support(valor_inmuebles, referencia_respaldo * 2, 8.0)
+        )
+        factores_riesgo_fuertes = {
+            "morosidad_alta",
+            "deuda_alta",
+            "contrato_plazo_fijo",
+            "contrato_honorarios_variable",
+            "ingreso_dividendo",
+        }
+        if factores_riesgo_fuertes.intersection(risk_codes):
+            respaldo = min(respaldo, 4.0)
+            recomendaciones.append(
+                "El patrimonio declarado puede apoyar el perfil, pero no reemplaza ingreso, deuda, morosidad ni estabilidad laboral."
+            )
+
+        if respaldo > 0:
+            components["perfil_compra"] += respaldo
+            score += respaldo
+            if valor_inmuebles > 0:
+                positivos.append("Patrimonio declarado como respaldo financiero adicional")
+            else:
+                positivos.append("Vehículo declarado como respaldo patrimonial complementario")
+
     # Complemento de renta con evaluacion completa del co-deudor
     if complemento:
         comp_tarjetas = int(data.get("complemento_tarjetas_activas", 0) or 0)
@@ -395,16 +665,32 @@ def calculate_score(data: Dict) -> Dict:
                 score += 3
                 positivos.append("Complemento de renta con antecedentes básicos utilizables")
 
-    # Normalización y límites
-    score = clamp(score)
-
-    # Clasificación
-    if score >= 70:
-        clasificacion = "Alto"
-    elif score >= 40:
-        clasificacion = "Medio"
-    else:
-        clasificacion = "Bajo"
+    property_value_resolution = resolve_property_value_clp(data)
+    financial_indicators = _resolve_financial_indicators(
+        data,
+        property_value_resolution.get("property_value_clp", 0),
+    )
+    financial_indicators.setdefault("property_value_clp", property_value_resolution.get("property_value_clp", 0))
+    financial_indicators.setdefault("property_value_uf", property_value_resolution.get("property_value_uf", 0))
+    blockers = detect_blockers(data, financial_indicators)
+    component_scores = calculate_component_scores(data, financial_indicators, blockers)
+    project_fit = calculate_project_fit(data, financial_indicators, blockers)
+    structured_improvement_plan = build_structured_improvement_plan(data, financial_indicators, blockers)
+    base_score = _calculate_weighted_score(component_scores)
+    original_classification = _classify_weighted_score(base_score)
+    main_blocker = _select_main_blocker(blockers)
+    adjusted_score, score_adjustment_reason = _apply_blocker_score_caps(base_score, blockers)
+    score = adjusted_score
+    clasificacion, classification_reason = _apply_final_classification(score, blockers)
+    if not score_adjustment_reason and clasificacion == original_classification:
+        classification_reason = "Se mantiene la clasificación base porque no hay bloqueadores relevantes para ajustar el score."
+    commercial_priority_detail = calculate_commercial_priority(
+        classification=clasificacion,
+        project_fit=project_fit,
+        blockers=blockers,
+        score=score,
+        data=data,
+    )
 
     # Recomendaciones según clasificación
     if clasificacion == "Bajo":
@@ -415,27 +701,48 @@ def calculate_score(data: Dict) -> Dict:
     if not ingreso_cubre_dividendo:
         recomendaciones.append("Ajustar el dividendo objetivo para mantener una carga mensual más sostenible.")
 
+    recomendaciones.extend(_contextual_recommendations(data, financial_indicators))
+
     uniq_positivos = _unique(positivos)
     uniq_riesgos = _unique(riesgos)
     uniq_recomendaciones = _unique(recomendaciones)
     uniq_risk_codes = _unique(risk_codes)
 
     result = {
-    "score": round(score, 1),
-    "classification": clasificacion,
-    "positive_indicators": uniq_positivos,
-    "risks": uniq_riesgos,
-    "recommendations": uniq_recomendaciones,
+        "score": round(score, 1),
+        "base_score": round(base_score, 1),
+        "adjusted_score": round(adjusted_score, 1),
+        "score_adjustment_reason": score_adjustment_reason,
+        "classification": clasificacion,
+        "positive_indicators": uniq_positivos,
+        "risks": uniq_riesgos,
+        "recommendations": uniq_recomendaciones,
         "risk_codes": uniq_risk_codes,
-        "component_scores": {k: round(v, 1) for k, v in components.items()},
+        "component_scores": component_scores,
         "algorithm_version": SCORING_VERSION,
+        "financial_indicators": financial_indicators,
+        "blockers": blockers,
+        "main_blocker": main_blocker,
+        "original_classification": original_classification,
+        "classification_reason": classification_reason,
+        "property_value_resolution": property_value_resolution,
+        "project_fit": project_fit,
+        "commercial_priority_detail": commercial_priority_detail,
+        "structured_improvement_plan": structured_improvement_plan,
     }
+    result.update(build_deterministic_explanations(result))
 
     result["ai_explanation"] = generate_user_explanation(
         classification=clasificacion,
         score=round(score, 1),
         positive_indicators=uniq_positivos,
         risks=uniq_riesgos,
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
     )
 
     result["improvement_plan"] = generate_improvement_plan(
@@ -447,7 +754,13 @@ def calculate_score(data: Dict) -> Dict:
         classification=clasificacion,
         score=round(score, 1),
         positive_indicators=uniq_positivos,
-        risks=uniq_riesgos
+        risks=uniq_riesgos,
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
     )
 
     result["commercial_guidance"] = generate_commercial_guidance(
@@ -455,7 +768,13 @@ def calculate_score(data: Dict) -> Dict:
         score=round(score, 1),
         positive_indicators=uniq_positivos,
         risks=uniq_riesgos,
-        recommendations=uniq_recomendaciones
+        recommendations=uniq_recomendaciones,
+        financial_indicators=financial_indicators,
+        blockers=blockers,
+        main_blocker=main_blocker,
+        project_fit=project_fit,
+        commercial_priority_detail=commercial_priority_detail,
+        structured_improvement_plan=structured_improvement_plan,
     )
 
     result.pop("risk_codes", None)

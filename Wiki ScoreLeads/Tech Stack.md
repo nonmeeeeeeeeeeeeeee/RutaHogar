@@ -6,7 +6,7 @@
 
 ## Arquitectura general
 
-ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, **backend** y **persistencia de datos**. El diseño prioriza la velocidad de prototipado para el MVP, evitando dependencias externas complejas en la primera fase.
+ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, **backend** y **persistencia de datos**. El diseño prioriza una plataforma profesional de precalificación financiera inmobiliaria, con reglas explicables, trazabilidad, privacidad y operación sin dependencias externas obligatorias.
 
 ---
 
@@ -16,7 +16,7 @@ ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, *
 | :--------- | :-- |
 | **React** | Framework principal para la interfaz de usuario |
 
-**Justificación:** Permite construir interfaces dinámicas de forma rápida, como formularios guiados, visualización del score y recomendaciones personalizadas. Se prefiere React sobre Angular para el MVP debido a su mayor rapidez para prototipar.
+**Justificación:** Permite construir interfaces dinámicas de forma rápida, como formularios guiados, visualización del score, bloqueadores, compatibilidad con proyecto, prioridad comercial y recomendaciones personalizadas.
 
 ---
 
@@ -39,7 +39,7 @@ ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, *
 | **Supabase** | Plataforma de base de datos administrada |
 | **PostgreSQL** | Motor de base de datos relacional |
 
-**Justificación:** Se almacenarán los datos mínimos necesarios del usuario: respuestas del formulario, score obtenido, clasificación asignada y fecha de evaluación. Supabase acelera el desarrollo del MVP al entregar una base PostgreSQL administrada, panel de gestión y posibilidades futuras de autenticación.
+**Justificación:** Se almacenarán los datos necesarios para trazabilidad y auditoría: respuestas del formulario, score obtenido, clasificación asignada, fecha de evaluación, versión del algoritmo, componentes del score y estado del plan de mejora. Supabase entrega una base PostgreSQL administrada, panel de gestión, autenticación y políticas de seguridad.
 
 **Datos almacenados por evaluación:**
 - Fecha de evaluación
@@ -56,13 +56,13 @@ ScoreLeads utiliza una arquitectura web de tres capas separadas: **frontend**, *
 | **Claude Code** | Apoyo al desarrollo, documentación y generación de componentes |
 | **Agente IA / LLM** | Explicación personalizada del score al usuario (HU 3) |
 
-**Nota:** Las herramientas de IA generativa no forman parte crítica de la arquitectura del sistema en el MVP. Su rol principal es asistir al equipo de desarrollo y generar las explicaciones textuales del scoring para el usuario final.
+**Nota:** La IA no decide el score ni reemplaza reglas de negocio. Su rol es redactar explicaciones textuales, resúmenes ejecutivos y orientación comercial a partir del resultado calculado por reglas auditables.
 
 ---
 
-## Integraciones futuras (post-MVP)
+## Integraciones futuras
 
-Estas tecnologías **no forman parte del MVP**. Se evaluarán en fases posteriores una vez validada la solución base.
+Estas tecnologías se evaluarán solo con alcance aprobado, consentimiento explícito cuando involucren datos personales o financieros, y trazabilidad suficiente para auditoría.
 
 | Tecnología / Servicio | Fase | Propósito |
 | :-------------------- | :--- | :-------- |
@@ -77,7 +77,7 @@ Estas tecnologías **no forman parte del MVP**. Se evaluarán en fases posterior
 
 - Cifrado en tránsito y en almacenamiento
 - Control de acceso basado en roles (cada actor solo visualiza los datos necesarios para su función)
-- Sin solicitud de credenciales bancarias ni documentos sensibles en el MVP
+- Sin solicitud de credenciales bancarias ni documentos sensibles
 - HTTPS obligatorio
 - Datos utilizados exclusivamente para fines de evaluación; no se comparten con terceros sin autorización explícita del usuario
 - Consentimiento explícito del usuario antes del envío de datos (criterio de aceptación obligatorio, HU 1 — E3)
@@ -88,8 +88,8 @@ Estas tecnologías **no forman parte del MVP**. Se evaluarán en fases posterior
 
 | Decisión | Elección | Descartado | Razón |
 | :------- | :------- | :--------- | :---- |
-| Framework frontend | React | Angular | Mayor rapidez para prototipar en MVP |
+| Framework frontend | React | Angular | Interfaces dinámicas y mantenibles para flujo financiero |
 | Lenguaje backend | Python + FastAPI | — | Facilita reglas de negocio y futura evolución hacia ML |
 | Base de datos | Supabase + PostgreSQL | — | BD administrada, panel de gestión, auth futura incluida |
-| Integraciones externas (MVP) | Ninguna | CMF, Dicom, CRM | Mantener viabilidad técnica y simplicidad del MVP |
-| Fuente de datos (MVP) | Datos autodeclarados por el usuario | APIs bancarias | Evitar dependencias externas restringidas en fase inicial |
+| Integraciones externas actuales | Ninguna obligatoria | CMF, Dicom, CRM | Mantener privacidad y consentimiento explícito antes de consultar terceros |
+| Fuente de datos actual | Datos autodeclarados por el usuario | APIs bancarias | Evitar consultas externas sin consentimiento y alcance aprobado |

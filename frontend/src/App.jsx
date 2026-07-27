@@ -19,12 +19,12 @@ import SignupOffer from "./components/SignupOffer";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
-import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
+import { getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
-import { buildFinancialTracking } from "./services/financialTracking";
 import {
   getConsent,
   saveConsent,
+  upsertProfile,
   updateProfileOnboarding,
   isSupabaseDataConfigured,
   isUUID,
@@ -36,6 +36,32 @@ const ONBOARDING_KEY = "scoreleads_onboarding";
 const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
 const ANON_RESULT_KEY = "scoreleads_anon_result";
 const ANON_INPUT_KEY = "scoreleads_anon_input";
+
+function readSessionJson(key) {
+  try {
+    return JSON.parse(sessionStorage.getItem(key));
+  } catch {
+    return null;
+  }
+}
+
+const evaluationMatchFields = [
+  "ingreso_mensual",
+  "deuda_mensual",
+  "edad",
+  "ahorro_disponible",
+  "property_value_uf",
+  "property_value_clp",
+  "plazo_credito_hipotecario",
+  "dividendo_estimado",
+  "comuna_objetivo",
+  "tipo_contrato",
+  "continuidad_laboral",
+  "morosidad_actual",
+  "complemento_renta",
+  "ingreso_mensual_complementario",
+  "deuda_mensual_complementario",
+];
 
 function getChannel() {
   try {
@@ -82,11 +108,202 @@ const hasCompletedOnboarding = (data) => {
   );
 };
 
+const buildResultSnapshot = (scoreResult = {}) => ({
+  ...scoreResult,
+  risks: normalizeDisplayList(scoreResult.risks),
+  recommendations: normalizeDisplayList(scoreResult.recommendations),
+  ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
+  improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+  positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
+  executive_summary: normalizeDisplayText(scoreResult.executive_summary),
+  commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
+});
+
+const buildFinancialInput = (input = {}) => ({
+  birth_date: input.birth_date,
+  ingreso_mensual: input.ingreso_mensual,
+  deuda_mensual: input.deuda_mensual,
+  edad: input.edad,
+  ahorro_disponible: input.ahorro_disponible,
+  property_value: input.property_value,
+  property_value_unit: input.property_value_unit,
+  property_value_uf: input.property_value_uf,
+  property_value_clp: input.property_value_clp,
+  property_value_source: input.property_value_source,
+  plazo_credito_hipotecario: input.plazo_credito_hipotecario,
+  dividendo_estimado: input.dividendo_estimado,
+  dividendo_esperado: input.dividendo_esperado,
+  dividendo_estimado_origen: input.dividendo_estimado_origen,
+  dividendo_estimado_calculado: input.dividendo_estimado_calculado,
+  dividendo_estimado_manual: input.dividendo_estimado_manual,
+  dividendo_tasa_anual_referencial: input.dividendo_tasa_anual_referencial,
+  dividendo_monto_credito_estimado_clp: input.dividendo_monto_credito_estimado_clp,
+  dividendo_monto_credito_estimado_uf: input.dividendo_monto_credito_estimado_uf,
+  dividendo_uf_referencial_clp: input.dividendo_uf_referencial_clp,
+  anonymous_flow_id: input.anonymous_flow_id,
+  comuna_objetivo: input.comuna_objetivo,
+  tipo_contrato: input.tipo_contrato,
+  continuidad_laboral: input.continuidad_laboral,
+  morosidad_actual: input.morosidad_actual,
+  monto_morosidad: input.monto_morosidad,
+  antiguedad_morosidad: input.antiguedad_morosidad,
+  complemento_renta: input.complemento_renta,
+  ingreso_mensual_complementario: input.ingreso_mensual_complementario,
+  deuda_mensual_complementario: input.deuda_mensual_complementario,
+  tipo_contrato_complementario: input.tipo_contrato_complementario,
+  continuidad_laboral_complementario:
+    input.continuidad_laboral_complementario,
+  morosidad_complementario: input.morosidad_complementario,
+  relacion_complementario: input.relacion_complementario,
+  declara_patrimonio: input.declara_patrimonio,
+  valor_vehiculos: input.valor_vehiculos,
+  valor_inmuebles: input.valor_inmuebles,
+  patrimonio_unit: input.patrimonio_unit,
+  plazo_compra: input.plazo_compra,
+  tiene_propiedad_vista: input.tiene_propiedad_vista,
+  vivienda_nueva: input.vivienda_nueva,
+  pie_en_cuotas_interes: input.pie_en_cuotas_interes,
+  consentimiento: input.consentimiento,
+  uf_value_clp: input.uf_value_clp,
+});
+
+const normalizeMatchValue = (value) => {
+  if (value === "" || value == null) return null;
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : value;
+};
+
+const findMatchingEvaluation = (evaluations = [], pendingInput, pendingResult) => {
+  if (!pendingInput || !pendingResult) return null;
+  const anonymousFlowId = pendingInput.anonymous_flow_id;
+  if (anonymousFlowId) {
+    return evaluations.find((item) => item?.input?.anonymous_flow_id === anonymousFlowId) || null;
+  }
+
+  return evaluations.find((item) => {
+    if (!item?.input || !item?.result) return false;
+    const sameResult =
+      normalizeMatchValue(item.result.score) === normalizeMatchValue(pendingResult.score) &&
+      item.result.classification === pendingResult.classification;
+    if (!sameResult) return false;
+
+    return evaluationMatchFields.every(
+      (field) =>
+        normalizeMatchValue(item.input[field]) === normalizeMatchValue(pendingInput[field]),
+    );
+  }) || null;
+};
+
+const mergeOnboardingData = (currentData, pendingData) => {
+  if (!pendingData) return currentData || null;
+  return {
+    ...(currentData || {}),
+    ...pendingData,
+    migrated_from_anonymous_flow: true,
+    updated_at: new Date().toISOString(),
+  };
+};
+
 const getInitialPageForProfile = (profile) => {
   if (!profile) return "landing";
   if (profile.role === roles.sales) return "leads";
+  if (profile.role === roles.admin) return "admin";
   if (profile.role !== roles.user) return "home";
   return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
+};
+
+const normalizePathname = (pathname = "/") => {
+  const normalized = String(pathname || "/")
+    .replace(/\/$/, "")
+    .toLowerCase();
+  return normalized || "/";
+};
+
+const getPrivatePathForPage = (page) => {
+  if (page === "home") return "/inicio";
+  if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
+  if (page === "recommendations") return "/recomendaciones";
+  if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
+  if (page === "profile") return "/perfil";
+  if (page === "leads") return "/dashboard";
+  if (page === "admin") return "/admin";
+  return "/inicio";
+};
+
+const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
+  const path = normalizePathname(pathname);
+  const unknownRoute = ![
+    "/",
+    "/inicio",
+    "/login",
+    "/registro",
+    "/precalificacion",
+    "/pre-evaluacion",
+    "/recomendaciones",
+    "/plan-mejora",
+    "/perfil",
+    "/historial",
+    "/dashboard",
+    "/ejecutivo/leads",
+    "/admin",
+  ].includes(path);
+
+  if (!profile) {
+    if (unknownRoute) return { page: "landing", path: "/" };
+    if (path === "/login" || path === "/registro") return { page: "auth" };
+    if (path === "/precalificacion" || path === "/pre-evaluacion") {
+      return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
+    }
+    if (["/recomendaciones", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+      return { page: "auth", path: "/login" };
+    }
+    return { page: "landing", path: path === "/inicio" ? "/" : undefined };
+  }
+
+  if (profile.role === roles.user) {
+    if (unknownRoute) return { page: "home", path: "/inicio" };
+    if (path === "/") return { page: "landing" };
+    if (path === "/inicio") return { page: "home" };
+    if (path === "/precalificacion" || path === "/pre-evaluacion") {
+      return {
+        page: hasCompletedOnboarding(getOnboardingData(profile)) ? "evaluate" : "onboarding",
+        path: path === "/pre-evaluacion" ? "/precalificacion" : undefined,
+      };
+    }
+    if (path === "/recomendaciones") return { page: "recommendations" };
+    if (path === "/plan-mejora") return { page: "tracking" };
+    if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
+    if (path === "/dashboard" || path === "/admin" || path === "/ejecutivo/leads" || path === "/login" || path === "/registro") {
+      return { page: "home", path: "/inicio" };
+    }
+    return { page: "home", path: "/inicio" };
+  }
+
+  if (profile.role === roles.sales) {
+    if (path === "/") return { page: "landing" };
+    if (path === "/dashboard" || path === "/ejecutivo/leads" || path === "/inicio") {
+      return { page: "leads", path: path === "/dashboard" ? undefined : "/dashboard" };
+    }
+    return { page: "leads", path: "/dashboard" };
+  }
+
+  if (profile.role === roles.admin) {
+    if (path === "/") return { page: "landing" };
+    if (path === "/admin") return { page: "admin" };
+    if (path === "/dashboard" || path === "/ejecutivo/leads") return { page: "leads", path: "/dashboard" };
+    if (path === "/inicio") return { page: "admin", path: "/admin" };
+    return { page: "admin", path: "/admin" };
+  }
+
+  return { page: getInitialPageForProfile(profile), path: getPrivatePathForPage(getInitialPageForProfile(profile)) };
+};
+
+const getRouteForPage = (page, profile, options = {}) => {
+  if (page === "landing") return "/";
+  if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
+  if (page === "anon-onboarding" || page === "anon-evaluate") return "/precalificacion";
+  if (!profile) return "/";
+  return getPrivatePathForPage(page);
 };
 
 const futureModules = [
@@ -130,11 +347,23 @@ const futureModules = [
 
 export default function App() {
   const storedAuth = useMemo(() => getStoredAuth(), []);
+  const initialAnonOnboarding = useMemo(() => readSessionJson(ANON_ONBOARDING_KEY), []);
+  const initialAnonResult = useMemo(() => readSessionJson(ANON_RESULT_KEY), []);
+  const initialAnonInput = useMemo(() => readSessionJson(ANON_INPUT_KEY), []);
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   const [auth, setAuth] = useState(storedAuth);
-  const [page, setPage] = useState(() => getInitialPageForProfile(storedAuth.profile));
+  const [page, setPage] = useState(
+    () =>
+      resolveRouteForPath(
+        window.location.pathname,
+        storedAuth.profile,
+        Boolean(initialAnonOnboarding),
+      ).page,
+  );
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
+  const [dismissedError, setDismissedError] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
   const [onboarding, setOnboarding] = useState(() => {
@@ -145,15 +374,9 @@ export default function App() {
     }
   });
   const [consentGranted, setConsentGranted] = useState(false);
-  const [anonOnboarding, setAnonOnboarding] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_ONBOARDING_KEY)); } catch { return null; }
-  });
-  const [anonResult, setAnonResult] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_RESULT_KEY)); } catch { return null; }
-  });
-  const [anonInput, setAnonInput] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem(ANON_INPUT_KEY)); } catch { return null; }
-  });
+  const [anonOnboarding, setAnonOnboarding] = useState(initialAnonOnboarding);
+  const [anonResult, setAnonResult] = useState(initialAnonResult);
+  const [anonInput, setAnonInput] = useState(initialAnonInput);
   const [signupOfferLoading, setSignupOfferLoading] = useState(false);
   const [signupOfferError, setSignupOfferError] = useState("");
 
@@ -174,7 +397,8 @@ export default function App() {
     removeEvaluation,
     prependEvaluation,
   } = useLeads({ userId, profile });
-  const visibleError = dataError || leadsError;
+  const currentError = dataError || leadsError;
+  const visibleError = currentError && currentError !== dismissedError ? currentError : "";
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
@@ -198,6 +422,43 @@ export default function App() {
           classification: currentEvaluation.result.classification,
         }
       : null;
+
+  const updateBrowserPath = (nextPath, options = {}) => {
+    const currentPath = window.location.href.includes("#")
+      ? window.location.href.slice(window.location.origin.length)
+      : window.location.pathname;
+    if (!nextPath || (nextPath === currentPath && nextPath === pathname)) return;
+    const method = options.replace ? "replaceState" : "pushState";
+    window.history[method](null, "", nextPath);
+    setPathname(nextPath);
+  };
+
+  const navigateToPageForProfile = (nextPage, nextProfile = profile, options = {}) => {
+    setPage(nextPage);
+    updateBrowserPath(getRouteForPage(nextPage, nextProfile, options), options);
+  };
+
+  const navigateToPage = (nextPage, options = {}) => {
+    navigateToPageForProfile(nextPage, profile, options);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    const route = resolveRouteForPath(pathname, profile, Boolean(anonOnboarding));
+    setPage(route.page);
+    if ((route.path && route.path !== pathname) || window.location.href.includes("#")) {
+      updateBrowserPath(route.path || pathname, { replace: true });
+    }
+  }, [pathname, profile?.role, anonOnboarding]);
+
+  useEffect(() => {
+    setDismissedError("");
+  }, [currentError]);
 
   useEffect(() => {
     let active = true;
@@ -239,28 +500,10 @@ export default function App() {
 
       try {
         const storedGoals = await getGoals(userId, currentEvaluation.id);
-        if (storedGoals.length > 0) {
-          if (active) setTrackingGoals(storedGoals);
-          return;
-        }
-
-        const tracking = buildFinancialTracking(currentEvaluation);
-        const createdGoals = await Promise.all(
-          (tracking?.goals || []).map((goal) =>
-            createGoal(userId, currentEvaluation.id, {
-              title: goal.title,
-              description: goal.description,
-              status: "pendiente",
-            }),
-          ),
-        );
-        if (active) setTrackingGoals(createdGoals);
+        if (active) setTrackingGoals(storedGoals);
       } catch (err) {
-        console.error(err);
-        if (active)
-          setDataError(
-            "No pudimos cargar tus metas de seguimiento. Revisa la configuración de Supabase.",
-          );
+        console.warn("No se pudieron cargar metas de seguimiento; se usará el plan sugerido local.", err);
+        if (active) setTrackingGoals([]);
       }
     }
 
@@ -271,8 +514,14 @@ export default function App() {
   }, [userId, currentEvaluation?.id, page]);
 
   useEffect(() => {
-    if (page === "leads" && profile?.role === roles.sales) markLeadsSeen();
+    if (page === "leads" && (profile?.role === roles.sales || profile?.role === roles.admin)) markLeadsSeen();
   }, [page]);
+
+  useEffect(() => {
+    if (page === "signup-offer" && anonResult) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [page, anonResult]);
 
   useEffect(() => {
     let active = true;
@@ -307,6 +556,86 @@ export default function App() {
     setAnonInput(null);
   };
 
+  const storeOnboardingForProfile = (nextProfile, answers) => {
+    const profileKey = isUUID(nextProfile?.id)
+      ? nextProfile.id
+      : isUUID(nextProfile?.user_id)
+        ? nextProfile.user_id
+        : nextProfile?.email || nextProfile?.id || "local-user";
+    const next = {
+      ...onboarding,
+      [profileKey]: answers,
+    };
+    setOnboarding(next);
+    localStorage.setItem(ONBOARDING_KEY, JSON.stringify(next));
+  };
+
+  const migrateAnonymousSession = async (nextAuth) => {
+    const pendingOnboarding = anonOnboarding;
+    const pendingResult = anonResult;
+    const pendingInput = anonInput;
+    const nextProfile = nextAuth?.profile;
+
+    if (
+      !nextProfile ||
+      nextProfile.role !== roles.user ||
+      (!pendingOnboarding && !pendingResult && !pendingInput)
+    ) {
+      return { auth: nextAuth, savedEvaluation: null, targetPage: getInitialPageForProfile(nextProfile) };
+    }
+
+    const nextUserId = isUUID(nextProfile?.id)
+      ? nextProfile.id
+      : isUUID(nextProfile?.user_id)
+        ? nextProfile.user_id
+        : nextProfile?.id || nextProfile?.email || null;
+    const onboardingToSave = mergeOnboardingData(nextProfile.onboarding_data, pendingOnboarding);
+    let migratedAuth = nextAuth;
+    let migratedProfile = nextProfile;
+
+    if (nextUserId && onboardingToSave) {
+      const savedProfile = await updateProfileOnboarding(nextUserId, onboardingToSave);
+      migratedProfile = updateStoredProfile({
+        ...nextProfile,
+        ...savedProfile,
+        email: nextProfile.email,
+        full_name: savedProfile?.full_name || nextProfile.full_name,
+        phone: savedProfile?.phone || nextProfile.phone,
+        role: savedProfile?.role || nextProfile.role,
+        onboarding_data: onboardingToSave,
+      });
+      migratedAuth = { ...nextAuth, profile: migratedProfile };
+      storeOnboardingForProfile(migratedProfile, onboardingToSave);
+    }
+
+    let savedEvaluation = null;
+    if (pendingResult && pendingInput) {
+      const financialInput = buildFinancialInput(pendingInput);
+      const existingEvaluations = nextUserId
+        ? await getEvaluations(nextUserId, migratedProfile?.role)
+        : [];
+      const existingEvaluation = findMatchingEvaluation(existingEvaluations, financialInput, pendingResult);
+      if (existingEvaluation) {
+        savedEvaluation = existingEvaluation;
+      } else {
+        savedEvaluation = await createEvaluation(nextUserId, {
+          email: migratedProfile?.email || "sin-email",
+          onboarding: onboardingToSave || null,
+          input: financialInput,
+          result: pendingResult,
+          channel: getChannel(),
+        });
+      }
+    }
+
+    clearAnonSession();
+    return {
+      auth: migratedAuth,
+      savedEvaluation,
+      targetPage: pendingResult && pendingInput ? "recommendations" : getInitialPageForProfile(migratedProfile),
+    };
+  };
+
   const handleAnonOnboardingComplete = (answers) => {
     const data = { ...answers, updated_at: new Date().toISOString() };
     sessionStorage.setItem(ANON_ONBOARDING_KEY, JSON.stringify(data));
@@ -315,27 +644,22 @@ export default function App() {
   };
 
   const handleAnonResult = (scoreResult, input) => {
-    const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: normalizeDisplayList(scoreResult.risks),
-      recommendations: normalizeDisplayList(scoreResult.recommendations),
-      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
-      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
-      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
-      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
-      algorithm_version: scoreResult.algorithm_version,
-      component_scores: scoreResult.component_scores,
-    };
+    const resultSnapshot = buildResultSnapshot(scoreResult);
+    const anonymousFlowId =
+      input.anonymous_flow_id ||
+      (window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()));
+    const financialInput = buildFinancialInput({
+      ...input,
+      anonymous_flow_id: anonymousFlowId,
+    });
     sessionStorage.setItem(ANON_RESULT_KEY, JSON.stringify(resultSnapshot));
-    sessionStorage.setItem(ANON_INPUT_KEY, JSON.stringify(input));
+    sessionStorage.setItem(ANON_INPUT_KEY, JSON.stringify(financialInput));
     setAnonResult(resultSnapshot);
-    setAnonInput(input);
+    setAnonInput(financialInput);
     setPage("signup-offer");
   };
 
-  const handleSignupFromOffer = async ({ full_name, email, password, birth_date, consentData }) => {
+  const handleSignupFromOffer = async ({ full_name, email, phone, password, birth_date, consentData }) => {
     setSignupOfferLoading(true);
     setSignupOfferError("");
     let nextAuth = null;
@@ -344,6 +668,7 @@ export default function App() {
         email,
         password,
         full_name,
+        phone,
         birth_date,
         role: roles.user,
       });
@@ -356,26 +681,16 @@ export default function App() {
         await saveConsent(newUserId, consentData);
       }
 
-      let savedEvaluation = null;
-      if (anonResult && anonInput) {
-        savedEvaluation = await createEvaluation(newUserId, {
-          email: newProfile?.email || "sin-email",
-          onboarding: anonOnboarding || null,
-          input: anonInput,
-          result: anonResult,
-          channel: getChannel(),
-        });
-      }
+      const migration = await migrateAnonymousSession(nextAuth);
+      nextAuth = migration.auth;
 
       // Batch all state updates together after all async work is done
-      clearAnonSession();
       setConsentGranted(true);
-      if (savedEvaluation) {
-        prependEvaluation(savedEvaluation);
-        setEvaluations([savedEvaluation]);
+      if (migration.savedEvaluation) {
+        prependEvaluation(migration.savedEvaluation);
       }
       setAuth(nextAuth);
-      setPage("recommendations");
+      navigateToPageForProfile(migration.targetPage, nextAuth.profile, { replace: true });
     } catch (err) {
       console.error(err);
       if (nextAuth?.profile) {
@@ -391,24 +706,38 @@ export default function App() {
 
   const handleContinueWithout = () => {
     clearAnonSession();
-    setPage("landing");
+    navigateToPage("landing");
   };
 
   const startEvaluation = () => {
     setResult(null);
     setResultSaved(null);
-    setPage(onboardingCompleted ? "evaluate" : "onboarding");
+    navigateToPage(onboardingCompleted ? "evaluate" : "onboarding");
   };
 
   const handleAuth = (nextAuth) => {
-    clearAnonSession();
-    setAuth(nextAuth);
     setResult(null);
     setResultSaved(null);
     setDataError("");
     setTrackingGoals([]);
     setConsentGranted(false);
-    setPage(getInitialPageForProfile(nextAuth.profile));
+    migrateAnonymousSession(nextAuth)
+      .then((migration) => {
+        if (migration.savedEvaluation) {
+          prependEvaluation(migration.savedEvaluation);
+        }
+        setAuth(migration.auth);
+        navigateToPageForProfile(migration.targetPage, migration.auth.profile, { replace: true });
+      })
+      .catch((err) => {
+        console.error(err);
+        setAuth(nextAuth);
+        setDataError(
+          "Iniciaste sesion, pero no pudimos migrar la preevaluación previa. Tus datos temporales se conservaron para reintentar.",
+        );
+        const fallbackPage = getInitialPageForProfile(nextAuth.profile);
+        navigateToPageForProfile(fallbackPage, nextAuth.profile, { replace: true });
+      });
   };
 
   const saveOnboardingAnswers = async (answers) => {
@@ -448,7 +777,7 @@ export default function App() {
       );
     }
     setResult(null);
-    setPage("home");
+    navigateToPage("home");
   };
 
   const handleProfileOnboardingSave = async (answers) => {
@@ -461,70 +790,61 @@ export default function App() {
     setAuth((prev) => ({ ...prev, profile: nextProfile }));
   };
 
+  const handleBirthDateSave = async (birthDate) => {
+    if (!profile || !birthDate) return;
+
+    const currentBirthDate = profile.birth_date || profile.fecha_nacimiento || "";
+    if (currentBirthDate === birthDate) return;
+
+    const optimisticProfile = updateStoredProfile({
+      ...profile,
+      birth_date: birthDate,
+      fecha_nacimiento: birthDate,
+    });
+    setAuth((prev) => ({ ...prev, profile: optimisticProfile }));
+
+    if (!userId) return;
+
+    const savedProfile = await upsertProfile(
+      userId,
+      profile.full_name || profile.email || "",
+      profile.role || roles.user,
+      userOnboarding || profile.onboarding_data || null,
+      {
+        phone: profile.phone || "",
+        birth_date: birthDate,
+      },
+    );
+
+    const nextProfile = updateStoredProfile({
+      ...optimisticProfile,
+      ...savedProfile,
+      email: profile.email,
+      phone: savedProfile?.phone || profile.phone || "",
+      birth_date: savedProfile?.birth_date || birthDate,
+      fecha_nacimiento: savedProfile?.birth_date || birthDate,
+      onboarding_data: savedProfile?.onboarding_data || userOnboarding || profile.onboarding_data || null,
+    });
+    setAuth((prev) => ({ ...prev, profile: nextProfile }));
+  };
+
   const handleDataConsent = async (consentData) => {
     if (userId) {
       await saveConsent(userId, consentData);
     }
     setConsentGranted(true);
-    setPage("evaluate");
+    navigateToPage("evaluate");
   };
 
   const handleResult = async (scoreResult, input) => {
-    const resultSnapshot = {
-      score: scoreResult.score,
-      classification: scoreResult.classification,
-      risks: normalizeDisplayList(scoreResult.risks),
-      recommendations: normalizeDisplayList(scoreResult.recommendations),
-      ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-      improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
-      positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
-      executive_summary: normalizeDisplayText(scoreResult.executive_summary),
-      commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
-      algorithm_version: scoreResult.algorithm_version,
-      component_scores: scoreResult.component_scores,
-    };
-
-    const financialInput = {
-      ingreso_mensual: input.ingreso_mensual,
-      deuda_mensual: input.deuda_mensual,
-      edad: input.edad,
-      ahorro_disponible: input.ahorro_disponible,
-      property_value: input.property_value,
-      property_value_unit: input.property_value_unit,
-      property_value_uf: input.property_value_uf,
-      property_value_clp: input.property_value_clp,
-      plazo_credito_hipotecario: input.plazo_credito_hipotecario,
-      dividendo_estimado: input.dividendo_estimado,
-      comuna_objetivo: input.comuna_objetivo,
-      tipo_contrato: input.tipo_contrato,
-      continuidad_laboral: input.continuidad_laboral,
-      morosidad_actual: input.morosidad_actual,
-      monto_morosidad: input.monto_morosidad,
-      antiguedad_morosidad: input.antiguedad_morosidad,
-      complemento_renta: input.complemento_renta,
-      ingreso_mensual_complementario: input.ingreso_mensual_complementario,
-      deuda_mensual_complementario: input.deuda_mensual_complementario,
-      tipo_contrato_complementario: input.tipo_contrato_complementario,
-      continuidad_laboral_complementario:
-        input.continuidad_laboral_complementario,
-      morosidad_complementario: input.morosidad_complementario,
-      relacion_complementario: input.relacion_complementario,
-      declara_patrimonio: input.declara_patrimonio,
-      valor_vehiculos: input.valor_vehiculos,
-      valor_inmuebles: input.valor_inmuebles,
-      patrimonio_unit: input.patrimonio_unit,
-      uf_value_clp: input.uf_value_clp,
-    };
+    const resultSnapshot = buildResultSnapshot(scoreResult);
+    const financialInput = buildFinancialInput(input);
 
     try {
       setResult(resultSnapshot);
       setResultSaved(null);
 
-      // Si el score es Bajo, redirigir a educación financiera (recommendations)
-      // De lo contrario, ir al home para ver el resultado detallado
-      setPage(
-        resultSnapshot.classification === "Alto" ? "home" : "recommendations",
-      );
+      navigateToPage("recommendations");
 
       setDataError("");
       // Corrección: se usaban variables 'rt' y 't' no definidas.
@@ -619,7 +939,7 @@ export default function App() {
 
   const handleOpenGoalPlan = (goal) => {
     setActiveGoal(goal);
-    setPage(
+    navigateToPage(
       goal.title === "Revisar objetivo inmobiliario"
         ? "objective-review"
         : "monthly-plan",
@@ -658,18 +978,51 @@ export default function App() {
     setConsentGranted(false);
     setResult(null);
     setResultSaved(null);
-    setPage("landing");
+    navigateToPage("landing", { replace: true });
   };
 
-  const handleNotificationClick = () => setPage("leads");
+  const handleNotificationClick = () => navigateToPage("leads");
 
   const handleDismissNotification = () => markLeadsSeen();
 
+  if (page === "landing") {
+    const openDashboard = () => navigateToPage(getInitialPageForProfile(profile));
+
+    return (
+      <LandingPage
+        profile={profile}
+        onStart={
+          !profile
+            ? () => navigateToPage("anon-onboarding")
+            : profile.role === roles.user
+              ? startEvaluation
+              : openDashboard
+        }
+        onLogin={() => navigateToPage("auth")}
+        onRegister={() => navigateToPage("auth", { authMode: "signup" })}
+        onDashboard={openDashboard}
+        onProfile={profile?.role === roles.user ? () => navigateToPage("profile") : null}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
   if (!profile) {
     if (page === "auth") {
+      const authMode = pathname === "/registro" ? "signup" : "signin";
       return (
         <div className="app-shell auth-shell">
-          <AuthPanel onAuth={handleAuth} onBack={() => setPage("landing")} />
+          <AuthPanel
+            initialMode={authMode}
+            onModeChange={(mode) =>
+              navigateToPage("auth", {
+                authMode: mode,
+                replace: true,
+              })
+            }
+            onAuth={handleAuth}
+            onBack={() => navigateToPage("landing")}
+          />
         </div>
       );
     }
@@ -677,7 +1030,7 @@ export default function App() {
     if (page === "anon-onboarding") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <Onboarding
               isAnon
@@ -691,10 +1044,10 @@ export default function App() {
     if (page === "anon-evaluate") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <section className="evaluation-panel">
-              <button className="secondary-button" type="button" onClick={() => setPage("anon-onboarding")}>
+              <button className="secondary-button" type="button" onClick={() => navigateToPage("anon-onboarding")}>
                 Volver
               </button>
               <div className="section-heading compact">
@@ -715,7 +1068,7 @@ export default function App() {
                   <button
                     className="secondary-button compact-button"
                     type="button"
-                    onClick={() => setPage("anon-onboarding")}
+                    onClick={() => navigateToPage("anon-onboarding")}
                   >
                     Editar contexto
                   </button>
@@ -724,6 +1077,7 @@ export default function App() {
               <ScoreForm
                 targetCommune={anonOnboarding?.comuna_interes}
                 objective={anonOnboarding?.objetivo_principal}
+                onboardingData={anonOnboarding}
                 birthDate={null}
                 profile={null}
                 consentGranted={true}
@@ -740,7 +1094,7 @@ export default function App() {
     if (page === "signup-offer") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => setPage("auth")} onHome={() => setPage("landing")} />
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
           <div className="app-shell">
             <SignupOffer
               result={anonResult}
@@ -755,7 +1109,7 @@ export default function App() {
       );
     }
 
-    return <LandingPage onStart={() => setPage("anon-onboarding")} onLogin={() => setPage("auth")} />;
+    return <LandingPage onStart={() => navigateToPage("anon-onboarding")} onLogin={() => navigateToPage("auth")} />;
   }
 
   return (
@@ -765,11 +1119,22 @@ export default function App() {
         page={page}
         currentScore={currentScore}
         onNavigate={(nextPage) =>
-          nextPage === "evaluate" ? startEvaluation() : setPage(nextPage)
+          nextPage === "evaluate" ? startEvaluation() : navigateToPage(nextPage)
         }
         onLogout={handleLogout}
       />
-      {visibleError && <div className="error-message">{visibleError}</div>}
+      {visibleError && (
+        <div className="error-message dismissible-message">
+          <span>{visibleError}</span>
+          <button
+            type="button"
+            aria-label="Cerrar mensaje"
+            onClick={() => setDismissedError(visibleError)}
+          >
+            x
+          </button>
+        </div>
+      )}
 
       {/* Notificación para ejecutivos */}
       <NotificationToast
@@ -788,7 +1153,7 @@ export default function App() {
           profile={profile}
           readonly={consentGranted}
           onAccept={handleDataConsent}
-          onBack={() => setPage(consentGranted ? "evaluate" : "onboarding")}
+          onBack={() => navigateToPage(consentGranted ? "evaluate" : "onboarding")}
         />
       ) : page === "home" ? (
         <>
@@ -857,7 +1222,7 @@ export default function App() {
         </>
       ) : page === "evaluate" ? (
         <section className="evaluation-panel">
-          <button className="secondary-button" onClick={() => setPage("home")}>
+          <button className="secondary-button" onClick={() => navigateToPage("home")}>
             Volver al inicio
           </button>
           <div className="section-heading compact">
@@ -879,7 +1244,7 @@ export default function App() {
               <button
                 className="secondary-button compact-button"
                 type="button"
-                onClick={() => setPage("onboarding")}
+                onClick={() => navigateToPage("onboarding")}
               >
                 Editar contexto
               </button>
@@ -888,10 +1253,12 @@ export default function App() {
           <ScoreForm
             targetCommune={userOnboarding?.comuna_interes}
             objective={userOnboarding?.objetivo_principal}
-            birthDate={profile?.birth_date}
+            onboardingData={userOnboarding}
+            birthDate={profile?.birth_date || profile?.fecha_nacimiento}
             profile={profile}
             consentGranted={consentGranted}
             onConsentAccept={handleDataConsent}
+            onBirthDateSave={handleBirthDateSave}
             onResult={handleResult}
           />
         </section>
@@ -917,21 +1284,21 @@ export default function App() {
         <MonthlyPlan
           evaluation={currentEvaluation}
           goal={activeGoal}
-          onBack={() => setPage("tracking")}
+          onBack={() => navigateToPage("tracking")}
           onSaveProgress={handleSaveGoalProgress}
         />
       ) : page === "objective-review" && profile.role === roles.user ? (
         <ObjectiveReview
           evaluation={currentEvaluation}
-          onBack={() => setPage("tracking")}
+          onBack={() => navigateToPage("tracking")}
         />
       ) : page === "recommendations" && profile.role === roles.user ? (
         <Recommendations
-          evaluation={currentEvaluation}
+          evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onStartEvaluation={startEvaluation}
-          onNavigate={setPage}
+          onNavigate={navigateToPage}
         />
-      ) : page === "leads" && profile.role === roles.sales ? (
+      ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (
         <AdminPanel evaluations={evaluations} profile={profile} />

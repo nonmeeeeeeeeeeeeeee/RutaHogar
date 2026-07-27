@@ -4,11 +4,16 @@ import { roleLabels, roles } from "../services/auth";
 const navByRole = {
   [roles.user]: [
     { id: "evaluate", label: "Precalificación" },
-    { id: "tracking", label: "Plan de Mejora" },
     { id: "recommendations", label: "Recomendaciones" },
+    { id: "tracking", label: "Plan de Mejora" },
   ],
-  [roles.sales]: [{ id: "leads", label: "Dashboard Leads" }],
-  [roles.admin]: [{ id: "admin", label: "Panel Admin" }],
+  [roles.sales]: [
+    { id: "leads", label: "Dashboard Leads" },
+  ],
+  [roles.admin]: [
+    { id: "admin", label: "Panel Admin" },
+    { id: "leads", label: "Dashboard Leads" },
+  ],
 };
 
 export default function Navbar({ profile, page, currentScore, onNavigate, onLogout }) {
@@ -29,7 +34,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
         <button
           className="brand-button"
           type="button"
-          onClick={() => handleNavigate("home")}
+          onClick={() => handleNavigate("landing")}
           aria-label="Ir al inicio"
         >
           <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
@@ -69,6 +74,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
               className={`nav-link ${page === item.id ? "is-active" : ""}`}
               type="button"
               onClick={() => handleNavigate(item.id)}
+              aria-current={page === item.id ? "page" : undefined}
             >
               {item.label}
             </button>
@@ -78,9 +84,10 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
         <div className="nav-actions">
           {role === roles.user && (
             <button
-              className="secondary-button compact-button"
+              className={`nav-link ${page === "profile" ? "is-active" : ""}`}
               type="button"
               onClick={() => handleNavigate("profile")}
+              aria-current={page === "profile" ? "page" : undefined}
             >
               Perfil
             </button>
