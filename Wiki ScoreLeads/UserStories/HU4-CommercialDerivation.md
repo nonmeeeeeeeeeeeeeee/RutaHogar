@@ -1,6 +1,6 @@
-# HdU 5 — CRM Integration
+# HU 4 — Commercial Derivation and Integration System
 
-> ⏸ **Out of current active scope.** Documented here for future planning. Do not implement without explicit team instruction.
+> 🗓 **Sprint 2 — not yet implemented.** Documented for planning. Do not implement without explicit team instruction.
 
 Allows qualified leads to be pushed from ScoreLeads directly into the real estate company's CRM, giving the sales team a prioritized pipeline with no manual data entry.
 
@@ -11,10 +11,11 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 | Field | Value |
 | :---- | :---- |
 | **Category** | Desirable |
-| **Story Points** | 5 |
+| **Story Points** | 8 |
 | **Actor** | Real Estate Staff |
-| **Status** | ⏸ Deferred |
-| **Depends on** | [[HdU3-HybridScoring\|HdU 3]] |
+| **Status** | 🗓 Planned |
+| **Sprint** | Sprint 2 |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
 | **Required by** | — |
 
 ---
@@ -27,7 +28,7 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 
 ## Acceptance Criteria
 
-### E1 — Replicate high-priority user to CRM
+### E1 — Automatic derivation of high-priority leads to the CRM
 
 **Given** a user has been submitted into the application,  
 **When** they finish being scored and are classified as high priority,  
@@ -35,7 +36,7 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 
 ---
 
-### E2 — Update CRM when score improves
+### E2 — Update the lead in the CRM on score/priority changes
 
 **Given** a user has been submitted into the application,  
 **When** an update to their score occurs and they become qualified or their priority increases,  
@@ -43,7 +44,7 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 
 ---
 
-### E3 — Do not send low-priority users to CRM
+### E3 — Internal retention of non-priority leads
 
 **Given** a user has been submitted into the application,  
 **When** they finish being scored and are not considered high priority,  
@@ -53,6 +54,7 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 
 ## Notes
 
-- This story requires knowledge of the target CRM's API (endpoint, authentication, field mapping). That information is not yet available.
-- The internal lead dashboard ([[HdU2-LeadPrioritization|HdU 2]]) covers the current prioritization need without this integration.
-- When this story is eventually implemented, the sync logic should be event-driven (score update triggers a CRM write) rather than a manual export.
+- This story requires knowledge of the target CRM's API (endpoint, authentication, field mapping). That information is not yet available and is part of **Spike 2**'s scope.
+- The internal lead dashboard ([[HU2-LeadPrioritization\|HU 2]]) covers the prioritization need for the PMV without this integration.
+- When implemented, the sync logic should be event-driven (a score update triggers a CRM write) rather than a manual export.
+- **Numbering note:** documented as `HdU 5` (CRM Integration) in the E2 informe; renumbered to `HU 4` following the E4 plan.
