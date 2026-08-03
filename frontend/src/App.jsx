@@ -17,6 +17,7 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
+import RegisterMilestone from "./components/RegisterMilestone";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan } from "./utils/text";
@@ -330,6 +331,7 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
+  const [milestoneSuccess, setMilestoneSuccess] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
   const [onboarding, setOnboarding] = useState(() => {
@@ -923,6 +925,7 @@ export default function App() {
     if (!currentEvaluation) return;
     try {
       setDataError("");
+      setMilestoneSuccess("");
       
       const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
       const scoreUrl = `${apiBase.replace(/\/$/, "")}/score`;
@@ -959,7 +962,11 @@ export default function App() {
       });
       prependEvaluation(savedEvaluation);
 
+      setMilestoneSuccess("¡Hito registrado exitosamente! Tu score y plan han sido recalculados.");
       setPage("tracking"); 
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setMilestoneSuccess(""), 5000);
     } catch (err) {
       console.error("Error registrando hito", err);
       setDataError("Hubo un problema registrando el hito. Por favor intenta de nuevo.");
@@ -1263,6 +1270,14 @@ export default function App() {
           onGoalStatusChange={handleGoalStatusChange}
           onOpenGoalPlan={handleOpenGoalPlan}
           onStartEvaluation={startEvaluation}
+          onOpenMilestoneRegistration={() => setPage("register-milestone")}
+          successMessage={milestoneSuccess}
+        />
+      ) : page === "register-milestone" && profile.role === roles.user ? (
+        <RegisterMilestone
+          evaluation={currentEvaluation}
+          onBack={() => setPage("tracking")}
+          onRegister={handleRegisterMilestone}
         />
       ) : page === "monthly-plan" && profile.role === roles.user ? (
         <MonthlyPlan

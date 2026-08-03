@@ -1,7 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { buildFinancialTracking, goalStatuses } from "../services/financialTracking";
 import { formatScore } from "../utils/helpers";
-import MilestoneModal from "./MilestoneModal";
 
 const scoreColorClass = (score) => {
   const n = Number(score);
@@ -18,9 +17,9 @@ export default function FinancialTracking({
   onGoalStatusChange,
   onOpenGoalPlan,
   onStartEvaluation,
-  onRegisterMilestone,
+  onOpenMilestoneRegistration,
+  successMessage,
 }) {
-  const [milestoneModalOpen, setMilestoneModalOpen] = useState(false);
   const tracking = useMemo(() => buildFinancialTracking(evaluation), [evaluation]);
 
   if (!tracking) {
@@ -54,6 +53,12 @@ export default function FinancialTracking({
         <p>Metas accionables para preparar mejor tu situación financiera a partir de tu última preevaluación.</p>
       </div>
 
+      {successMessage && (
+        <div className="success-message" style={{ marginBottom: "2rem" }}>
+          {successMessage}
+        </div>
+      )}
+
       <div className="tracking-summary">
         <div className={`score-badge-wrap ${scoreColorClass(tracking.score)}`}>
           <span>Score actual</span>
@@ -66,7 +71,7 @@ export default function FinancialTracking({
       {tracking.warning && <div className="warning-note">{tracking.warning}</div>}
 
       <div className="tracking-actions" style={{ marginBottom: "1rem" }}>
-        <button type="button" className="primary-button" onClick={() => setMilestoneModalOpen(true)}>
+        <button type="button" className="primary-button" onClick={onOpenMilestoneRegistration}>
           Registrar Avance / Hito Financiero
         </button>
       </div>
@@ -121,17 +126,6 @@ export default function FinancialTracking({
 
         {tracking.ufNote && <p className="field-help">{tracking.ufNote}</p>}
       </div>
-
-      {milestoneModalOpen && (
-        <MilestoneModal
-          evaluation={evaluation}
-          onClose={() => setMilestoneModalOpen(false)}
-          onSubmit={(data) => {
-            setMilestoneModalOpen(false);
-            onRegisterMilestone?.(data);
-          }}
-        />
-      )}
     </section>
   );
 }

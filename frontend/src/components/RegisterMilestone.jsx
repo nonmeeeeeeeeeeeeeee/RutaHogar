@@ -1,6 +1,11 @@
 import React, { useState } from "react";
-import { formatClp } from "../utils/helpers";
-import { continuityOptions } from "./ScoreForm";
+import { formatClp } from "../services/monthlyPlanService";
+const continuityOptions = [
+  { value: "menos_6_meses", label: "Menos de 6 meses" },
+  { value: "entre_6_y_12_meses", label: "Entre 6 y 12 meses" },
+  { value: "entre_1_y_3_anios", label: "Entre 1 y 3 años" },
+  { value: "mas_3_anios", label: "Más de 3 años" },
+];
 
 export default function RegisterMilestone({ evaluation, onBack, onRegister }) {
   const [activeType, setActiveType] = useState(null); // 'ahorro', 'deuda', 'laboral'
@@ -81,40 +86,39 @@ export default function RegisterMilestone({ evaluation, onBack, onRegister }) {
         <button type="button" className="text-button mb-3" onClick={onBack}>
           ← Volver al Plan de Mejora
         </button>
-        <span className="eyebrow">Seguimiento</span>
         <h1>Registrar un Avance Financiero</h1>
         <p>
-          Selecciona el área en la que lograste un hito para recalcular tu perfil y 
+          Selecciona el área en la que lograste un hito para recalcular tu perfil y
           plan de mejora.
         </p>
       </div>
 
       <div className="milestone-cards-container" style={{ display: "flex", gap: "1rem", marginBottom: "2rem" }}>
-        <button 
-          className={`card-button ${activeType === 'ahorro' ? 'active' : ''}`} 
+        <button
+          className={`card-button ${activeType === 'ahorro' ? 'active' : ''}`}
           onClick={() => { setActiveType('ahorro'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: activeType === 'ahorro' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', background: activeType === 'ahorro' ? 'var(--surface-color-alt)' : 'var(--surface-color)', cursor: "pointer", textAlign: "left" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'ahorro' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
-          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem" }}>💰 Aumento de Ahorro</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-muted)" }}>He logrado ahorrar más dinero para mi pie.</p>
+          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💰 Aumento de Ahorro</h3>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He logrado ahorrar más dinero para mi pie.</p>
         </button>
 
-        <button 
-          className={`card-button ${activeType === 'deuda' ? 'active' : ''}`} 
+        <button
+          className={`card-button ${activeType === 'deuda' ? 'active' : ''}`}
           onClick={() => { setActiveType('deuda'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: activeType === 'deuda' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', background: activeType === 'deuda' ? 'var(--surface-color-alt)' : 'var(--surface-color)', cursor: "pointer", textAlign: "left" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'deuda' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
-          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem" }}>💳 Reducción de Deuda</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-muted)" }}>He pagado parte o la totalidad de mis deudas.</p>
+          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💳 Reducción de Deuda</h3>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He pagado parte o la totalidad de mis deudas.</p>
         </button>
 
-        <button 
-          className={`card-button ${activeType === 'laboral' ? 'active' : ''}`} 
+        <button
+          className={`card-button ${activeType === 'laboral' ? 'active' : ''}`}
           onClick={() => { setActiveType('laboral'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: activeType === 'laboral' ? '2px solid var(--primary-color)' : '1px solid var(--border-color)', background: activeType === 'laboral' ? 'var(--surface-color-alt)' : 'var(--surface-color)', cursor: "pointer", textAlign: "left" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'laboral' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
-          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem" }}>💼 Mejora Laboral</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--text-muted)" }}>He cambiado mi tipo de contrato o antigüedad.</p>
+          <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💼 Mejora Laboral</h3>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He cambiado mi tipo de contrato o antigüedad.</p>
         </button>
       </div>
 
