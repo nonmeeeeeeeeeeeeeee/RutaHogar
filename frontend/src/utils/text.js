@@ -54,3 +54,27 @@ export function normalizeDisplayText(value) {
 export function normalizeDisplayList(items) {
   return (Array.isArray(items) ? items : []).map(normalizeDisplayText).filter(Boolean);
 }
+
+export function normalizeImprovementPlan(items) {
+  if (!Array.isArray(items)) return [];
+  
+  return items.map(item => {
+    if (typeof item === 'string') {
+      return {
+        category: "General",
+        description: normalizeDisplayText(item),
+        impact_level: "Medio",
+        impact_score: 2,
+        expected_benefit: "Mejora general para tu perfil."
+      };
+    }
+    if (item && typeof item === 'object') {
+      return {
+        ...item,
+        description: normalizeDisplayText(item.description),
+        expected_benefit: normalizeDisplayText(item.expected_benefit)
+      };
+    }
+    return null;
+  }).filter(Boolean);
+}

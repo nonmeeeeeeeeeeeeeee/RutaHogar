@@ -16,10 +16,11 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
+import RegisterMilestone from "./components/RegisterMilestone";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
-import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
-import { getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
+import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan } from "./utils/text";
+import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
 import {
   getConsent,
@@ -113,7 +114,7 @@ const buildResultSnapshot = (scoreResult = {}) => ({
   risks: normalizeDisplayList(scoreResult.risks),
   recommendations: normalizeDisplayList(scoreResult.recommendations),
   ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-  improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+  improvement_plan: normalizeImprovementPlan(scoreResult.improvement_plan),
   positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
   executive_summary: normalizeDisplayText(scoreResult.executive_summary),
   commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
@@ -364,6 +365,7 @@ export default function App() {
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
   const [dismissedError, setDismissedError] = useState("");
+  const [milestoneSuccess, setMilestoneSuccess] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
   const [onboarding, setOnboarding] = useState(() => {
@@ -970,6 +972,58 @@ export default function App() {
     }
   };
 
+  const handleRegisterMilestone = async (milestoneData) => {
+    if (!currentEvaluation) return;
+    try {
+      setDataError("");
+      setMilestoneSuccess("");
+      
+      const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
+      const scoreUrl = `${apiBase.replace(/\/$/, "")}/score`;
+
+      const newFinancialInput = buildFinancialInput({
+        ...currentEvaluation.input,
+        ...milestoneData,
+      });
+
+      const res = await fetch(scoreUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newFinancialInput),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error en el scoring: ${res.status}`);
+      }
+
+      const scoreResult = await res.json();
+      const resultSnapshot = buildResultSnapshot(scoreResult);
+
+      const savedEvaluation = await createEvaluation(isUUID(userId) ? userId : null, {
+        email: profile?.email || "sin-email",
+        onboarding: userOnboarding ? { ...userOnboarding } : null,
+        input: newFinancialInput,
+        result: resultSnapshot,
+        channel: getChannel(),
+      });
+
+      setEvaluations((prev) => {
+        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
+        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
+      });
+      prependEvaluation(savedEvaluation);
+
+      setMilestoneSuccess("¡Hito registrado exitosamente! Tu score y plan han sido recalculados.");
+      setPage("tracking"); 
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setMilestoneSuccess(""), 5000);
+    } catch (err) {
+      console.error("Error registrando hito", err);
+      setDataError("Hubo un problema registrando el hito. Por favor intenta de nuevo.");
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     setAuth({ session: null, profile: null });
@@ -1279,6 +1333,14 @@ export default function App() {
           onGoalStatusChange={handleGoalStatusChange}
           onOpenGoalPlan={handleOpenGoalPlan}
           onStartEvaluation={startEvaluation}
+          onOpenMilestoneRegistration={() => setPage("register-milestone")}
+          successMessage={milestoneSuccess}
+        />
+      ) : page === "register-milestone" && profile.role === roles.user ? (
+        <RegisterMilestone
+          evaluation={currentEvaluation}
+          onBack={() => setPage("tracking")}
+          onRegister={handleRegisterMilestone}
         />
       ) : page === "monthly-plan" && profile.role === roles.user ? (
         <MonthlyPlan

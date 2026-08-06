@@ -13,6 +13,8 @@ export default function FinancialTracking({
   onGoalStatusChange,
   onOpenGoalPlan,
   onStartEvaluation,
+  onOpenMilestoneRegistration,
+  successMessage,
 }) {
   const tracking = useMemo(() => buildFinancialTracking(evaluation), [evaluation]);
   const adjustment = useMemo(
@@ -38,9 +40,9 @@ export default function FinancialTracking({
 
   const displayedGoals = goals.length
     ? tracking.goals.map((goal) => {
-        const storedGoal = goals.find((item) => item.title === goal.title || item.id === goal.id);
-        return storedGoal ? { ...storedGoal, ...goal, id: storedGoal.id, status: storedGoal.status } : goal;
-      })
+      const storedGoal = goals.find((item) => item.title === goal.title || item.id === goal.id);
+      return storedGoal ? { ...storedGoal, ...goal, id: storedGoal.id, status: storedGoal.status } : goal;
+    })
     : tracking.goals.map((goal) => ({ ...goal, status: "pendiente" }));
 
   return (
@@ -50,6 +52,12 @@ export default function FinancialTracking({
         <h1>Mi plan de mejora</h1>
         <p>Metas accionables para preparar mejor tu situación financiera a partir de tu última preevaluación.</p>
       </div>
+
+      {successMessage && (
+        <div className="success-message" style={{ marginBottom: "2rem" }}>
+          {successMessage}
+        </div>
+      )}
 
       <div className="tracking-summary">
         <div className={`score-badge-wrap ${getScoreBadgeClass(tracking.classification)}`}>
@@ -69,6 +77,12 @@ export default function FinancialTracking({
       </div>
 
       {tracking.warning && <div className="warning-note">{tracking.warning}</div>}
+
+      <div className="tracking-actions" style={{ marginBottom: "1rem" }}>
+        <button type="button" className="primary-button" onClick={onOpenMilestoneRegistration}>
+          Registrar Avance / Hito Financiero
+        </button>
+      </div>
 
       {evaluation?.plan_accepted_at ? (
         <div className="success-message">Plan activado. Podrás volver a precalificar después de avanzar en tus metas.</div>
@@ -117,9 +131,9 @@ export default function FinancialTracking({
             </label>
           </article>
         ))}
-      </div>
 
-      {tracking.ufNote && <p className="tracking-footnote">{tracking.ufNote}</p>}
+        {tracking.ufNote && <p className="field-help">{tracking.ufNote}</p>}
+      </div>
     </section>
   );
 }

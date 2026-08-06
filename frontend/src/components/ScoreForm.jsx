@@ -374,10 +374,10 @@ export default function ScoreForm({
 
   const consentDate = consentTimestamp
     ? new Date(consentTimestamp).toLocaleDateString("es-CL", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : null;
 
   const debtExceedsIncome =
@@ -1630,8 +1630,7 @@ export default function ScoreForm({
             </div>
           </div>
           <p className="field-help">
-            Declara el valor comercial estimado de tus activos. Esto fortalece
-            tu perfil de cara a una evaluación hipotecaria.
+            Puedes ingresarlo en UF o CLP. {ufHelpText}
           </p>
         </div>
       )}
