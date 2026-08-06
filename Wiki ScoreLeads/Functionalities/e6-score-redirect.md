@@ -1,6 +1,6 @@
 # Redirección post-evaluación según clasificación (E6)
 
-Implementa el criterio E6 de [[../UserStories/HdU3-HybridScoring|HdU 3]]: los leads que no califican son redirigidos automáticamente a un flujo educativo; los leads Alto van al resumen de resultado.
+Implementa el criterio E6 de [[../UserStories/HU3-HybridScoring|HU 3]]: los leads que no califican son redirigidos automáticamente a un flujo educativo; los leads Alto van al resumen de resultado.
 
 ---
 

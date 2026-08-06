@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getScoringHistoryByEvaluation } from "../services/getScoringHistory";
-import { formatScore } from "../utils/helpers";
+import {
+  formatScore,
+  getBaseClassification,
+  getClassificationAdjustment,
+  getClassificationClass,
+  getScoreBadgeClassByScore,
+  translateSeverity,
+} from "../utils/helpers";
  
 function formatFecha(created_at) {
   if (!created_at) return "-";
@@ -82,6 +89,48 @@ const DATE_RANGES = [
   { label: "Último año", value: "anio" },
 ];
 const DEFAULT_CLASSIFICATION_FILTER = "Alto";
+const emptyValue = "-";
+const CLP_FORMATTER = new Intl.NumberFormat("es-CL", {
+  style: "currency",
+  currency: "CLP",
+  maximumFractionDigits: 0,
+});
+
+function hasObjectData(value) {
+  return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0;
+}
+
+function money(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "Sin dato";
+  return CLP_FORMATTER.format(Math.round(numericValue));
+}
+
+function booleanText(value) {
+  if (value === true) return "Sí";
+  if (value === false) return "No";
+  return "Sin dato";
+}
+
+function formatPercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return "Sin dato";
+  return `${Math.round(numericValue * 1000) / 10}%`;
+}
+
+function purchaseTermLabel(value) {
+  const labels = {
+    inmediato: "Inmediato",
+    "0_3_meses": "0 a 3 meses",
+    "3_a_6_meses": "3 a 6 meses",
+    "3_6_meses": "3 a 6 meses",
+    "6_a_12_meses": "6 a 12 meses",
+    "6_12_meses": "6 a 12 meses",
+    mas_12_meses: "Más de 12 meses",
+    solo_explorando: "Solo explorando",
+  };
+  return labels[value] || "Sin dato";
+}
 
 function getDateThreshold(value) {
   const now = new Date();
@@ -102,6 +151,24 @@ export default function DashboardLeads({ evaluations }) {
   const [search, setSearch] = useState("");
   const [selectedLead, setSelectedLead] = useState(null);
   const [leadHistory, setLeadHistory] = useState([]);
+  const selectedResult = selectedLead?.result || {};
+  const selectedInput = selectedLead?.input || {};
+  const selectedOnboarding = selectedLead?.onboarding || {};
+  const selectedMainBlocker = hasObjectData(selectedResult.main_blocker) ? selectedResult.main_blocker : null;
+  const selectedAdjustment = getClassificationAdjustment(selectedResult);
+  const selectedProjectFit = hasObjectData(selectedResult.project_fit) ? selectedResult.project_fit : null;
+  const selectedCommercialPriority = hasObjectData(selectedResult.commercial_priority_detail)
+    ? selectedResult.commercial_priority_detail
+    : null;
+  const selectedRecommendations = Array.isArray(selectedResult.recommendations) ? selectedResult.recommendations : [];
+  const selectedPositiveIndicators = Array.isArray(selectedResult.positive_indicators) ? selectedResult.positive_indicators : [];
+  const selectedRisks = Array.isArray(selectedResult.risks) ? selectedResult.risks : [];
+  const selectedFinancialIndicators = hasObjectData(selectedResult.financial_indicators)
+    ? selectedResult.financial_indicators
+    : {};
+  const selectedPhone = selectedLead?.phone || selectedLead?.profile?.phone || "";
+  const selectedBaseScore = selectedResult.base_score ?? selectedResult.score;
+  const selectedFinalScore = selectedResult.adjusted_score ?? selectedResult.score;
   const hasActiveFilters =
     filter !== DEFAULT_CLASSIFICATION_FILTER ||
     filterCommune !== "todas" ||
@@ -140,7 +207,8 @@ export default function DashboardLeads({ evaluations }) {
   const counts = useMemo(() => {
     const c = { Alto: 0, Medio: 0, Bajo: 0 };
     evaluations.forEach((item) => {
-      if (c[item.result.classification] !== undefined) c[item.result.classification]++;
+      const classification = item.result?.classification;
+      if (c[classification] !== undefined) c[classification]++;
     });
     return c;
   }, [evaluations]);
@@ -151,7 +219,7 @@ export default function DashboardLeads({ evaluations }) {
     const searchLower = search.trim().toLowerCase();
 
     return evaluations.filter((item) => {
-      if (filter !== "todos" && item.result.classification !== filter) return false;
+      if (filter !== "todos" && item.result?.classification !== filter) return false;
 
       if (filterCommune !== "todas") {
         const main = item.input?.comuna_objetivo || item.onboarding?.comuna_interes;
@@ -275,15 +343,15 @@ export default function DashboardLeads({ evaluations }) {
             {filtered.map((item) => (
               <tr key={item.id}>
                 <td>{formatFecha(item.created_at)}</td>
-                <td>{item.full_name}</td>
-                <td>{item.input?.comuna_objetivo || "-"}</td>
+                <td>{item.full_name || item.email || emptyValue}</td>
+                <td>{item.input?.comuna_objetivo || item.onboarding?.comuna_interes || emptyValue}</td>
                 <td>
-                  <span className={`status-pill ${item.result.classification?.toLowerCase()}`}>
-                    {item.result.classification}
+                  <span className={`status-pill ${getClassificationClass(item.result?.classification)}`}>
+                    {item.result?.classification || emptyValue}
                   </span>
                 </td>
                 <td>
-                  {item.result.risks?.length
+                  {item.result?.risks?.length
                     ? item.result.risks.slice(0, 2).join(" ")
                     : "Sin riesgos relevantes"}
                 </td>
@@ -310,7 +378,7 @@ export default function DashboardLeads({ evaluations }) {
         </table>
       </div>
 
-      {/* Modal de detalles — sin cambios */}
+      {/* Modal de detalles */}
       {selectedLead && (
         <div
           style={{
@@ -345,16 +413,29 @@ export default function DashboardLeads({ evaluations }) {
               </button>
             </div>
 
-            <div className={`lead-score-highlight ${selectedLead.result.classification?.toLowerCase() || ""}`}>
-              <div>
-                <span>Score</span>
-                <strong>{selectedLead.result.score}</strong>
+            <div className="lead-score-highlight">
+              <div className={getScoreBadgeClassByScore(selectedBaseScore)}>
+                <span>Score base</span>
+                <strong>{formatScore(selectedBaseScore) ?? emptyValue}</strong>
+                <small>Base: {getBaseClassification(selectedResult)}</small>
               </div>
-              <div>
-                <span>Clasificación</span>
-                <strong>{selectedLead.result.classification || "-"}</strong>
+              <div className={getClassificationClass(selectedResult.classification)}>
+                <span>Score final</span>
+                <strong>{formatScore(selectedFinalScore) ?? emptyValue}</strong>
+                {selectedResult.score_adjustment_reason ? <small>Ajustado por bloqueadores</small> : null}
+              </div>
+              <div className={getClassificationClass(selectedResult.classification)}>
+                <span>Clasificación final</span>
+                <strong>{selectedResult.classification || emptyValue}</strong>
               </div>
             </div>
+            {selectedAdjustment ? (
+              <div className="score-adjustment-note">
+                <strong>{selectedAdjustment.message}</strong>
+                {selectedAdjustment.detail ? <p>{selectedAdjustment.detail}</p> : null}
+                {selectedResult.score_adjustment_reason ? <p>{selectedResult.score_adjustment_reason}</p> : null}
+              </div>
+            ) : null}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2rem" }}>
               {/* Columna Izquierda */}
@@ -363,26 +444,37 @@ export default function DashboardLeads({ evaluations }) {
                 <div style={{ background: "#f8fafc", padding: "1.25rem", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
                   <h3 style={{ margin: "0 0 1rem 0", fontSize: "1.1rem", color: "#334155" }}>Información del Cliente</h3>
                   <div style={{ display: "grid", gap: "0.6rem", fontSize: "0.95rem", color: "#475569" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Nombre:</strong> <span style={{ textAlign: "right" }}>{selectedLead.full_name || "-"}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Email:</strong> <span style={{ textAlign: "right" }}>{selectedLead.email || "-"}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Teléfono:</strong> <span style={{ textAlign: "right" }}>{selectedLead.phone || selectedLead.profile?.phone || "-"}</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Edad:</strong> <span style={{ textAlign: "right" }}>{selectedLead.input?.edad ?? "-"} años</span></div>
-                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna principal:</strong> <span style={{ textAlign: "right" }}>{selectedLead.input?.comuna_objetivo || selectedLead.onboarding?.comuna_interes || "-"}</span></div>
-                    {selectedLead.onboarding?.comuna_alternativa && (
-                      <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna alternativa:</strong> <span style={{ textAlign: "right" }}>{selectedLead.onboarding.comuna_alternativa}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Nombre:</strong> <span style={{ textAlign: "right" }}>{selectedLead.full_name || emptyValue}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Email:</strong> <span style={{ textAlign: "right" }}>{selectedLead.email || emptyValue}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Teléfono:</strong> <span style={{ textAlign: "right" }}>{selectedPhone || emptyValue}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Edad:</strong> <span style={{ textAlign: "right" }}>{selectedInput.edad != null ? `${selectedInput.edad} años` : emptyValue}</span></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna principal:</strong> <span style={{ textAlign: "right" }}>{selectedInput.comuna_objetivo || selectedOnboarding.comuna_interes || emptyValue}</span></div>
+                    {selectedOnboarding.comuna_alternativa && (
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Comuna alternativa:</strong> <span style={{ textAlign: "right" }}>{selectedOnboarding.comuna_alternativa}</span></div>
                     )}
                     <div style={{ display: "flex", justifyContent: "space-between" }}><strong>Fecha evaluación:</strong> <span style={{ textAlign: "right" }}>{formatFecha(selectedLead.created_at)}</span></div>
                   </div>
                 </div>
 
+                {selectedMainBlocker && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Bloqueador principal</h3>
+                    <div style={{ background: "#fff7ed", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #fb923c", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                      <strong>{selectedMainBlocker.title || selectedMainBlocker.code || "Antecedente a revisar"}</strong>
+                      {selectedMainBlocker.description ? <p style={{ margin: "0.5rem 0" }}>{selectedMainBlocker.description}</p> : null}
+                      <span>Severidad: {translateSeverity(selectedMainBlocker.severity)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Indicadores positivos */}
-                {selectedLead.result.positive_indicators?.length > 0 && (
+                {selectedPositiveIndicators.length > 0 && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155", display: "flex", alignItems: "center", gap: "6px" }}>
                        <span style={{ color: "#10b981", fontWeight: "bold" }}>✓</span> Indicadores positivos
                     </h3>
                     <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
-                      {selectedLead.result.positive_indicators.map((ind, i) => (
+                      {selectedPositiveIndicators.map((ind, i) => (
                         <li key={i} style={{ marginBottom: "0.25rem" }}>{ind}</li>
                       ))}
                     </ul>
@@ -390,13 +482,13 @@ export default function DashboardLeads({ evaluations }) {
                 )}
 
                 {/* Riesgos detectados */}
-                {selectedLead.result.risks?.length > 0 && (
+                {selectedRisks.length > 0 && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155", display: "flex", alignItems: "center", gap: "6px" }}>
                        <span style={{ color: "#ef4444", fontWeight: "bold" }}>⚠</span> Riesgos detectados
                     </h3>
                     <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
-                      {selectedLead.result.risks.map((r, i) => (
+                      {selectedRisks.map((r, i) => (
                         <li key={i} style={{ marginBottom: "0.25rem" }}>{r}</li>
                       ))}
                     </ul>
@@ -406,24 +498,75 @@ export default function DashboardLeads({ evaluations }) {
 
               {/* Columna Derecha */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                {selectedLead.result.executive_summary && (
+                {selectedProjectFit && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Compatibilidad con objetivo</h3>
+                    <dl style={{ margin: 0, display: "grid", gap: "0.5rem", color: "#475569", fontSize: "0.95rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><dt>Clasificación</dt><dd style={{ margin: 0 }}>{selectedProjectFit.classification || selectedProjectFit.status || emptyValue}</dd></div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><dt>Score</dt><dd style={{ margin: 0 }}>{formatScore(selectedProjectFit.score) ?? emptyValue}</dd></div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><dt>Brecha ingreso</dt><dd style={{ margin: 0 }}>{money(selectedProjectFit.income_gap)}</dd></div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><dt>Brecha pie</dt><dd style={{ margin: 0 }}>{money(selectedProjectFit.down_payment_gap)}</dd></div>
+                      <div style={{ display: "flex", justifyContent: "space-between" }}><dt>Compatible</dt><dd style={{ margin: 0 }}>{booleanText(selectedProjectFit.compatible)}</dd></div>
+                    </dl>
+                  </div>
+                )}
+
+                <div>
+                  <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Señales comerciales declaradas</h3>
+                  <dl style={{ margin: 0, display: "grid", gap: "0.5rem", color: "#475569", fontSize: "0.95rem", background: "#f8fafc", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #93c5fd" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                      <dt>Plazo de compra</dt>
+                      <dd style={{ margin: 0, textAlign: "right" }}>{purchaseTermLabel(selectedInput.plazo_compra)}</dd>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                      <dt>Propiedad o proyecto visto</dt>
+                      <dd style={{ margin: 0, textAlign: "right" }}>{booleanText(selectedInput.tiene_propiedad_vista)}</dd>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+                      <dt>Pie estimado</dt>
+                      <dd style={{ margin: 0, textAlign: "right" }}>{formatPercent(selectedFinancialIndicators.pie_ratio)}</dd>
+                    </div>
+                  </dl>
+                </div>
+
+                {selectedCommercialPriority && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Prioridad comercial</h3>
+                    <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80" }}>
+                      <strong>Acción:</strong> {selectedCommercialPriority.action || selectedCommercialPriority.level || emptyValue}
+                      <br />
+                      <strong>Motivo:</strong> {selectedCommercialPriority.reason || "Sin motivo registrado."}
+                      <br />
+                      <strong>Derivación sugerida:</strong> {booleanText(selectedCommercialPriority.send_to_crm)}
+                    </p>
+                  </div>
+                )}
+
+                {selectedRecommendations.length > 0 && (
+                  <div>
+                    <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Recomendaciones</h3>
+                    <ul style={{ margin: 0, paddingLeft: "1.25rem", color: "#475569", fontSize: "0.95rem", lineHeight: "1.5" }}>
+                      {selectedRecommendations.map((item, index) => (
+                        <li key={`${item}-${index}`}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {selectedResult.executive_summary && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Resumen Ejecutivo</h3>
                     <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f8fafc", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #cbd5e1" }}>
-                       {selectedLead.result.executive_summary}
+                       {selectedResult.executive_summary}
                     </p>
                   </div>
                 )}
                 
-                {selectedLead.result.commercial_guidance && (
+                {!selectedCommercialPriority && selectedResult.commercial_guidance && (
                   <div>
                     <h3 style={{ margin: "0 0 0.75rem 0", fontSize: "1.05rem", color: "#334155" }}>Orientación Comercial</h3>
                     <p style={{ margin: 0, color: "#475569", fontSize: "0.95rem", lineHeight: "1.6", background: "#f0fdf4", padding: "1rem", borderRadius: "8px", borderLeft: "4px solid #4ade80" }}>
-                      <>
-                        <strong>Acción:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[0].replace("Acción:", "").trim()}
-                        <br />
-                        <strong>Motivo:</strong> {selectedLead.result.commercial_guidance.split("Motivo:")[1].trim()}
-                      </>
+                      {selectedResult.commercial_guidance}
                     </p>
                   </div>
                 )}
@@ -445,7 +588,7 @@ export default function DashboardLeads({ evaluations }) {
                       Correo
                     </a>
                     <a
-                      href={`https://wa.me/${(selectedLead.phone || "").replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"}! Te escribo por ScoreLeads!`)}`}
+                      href={`https://wa.me/${selectedPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(`Hola ${selectedLead.full_name?.split(" ")[0] || "Cliente"}! Te escribo por ScoreLeads.`)}`}
                       style={{ textDecoration: "none", textAlign: "center", backgroundColor: "#25D366", color: "white", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center", padding: "0.6rem", fontWeight: "500", fontSize: "0.9rem", border: "none", cursor: "pointer" }}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -479,7 +622,9 @@ export default function DashboardLeads({ evaluations }) {
                     >
                       <div className="history-card-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
                         <span className="eyebrow">{(() => { const d = new Date(item.created_at); const fecha = d.toLocaleDateString("es-CL"); const hora = `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}:${String(d.getUTCSeconds()).padStart(2, "0")}`; return `${fecha} ${hora} UTC`; })()}</span>
-                        <strong>{formatScore(item.score) ?? "Sin score"} / {item.classification}</strong>
+                        <strong>
+                          Score base: {formatScore(item.base_score ?? item.score, "Sin score")} · Score final: {formatScore(item.adjusted_score ?? item.score, "Sin score")} · Clasificación final: {item.classification || emptyValue}
+                        </strong>
                       </div>
                       <dl style={{ margin: 0, display: "grid", gap: "0.3rem", fontSize: "0.9rem" }}>
                         <div style={{ display: "flex", gap: "0.5rem" }}>

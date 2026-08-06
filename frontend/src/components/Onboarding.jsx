@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { comunasMvp } from "../constants/comunas";
 
-const normalizePropertyType = (value) => (value === "indiferente" ? "aun_no_lo_se" : value || "");
+const normalizePropertyType = (value) =>
+  value === "indiferente" || value === "aun_no_lo_se" ? "" : value || "";
 
 export default function Onboarding({ initialData, onComplete, isAnon = false }) {
   const [anonConsent, setAnonConsent] = useState(false);
@@ -11,6 +12,7 @@ export default function Onboarding({ initialData, onComplete, isAnon = false }) 
     comuna_interes: initialData?.comuna_interes || "",
     plazo_compra: initialData?.plazo_compra || "",
     comuna_alternativa: initialData?.comuna_alternativa || "",
+    tiene_propiedad_vista: initialData?.tiene_propiedad_vista === true,
   });
   const [error, setError] = useState("");
   const alternativeCommunes = form.comuna_interes
@@ -18,9 +20,9 @@ export default function Onboarding({ initialData, onComplete, isAnon = false }) 
     : [];
 
   const handleChange = (event) => {
-    const { name, value } = event.target;
+    const { name, value, type, checked } = event.target;
     setForm((prev) => {
-      const next = { ...prev, [name]: value };
+      const next = { ...prev, [name]: type === "checkbox" ? checked : value };
       if (name === "comuna_interes" && value === prev.comuna_alternativa) {
         next.comuna_alternativa = "";
       }
@@ -98,7 +100,6 @@ export default function Onboarding({ initialData, onComplete, isAnon = false }) 
               <option value="">Selecciona una opción</option>
               <option value="casa">Casa</option>
               <option value="departamento">Departamento</option>
-              <option value="aun_no_lo_se">Aún no lo sé</option>
             </select>
           </label>
 
@@ -144,6 +145,16 @@ export default function Onboarding({ initialData, onComplete, isAnon = false }) 
                 </option>
               ))}
             </select>
+          </label>
+
+          <label className="check-row">
+            <input
+              type="checkbox"
+              name="tiene_propiedad_vista"
+              checked={form.tiene_propiedad_vista}
+              onChange={handleChange}
+            />
+            <span>Ya tengo una propiedad o proyecto visto</span>
           </label>
         </div>
 

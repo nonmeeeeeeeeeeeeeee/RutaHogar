@@ -21,7 +21,7 @@
 
 ## 1. ¿Qué es ScoreLeads?
 
-ScoreLeads es un MVP web que permite a un usuario interesado en comprar una vivienda ingresar sus datos financieros básicos y recibir en segundos:
+ScoreLeads es una plataforma profesional de precalificación financiera inmobiliaria que permite a un usuario interesado en comprar una vivienda ingresar sus datos financieros básicos y recibir en segundos:
 
 - Un **score de 0 a 100** basado en reglas del mundo hipotecario real.
 - Una **clasificación**: Alto, Medio o Bajo.
@@ -30,7 +30,7 @@ ScoreLeads es un MVP web que permite a un usuario interesado en comprar una vivi
 
 Para la inmobiliaria, los leads con score Alto quedan disponibles en un panel priorizado para que el ejecutivo comercial los contacte directamente.
 
-El sistema **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana.
+El sistema **no aprueba créditos** y **no reemplaza** una evaluación bancaria formal. Es una herramienta orientativa de precalificación temprana. La IA no decide el score: solo redacta explicaciones a partir del resultado calculado por reglas auditables.
 
 ---
 
@@ -311,6 +311,12 @@ Recibe los datos financieros del usuario y retorna el resultado de la evaluació
 | [[Tech Stack]] | Stack tecnológico completo con justificaciones, integraciones futuras y decisiones de diseño |
 | [[informes_entregas/Informe ScoreLeads]] | E1 — Justificación de propuesta: problema, cliente, solución, riesgos e hipótesis |
 | [[informes_entregas/E2 - GPI 2026 - ScoreLeads]] | E2 — Historias de usuario corregidas, criterios de aceptación y rúbrica |
+| [[informes_entregas/E4 - GPI Plan de Proyecto 2026]] | E4 — Plan de proyecto 2026: actores, atributos de calidad, riesgos, distribución en 3 sprints y detalle de 2 spikes + 33 HUs |
+| [[UserStories/index\|User Stories]] | Backlog completo (HU 1–33) con estado, sprint y páginas por historia |
+| [[Distribucion\|Distribución / Sprints]] | Plan de 3 sprints + 2 spikes con totales de SP |
+| [[Riesgos\|Riesgos técnicos]] | 9 riesgos técnicos con fórmula de prioridad y mitigaciones |
+| [[AtributosDeCalidad\|Atributos de calidad (RNF)]] | 8 atributos de calidad con metas SMART y verificación |
+| [[Actores\|Actores / Roles]] | Los 4 actores del sistema con niveles de manejo tecnológico y de contexto |
 | `contexto-ScoreLeads.md` | Contexto consolidado: visión, flujo, variables de scoring y reglas del mundo hipotecario |
 | `agents/AGENTS.md` | Instrucciones generales para agentes IA del proyecto |
 | `README.md` | Instrucciones rápidas de instalación y ejecución |

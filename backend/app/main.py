@@ -1,4 +1,5 @@
-from typing import Optional
+import os
+from typing import Any, Optional
 from fastapi import FastAPI
 from pydantic import BaseModel, field_validator, model_validator
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,6 +11,16 @@ VALID_DELINQUENCY_VALUES = {"si", "no"}
 VALID_DELINQUENCY_AGE_VALUES = {"menos_3_meses", "3_a_12_meses", "1_a_3_anios", "mas_3_anios"}
 VALID_PROPERTY_UNITS = {"uf", "clp"}
 VALID_MORTGAGE_TERMS = {10, 15, 20, 25, 30}
+VALID_PURCHASE_TERMS = {
+    "inmediato",
+    "3_a_6_meses",
+    "6_a_12_meses",
+    "mas_12_meses",
+    "solo_explorando",
+    "0_3_meses",
+    "3_6_meses",
+    "6_12_meses",
+}
 VALID_RELATION_TYPES = {
     "conyuge", "pareja_conviviente", "pareja_hijos_comun", "padre_madre",
     "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
@@ -17,9 +28,26 @@ VALID_RELATION_TYPES = {
 
 app = FastAPI(title="ScoreLeads")
 
+LOCAL_FRONTEND_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:5176",
+    "http://127.0.0.1:5176",
+]
+EXTRA_FRONTEND_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("SCORELEADS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=LOCAL_FRONTEND_ORIGINS + EXTRA_FRONTEND_ORIGINS,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -43,7 +71,16 @@ class ScoreRequest(BaseModel):
     monto_morosidad: Optional[float] = None
     antiguedad_morosidad: Optional[str] = None
     comuna_objetivo: Optional[str] = None
-    dividendo_estimado: float
+    dividendo_estimado: Optional[float] = None
+    dividendo_esperado: Optional[float] = None
+    dividendo_estimado_origen: Optional[str] = None
+    dividendo_estimado_calculado: Optional[float] = None
+    dividendo_estimado_manual: Optional[float] = None
+    dividendo_tasa_anual_referencial: Optional[float] = None
+    dividendo_monto_credito_estimado_clp: Optional[float] = None
+    dividendo_monto_credito_estimado_uf: Optional[float] = None
+    dividendo_uf_referencial_clp: Optional[float] = None
+    anonymous_flow_id: Optional[str] = None
     complemento_renta: bool = False
     ingreso_mensual_complementario: Optional[float] = None
     deuda_mensual_complementario: Optional[float] = None
@@ -51,11 +88,40 @@ class ScoreRequest(BaseModel):
     continuidad_laboral_complementario: Optional[str] = None
     morosidad_complementario: Optional[str] = None
     relacion_complementario: Optional[str] = None
+    vivienda_nueva: Optional[bool] = None
+    plazo_compra: Optional[str] = None
+    tiene_propiedad_vista: Optional[bool] = None
+    pie_en_cuotas_interes: Optional[bool] = None
     consentimiento: bool
     declara_patrimonio: bool = False
     valor_vehiculos: Optional[float] = 0.0
     valor_inmuebles: Optional[float] = 0.0
     patrimonio_unit: Optional[str] = "clp"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize_compatible_payload(cls, values: Any):
+        if not isinstance(values, dict):
+            return values
+
+        data = dict(values)
+        if data.get("dividendo_estimado") is None:
+            dividend = (
+                data.get("dividendo_esperado")
+                or data.get("dividendo_estimado_manual")
+                or data.get("dividendo_estimado_calculado")
+            )
+            if dividend is not None:
+                data["dividendo_estimado"] = dividend
+
+        purchase_term_aliases = {
+            "0_3_meses": "inmediato",
+            "3_6_meses": "3_a_6_meses",
+            "6_12_meses": "6_a_12_meses",
+        }
+        if data.get("plazo_compra") in purchase_term_aliases:
+            data["plazo_compra"] = purchase_term_aliases[data["plazo_compra"]]
+        return data
 
     @field_validator("ingreso_mensual")
     @classmethod
@@ -67,7 +133,7 @@ class ScoreRequest(BaseModel):
     @field_validator("deuda_mensual", "ahorro_disponible", "dividendo_estimado")
     @classmethod
     def validate_non_negative(cls, value):
-        if value < 0:
+        if value is not None and value < 0:
             raise ValueError("El valor no puede ser negativo")
         return value
 
@@ -136,6 +202,13 @@ class ScoreRequest(BaseModel):
             raise ValueError("Unidad de monto de vivienda inválida")
         return value
 
+    @field_validator("plazo_compra")
+    @classmethod
+    def validate_purchase_term(cls, value):
+        if value is not None and value not in VALID_PURCHASE_TERMS:
+            raise ValueError("Plazo de compra inválido")
+        return value
+
     @field_validator("consentimiento")
     @classmethod
     def validate_consent(cls, value):
@@ -184,6 +257,8 @@ class ScoreRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_conditional_fields(self):
+        if self.dividendo_estimado is None:
+            raise ValueError("Debe indicar el dividendo estimado")
         if self.morosidad_actual == "si":
             if self.monto_morosidad is None or self.monto_morosidad <= 0:
                 raise ValueError("Debe indicar el monto de morosidad")
