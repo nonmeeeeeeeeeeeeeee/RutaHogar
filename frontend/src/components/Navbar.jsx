@@ -6,6 +6,7 @@ const navByRole = {
     { id: "evaluate", label: "Precalificación" },
     { id: "recommendations", label: "Recomendaciones" },
     { id: "tracking", label: "Plan de Mejora" },
+    { id: "academia", label: "Academia" },
   ],
   [roles.sales]: [
     { id: "leads", label: "Dashboard Leads" },

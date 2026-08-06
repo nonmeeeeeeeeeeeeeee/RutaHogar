@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import AcademiaFinanciera from "./components/AcademiaFinanciera";
 import AdminPanel from "./components/AdminPanel";
 import AnonHeader from "./components/AnonHeader";
 import AuthPanel from "./components/AuthPanel";
@@ -224,6 +225,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "home") return "/inicio";
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
   if (page === "recommendations") return "/recomendaciones";
+  if (page === "academia") return "/academia";
   if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
   if (page === "profile") return "/perfil";
   if (page === "leads") return "/dashboard";
@@ -241,6 +243,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/precalificacion",
     "/pre-evaluacion",
     "/recomendaciones",
+    "/academia",
     "/plan-mejora",
     "/perfil",
     "/historial",
@@ -255,7 +258,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "landing", path: path === "/inicio" ? "/" : undefined };
@@ -272,6 +275,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
       };
     }
     if (path === "/recomendaciones") return { page: "recommendations" };
+    if (path === "/academia") return { page: "academia" };
     if (path === "/plan-mejora") return { page: "tracking" };
     if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
     if (path === "/dashboard" || path === "/admin" || path === "/ejecutivo/leads" || path === "/login" || path === "/registro") {
@@ -1360,6 +1364,8 @@ export default function App() {
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
         />
+      ) : page === "academia" && profile.role === roles.user ? (
+        <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} />
       ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (
