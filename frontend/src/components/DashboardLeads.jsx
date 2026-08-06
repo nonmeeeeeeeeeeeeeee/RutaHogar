@@ -13,6 +13,50 @@ function formatFecha(created_at) {
   });
 }
 
+const eventLabels = {
+  no_viable_shown: "Plan no viable presentado",
+  apply_alternative: "Aplicó alternativa",
+  simulate_success: "Simulación viable",
+  accept_plan: "Aceptó el plan",
+  register_savings: "Registró ahorro",
+};
+
+function formatEventMoney(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "";
+  return new Intl.NumberFormat("es-CL", {
+    style: "currency",
+    currency: "CLP",
+    maximumFractionDigits: 0,
+  }).format(Math.round(number / 1000) * 1000);
+}
+
+function renderEventDetail(event) {
+  const d = event.details || {};
+  switch (event.type) {
+    case "no_viable_shown":
+      return d.message || "Se presentó la condición No viable";
+    case "apply_alternative":
+      return `${d.title || d.alternative_id || "Alternativa"} → ${d.result_viable ? "viable" : "no viable"}`;
+    case "simulate_success":
+      return d.months ? `Viable ahorrando en ${d.months} meses` : "Escenario simulado viable";
+    case "accept_plan":
+      return `Meta ${formatEventMoney(d.monthly_target)} / ${d.months ?? "-"} meses`;
+    case "register_savings":
+      return `${formatEventMoney(d.total_registered) || "$0"} acumulado (${d.progress_percent ?? 0}%)`;
+    default:
+      return "";
+  }
+}
+
+function formatEventAt(at) {
+  const d = new Date(at);
+  if (isNaN(d.getTime())) return "";
+  const fecha = d.toLocaleDateString("es-CL");
+  const hora = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${fecha} ${hora}`;
+}
+
 const AGE_RANGES = [
   { label: "Todas las edades", min: 0, max: Infinity },
   { label: "18 – 25 años", min: 18, max: 25 },
@@ -468,6 +512,25 @@ export default function DashboardLeads({ evaluations }) {
                           </dd>
                         </div>
                       </dl>
+
+                      {(item.events || []).length > 0 && (
+                        <div style={{ marginTop: "0.75rem", borderTop: "1px dashed var(--color-border, #e0e0e0)", paddingTop: "0.75rem" }}>
+                          <span className="eyebrow">Eventos del plan de ahorro</span>
+                          <ul style={{ margin: "0.5rem 0 0", padding: 0, listStyle: "none", display: "grid", gap: "0.45rem", fontSize: "0.9rem" }}>
+                            {(item.events || []).map((event, i) => (
+                              <li key={i} style={{ display: "flex", gap: "0.5rem", alignItems: "baseline" }}>
+                                <span style={{ whiteSpace: "nowrap", color: "var(--color-muted, #888)", minWidth: "70px" }}>
+                                  {formatEventAt(event.at)}
+                                </span>
+                                <strong style={{ whiteSpace: "nowrap" }}>
+                                  {eventLabels[event.type] || event.type}
+                                </strong>
+                                <span style={{ color: "#475569" }}>{renderEventDetail(event)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>
