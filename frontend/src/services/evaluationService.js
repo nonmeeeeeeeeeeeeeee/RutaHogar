@@ -82,6 +82,8 @@ export function normalizeEvaluation(row, profilesMap = {}) {
     id: row.id,
     created_at: row.created_at || new Date().toISOString(),
     email: row.email,
+    housing_plan: row.housing_plan || null,
+    plan_accepted_at: row.plan_accepted_at || null,
     // Busca el nombre en el mapa de profiles por user_id
     full_name: profilesMap[row.user_id] || null,
     user_id: row.user_id,
@@ -165,6 +167,7 @@ const evaluationSelectColumns = [
   "recommendations",
   "executive_summary",
   "commercial_guidance",
+  "housing_plan",
   "created_at",
 ].join(", ");
 
@@ -322,16 +325,57 @@ export async function deleteEvaluation(evaluationId, userId) {
   if (error) { logSupabaseError(error); throw error; }
 }
 
-export async function acceptEvaluationPlan(evaluationId, userId) {
+export async function acceptEvaluationPlan(evaluationId, userId, planSnapshot) {
   const acceptedAt = new Date().toISOString();
+  const housingPlan = {
+    status: "en_curso",
+    accepted_at: acceptedAt,
+    ...planSnapshot,
+  };
 
   if (!isSupabaseDataConfigured) {
     const next = readLocalEvaluations().map((item) =>
-      item.id === evaluationId ? { ...item, plan_accepted_at: acceptedAt } : item,
+      item.id === evaluationId ? { ...item, plan_accepted_at: acceptedAt, housing_plan: housingPlan } : item,
     );
     writeLocalEvaluations(next);
     return normalizeLocalEvaluation(next.find((item) => item.id === evaluationId) || null);
   }
 
-  return null;
+  const user = await getAuthenticatedUser();
+  if (!user?.id) throw new Error("No hay usuario autenticado para aceptar el plan.");
+
+  const { data, error } = await supabase
+    .from("evaluations")
+    .update({ housing_plan: housingPlan })
+    .eq("id", evaluationId)
+    .eq("user_id", user.id)
+    .select(evaluationSelectColumns)
+    .single();
+
+  if (error) { logSupabaseError(error); throw error; }
+  return normalizeEvaluation(data);
+}
+
+export async function saveHousingPlanProgress(evaluationId, userId, housingPlan) {
+  if (!isSupabaseDataConfigured) {
+    const next = readLocalEvaluations().map((item) =>
+      item.id === evaluationId ? { ...item, housing_plan: housingPlan } : item,
+    );
+    writeLocalEvaluations(next);
+    return normalizeLocalEvaluation(next.find((item) => item.id === evaluationId) || null);
+  }
+
+  const user = await getAuthenticatedUser();
+  if (!user?.id) throw new Error("No hay usuario autenticado para guardar el progreso del plan.");
+
+  const { data, error } = await supabase
+    .from("evaluations")
+    .update({ housing_plan: housingPlan })
+    .eq("id", evaluationId)
+    .eq("user_id", user.id)
+    .select(evaluationSelectColumns)
+    .single();
+
+  if (error) { logSupabaseError(error); throw error; }
+  return normalizeEvaluation(data);
 }

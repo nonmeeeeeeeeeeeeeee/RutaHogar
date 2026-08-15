@@ -1507,6 +1507,108 @@ li {
   gap: 12px;
 }
 
+.month-summary {
+  overflow: hidden;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.month-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fbfdff;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.month-summary-header span {
+  color: #111827;
+  text-transform: none;
+}
+
+.month-summary-row + .month-summary-row {
+  border-top: 1px solid #e2e8f0;
+}
+
+.month-summary-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.month-summary-toggle:hover {
+  background: #f7fafc;
+}
+
+.month-summary-row.is-open .month-summary-toggle {
+  background: #f0f7f3;
+}
+
+.month-summary-label {
+  flex: 1 1 160px;
+  color: #111827;
+  font-weight: 700;
+}
+
+.month-summary-amount {
+  margin-left: auto;
+  color: #526174;
+  font-weight: 700;
+}
+
+.month-summary-chevron {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.month-status-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.month-status-badge.logrado {
+  color: #ffffff;
+  background: #246354;
+}
+
+.month-status-badge.no_logrado {
+  color: #7a4b00;
+  background: #fdecc8;
+}
+
+.month-status-badge.pendiente {
+  color: #526174;
+  background: #e7ecf3;
+}
+
+.month-summary-detail {
+  padding: 14px 16px;
+  border-top: 1px dashed #c3cedb;
+  background: #fbfdff;
+}
+
+.month-summary-detail .month-card {
+  background: #ffffff;
+}
+
 .month-card {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 260px;
@@ -1546,6 +1648,15 @@ li {
   color: #526174;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.plan-closed-note {
+  padding: 14px 16px;
+  border: 1px dashed #c3cedb;
+  border-radius: 8px;
+  background: #f7fafc;
+  color: #64748b;
+  font-size: 0.9rem;
 }
 
 .empty-state {
@@ -1996,7 +2107,424 @@ th {
   to { transform: translateX(0); opacity: 1; }
 }
 
+.housing-plan-block {
+  margin-bottom: 16px;
+  padding: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.housing-status-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.housing-status-indicator {
+  display: grid;
+  min-width: 140px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.housing-status-indicator.status-pendiente {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.housing-status-indicator.status-en-curso {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.housing-status-indicator.status-en-progreso {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.housing-status-indicator.status-alcanzado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.housing-pie-toggle {
+  display: grid;
+  gap: 4px;
+}
+
+.housing-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.housing-metrics .metric {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.housing-metrics .metric strong {
+  font-size: 1.05rem;
+  color: #111827;
+}
+
+.housing-metrics .metric small {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.housing-metrics .metric.metric-warning strong {
+  color: #b45309;
+}
+
+.housing-metrics .metric.metric-ok strong {
+  color: #166534;
+}
+
+.housing-metrics .metric.metric-highlight {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.text-warning {
+  color: #b45309;
+}
+
+.housing-plan-status {
+  margin-bottom: 14px;
+}
+
+.housing-plan-status .status-badge {
+  display: grid;
+  gap: 2px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.housing-plan-status .status-badge.status-pendiente {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.housing-plan-status .status-badge.status-en-curso {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.housing-plan-status .status-badge.status-en-progreso {
+  background: #e9f8ef;
+  color: #166534;
+}
+
+.housing-plan-status .status-badge.status-alcanzado {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.housing-plan-status .status-badge strong {
+  font-size: 1.15rem;
+}
+
+.housing-plan-status .status-badge small {
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.housing-savings-summary {
+  display: grid;
+  gap: 16px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.summary-block {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.summary-block span {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.summary-block strong {
+  color: #111827;
+  font-size: 1.2rem;
+}
+
+.summary-block small {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.summary-block.highlight {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.summary-block.warning {
+  background: #fff8e6;
+  border-color: #f4d38b;
+}
+
+.summary-block.warning strong {
+  color: #b45309;
+}
+
+.summary-block.ok {
+  background: #f4fbf7;
+  border-color: rgba(36, 99, 84, 0.45);
+}
+
+.summary-block.ok strong {
+  color: #166534;
+}
+
+.pie-type-selector {
+  display: grid;
+  gap: 6px;
+}
+
+.gap-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.btn-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.btn-group button {
+  padding: 8px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #334155;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-group button.btn-group-selected {
+  background: #246354;
+  border-color: #246354;
+  color: #ffffff;
+}
+
+.housing-breakdown {
+  display: grid;
+  gap: 12px;
+}
+
+.housing-breakdown-table {
+  overflow-x: auto;
+}
+
+.scenario-note {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e40af;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.scenario-note button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #246354;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.simulator-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.simulator-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: end;
+}
+
+.simulator-field {
+  display: grid;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #172033;
+}
+
+.simulator-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 1rem;
+}
+
+.simulator-codeudor-toggle {
+  grid-column: 1 / -1;
+}
+
+.simulator-result {
+  display: grid;
+  gap: 12px;
+}
+
+.sim-badge {
+  justify-self: start;
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-weight: 800;
+}
+
+.sim-badge.viable {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.sim-badge.no-viable {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.sim-badge.long {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.sim-badge.error {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.sim-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sim-metrics .metric {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.sim-metrics .metric span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.sim-metrics .metric strong {
+  color: #111827;
+  font-size: 1.05rem;
+}
+
+.sim-metrics .metric.metric-highlight {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.alternatives-block {
+  display: grid;
+  gap: 12px;
+}
+
+.alternative-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.alternative-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid #d7e0ea;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.alternative-card h3 {
+  margin-bottom: 0;
+  font-size: 1.08rem;
+}
+
+.alternative-card p {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
+.alternative-card.is-disabled {
+  background: #f8fafc;
+  opacity: 0.8;
+}
+
+.alternative-change {
+  color: #246354;
+}
+
+.alternative-benefit {
+  color: #334155;
+  font-weight: 700;
+}
+
+.alternative-reason {
+  color: #b45309;
+  font-weight: 700;
+}
+
+.alternative-card button {
+  align-self: flex-start;
+  margin-top: auto;
+}
+
 @media (max-width: 820px) {
+  .housing-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .hero,
   .auth-panel,
   .module-grid,
@@ -2012,8 +2540,17 @@ th {
   .plan-progress,
   .month-card,
   .metrics-grid,
-  .admin-grid {
+  .admin-grid,
+  .summary-grid,
+  .gap-summary,
+  .simulator-grid,
+  .sim-metrics,
+  .alternative-grid {
     grid-template-columns: 1fr;
+  }
+
+  .simulator-codeudor-toggle {
+    grid-column: auto;
   }
 
   .navbar {

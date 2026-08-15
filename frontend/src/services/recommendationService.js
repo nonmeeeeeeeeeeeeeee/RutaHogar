@@ -6,16 +6,16 @@ const summaries = {
 
 const primaryRecommendations = {
   Alto: [
-    "Mantén tu estabilidad financiera y evita aumentar tus deudas antes de iniciar una evaluación formal.",
-    "Conserva el ahorro disponible para pie, gastos iniciales y margen de seguridad.",
+    { text: "Mantén tu estabilidad financiera y evita aumentar tus deudas antes de iniciar una evaluación formal.", benefit: "Preservar tu clasificación actual y no generar nuevas alertas." },
+    { text: "Conserva el ahorro disponible para pie, gastos iniciales y margen de seguridad.", benefit: "Contar con los recursos necesarios al momento de la evaluación formal." },
   ],
   Medio: [
-    "Podrías fortalecer tu perfil financiero antes de avanzar. Revisa tus niveles de deuda, ahorro y estabilidad declarada.",
-    "Evalúa si el dividendo esperado sigue siendo sostenible para tu situación actual.",
+    { text: "Podrías fortalecer tu perfil financiero antes de avanzar. Revisa tus niveles de deuda, ahorro y estabilidad declarada.", benefit: "Subir a clasificación Alto y acceder a mejores condiciones." },
+    { text: "Evalúa si el dividendo esperado sigue siendo sostenible para tu situación actual.", benefit: "Evitar comprometerte con una cuota que pueda afectar tus finanzas." },
   ],
   Bajo: [
-    "Conviene preparar mejor tu situación financiera antes de avanzar. Enfócate en ordenar deudas, aumentar ahorro o revisar tu objetivo inmobiliario.",
-    "Considera ajustar el plazo de compra o revisar alternativas de comuna antes de una evaluación formal.",
+    { text: "Conviene preparar mejor tu situación financiera antes de avanzar. Enfócate en ordenar deudas, aumentar ahorro o revisar tu objetivo inmobiliario.", benefit: "Construir una base sólida que te permita ser evaluado exitosamente." },
+    { text: "Considera ajustar el plazo de compra o revisar alternativas de comuna antes de una evaluación formal.", benefit: "Alinear tu objetivo con tu capacidad de pago real." },
   ],
 };
 
@@ -36,17 +36,17 @@ export function buildRecommendations(evaluation) {
   const actions = [];
 
   if (input.morosidad_actual === "si" || input.morosidad_actual === "no_lo_se") {
-    recommendations.push("Revisa y regulariza cualquier situación de morosidad declarada antes de avanzar.");
+    recommendations.push({ text: "Revisa y regulariza cualquier situación de morosidad declarada antes de avanzar.", benefit: "Limpiar tu historial crediticio para no afectar la evaluación formal." });
     actions.push("Confirmar estado de pagos y compromisos vigentes.");
   }
 
   if (input.continuidad_laboral === "menos_6_meses" || input.continuidad_laboral === "entre_6_y_12_meses") {
-    recommendations.push("Fortalecer la continuidad laboral puede ayudar a preparar mejor una futura evaluación.");
+    recommendations.push({ text: "Fortalecer la continuidad laboral puede ayudar a preparar mejor una futura evaluación.", benefit: "Demostrar solvencia y estabilidad a quien evalúe tu perfil." });
     actions.push("Mantener estabilidad laboral y respaldos simples de ingresos.");
   }
 
   if (input.complemento_renta) {
-    recommendations.push("Si usarás complemento de renta, ordena los antecedentes de esa persona con anticipación.");
+    recommendations.push({ text: "Si usarás complemento de renta, ordena los antecedentes de esa persona con anticipación.", benefit: "Asegurar que el co-deudor aporte valor real a tu perfil." });
     actions.push("Validar documentos básicos de quien complementará renta.");
   }
 
@@ -71,7 +71,7 @@ export function buildRecommendations(evaluation) {
     score: result.score,
     classification,
     summary: summaries[classification] || summaries.Bajo,
-    recommendations: [...new Set(recommendations)],
+    recommendations: recommendations.filter((item, index, self) => self.findIndex(i => i.text === item.text) === index),
     actions: [...new Set(actions)],
     main_blocker: result.main_blocker || null,
     project_fit: result.project_fit || null,

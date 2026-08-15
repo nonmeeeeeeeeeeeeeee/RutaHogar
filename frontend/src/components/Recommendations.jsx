@@ -122,7 +122,10 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           <strong>Recomendaciones personalizadas</strong>
           <ul>
             {data.recommendations.map((item) => (
-              <li key={item}><LinkedText text={item} onOpenArticle={openInAcademy} /></li>
+              <li key={item.text}>
+                {item.text}
+                {item.benefit && <p className="benefit"><b>Beneficio esperado: </b>{item.benefit}</p>}
+              </li>
             ))}
           </ul>
         </section>

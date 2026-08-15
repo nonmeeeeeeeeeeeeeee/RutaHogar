@@ -6,6 +6,7 @@ import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
 import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
+import HousingSavingsPlan from "./components/HousingSavingsPlan";
 import LandingPage from "./components/LandingPage";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
@@ -18,11 +19,13 @@ import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
 import RegisterMilestone from "./components/RegisterMilestone";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, saveHousingPlanProgress } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
+import { buildHousingNotViableRecommendation, buildHousingPlanSnapshot, calculateHousingSavings, getHousingPropertyPrice } from "./services/housingSavingsPlanService";
+import { appendScoringEvent } from "./services/getScoringHistory";
 import {
   getConsent,
   saveConsent,
@@ -372,6 +375,7 @@ export default function App() {
   const [milestoneSuccess, setMilestoneSuccess] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
+  const [housingInitialPieType, setHousingInitialPieType] = useState("minimo");
   const [onboarding, setOnboarding] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(ONBOARDING_KEY)) || {};
@@ -918,14 +922,84 @@ export default function App() {
     }
   };
 
-  const handleAcceptPlan = async () => {
+  const handleAcceptPlan = async (housingPieType) => {
     if (!currentEvaluation) return;
 
     try {
       setDataError("");
+      const input = currentEvaluation.input || {};
+      const price = getHousingPropertyPrice(currentEvaluation);
+      const housingInfo = price > 0 ? calculateHousingSavings(input, price) : null;
+
+      if (!housingInfo || housingInfo.error || !housingInfo.isViable) {
+        const recommendation =
+          housingInfo && !housingInfo.error
+            ? buildHousingNotViableRecommendation(housingInfo).message
+            : "";
+        setDataError(
+          recommendation ||
+            "El plan no es viable actualmente. Ajusta deuda, ingreso o escenario antes de aceptar.",
+        );
+        return;
+      }
+
+      const snapshot = buildHousingPlanSnapshot(housingInfo, housingPieType || "minimo");
       const updatedEvaluation = await acceptEvaluationPlan(
         currentEvaluation.id,
         userId || profile?.email || "local-user",
+        snapshot,
+      );
+      if (updatedEvaluation) {
+        setEvaluations((prev) =>
+          prev.map((item) =>
+            item.id === updatedEvaluation.id ? updatedEvaluation : item,
+          ),
+        );
+        handleLogScoringEvent({
+          type: "accept_plan",
+          details: {
+            pie_type: snapshot.pie_type,
+            monthly_target: snapshot.monthly_target,
+            months: snapshot.months,
+            pie_required: snapshot.pie_required,
+            gap: snapshot.gap,
+          },
+        });
+      }
+      setDataError(
+        "Plan de ahorro confirmado. Ya puedes registrar tu ahorro mes a mes.",
+      );
+    } catch (err) {
+      console.error(err);
+      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+    }
+  };
+
+  const handleLogScoringEvent = (event) => {
+    if (!currentEvaluation) return;
+    appendScoringEvent(
+      currentEvaluation.id,
+      userId || profile?.email || "local-user",
+      event,
+    ).catch((err) => {
+      console.error("No se pudo registrar el evento de seguimiento:", err);
+    });
+  };
+
+  const handleSaveHousingProgress = async (progressData) => {
+    if (!currentEvaluation) return;
+
+    try {
+      setDataError("");
+      const housingPlan = {
+        ...(currentEvaluation.housing_plan || {}),
+        status: "en_curso",
+        progress: progressData,
+      };
+      const updatedEvaluation = await saveHousingPlanProgress(
+        currentEvaluation.id,
+        userId || profile?.email || "local-user",
+        housingPlan,
       );
       if (updatedEvaluation) {
         setEvaluations((prev) =>
@@ -934,12 +1008,9 @@ export default function App() {
           ),
         );
       }
-      setDataError(
-        "Plan activado. Podrás volver a precalificar después de avanzar en tus metas.",
-      );
     } catch (err) {
       console.error(err);
-      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+      setDataError("No se pudo guardar el progreso del plan de ahorro.");
     }
   };
 
@@ -950,6 +1021,11 @@ export default function App() {
         ? "objective-review"
         : "monthly-plan",
     );
+  };
+
+  const handleOpenHousingPlan = (pieType) => {
+    setHousingInitialPieType(pieType || "minimo");
+    setPage("housing-plan");
   };
 
   const handleSaveGoalProgress = async (goalId, progressData) => {
@@ -1337,8 +1413,18 @@ export default function App() {
           onGoalStatusChange={handleGoalStatusChange}
           onOpenGoalPlan={handleOpenGoalPlan}
           onStartEvaluation={startEvaluation}
+          onOpenHousingPlan={handleOpenHousingPlan}
+          onLogScoringEvent={handleLogScoringEvent}
           onOpenMilestoneRegistration={() => setPage("register-milestone")}
           successMessage={milestoneSuccess}
+        />
+      ) : page === "housing-plan" && profile.role === roles.user ? (
+        <HousingSavingsPlan
+          evaluation={currentEvaluation}
+          initialPieType={housingInitialPieType}
+          onBack={() => setPage("tracking")}
+          onSaveHousingProgress={handleSaveHousingProgress}
+          onLogScoringEvent={handleLogScoringEvent}
         />
       ) : page === "register-milestone" && profile.role === roles.user ? (
         <RegisterMilestone

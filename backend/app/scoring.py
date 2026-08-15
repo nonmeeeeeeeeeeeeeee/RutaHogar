@@ -1,4 +1,4 @@
-from typing import Dict, List, Any
+from typing import Dict, List, Union, Any
 from .ai import (
     generate_executive_summary,
     generate_commercial_guidance,
@@ -74,6 +74,8 @@ def clamp(v: float, lo: float = 0.0, hi: float = 100.0) -> float:
     return max(lo, min(hi, v))
 
 
+RecType = Union[str, Dict[str, str]]
+
 def _money_to_clp(value: float, unit: str, uf_value: float = VALOR_UF_CLP) -> float:
     if unit == "uf":
         return value * uf_value
@@ -93,13 +95,13 @@ def _bounded_support(value: float, reference: float, max_support: float) -> floa
         return 0.0
     return min(max_support, max_support * min(value / reference, 1.0))
 
-
-def _unique(items: List[str]) -> List[str]:
+def _unique(items: List[RecType]) -> List[RecType]:
     seen = set()
     result = []
     for item in items:
-        if item not in seen:
-            seen.add(item)
+        key = item["text"] if isinstance(item, dict) else item
+        if key not in seen:
+            seen.add(key)
             result.append(item)
     return result
 
@@ -533,7 +535,7 @@ def calculate_score(data: Dict) -> Dict:
     }
     positivos: List[str] = []
     riesgos: List[str] = []
-    recomendaciones: List[str] = []
+    recomendaciones: List[Dict[str, str]] = []
     risk_codes: List[str] = []
     relaciones_debiles = {"amigo", "otro"}
     complemento_completo = (
@@ -566,7 +568,7 @@ def calculate_score(data: Dict) -> Dict:
         score -= 15
         risk_codes.append("ingreso_dividendo")
         riesgos.append("El dividendo objetivo podría exigir más holgura financiera.")
-        recomendaciones.append("Revisar el dividendo estimado o ajustar el objetivo de compra.")
+        recomendaciones.append({"text": "Revisar el dividendo estimado o ajustar el objetivo de compra.", "benefit": "Alinear tu capacidad de pago con el mercado para mejorar tu clasificación."})
 
     # Regla: deuda > 40% ingreso penaliza
     if ingreso > 0 and deuda > 0.4 * ingreso:
@@ -574,7 +576,7 @@ def calculate_score(data: Dict) -> Dict:
         score -= 20
         risk_codes.append("deuda_alta")
         riesgos.append("La carga mensual de deudas podría afectar la evaluación.")
-        recomendaciones.append("Reducir compromisos mensuales antes de avanzar.")
+        recomendaciones.append({"text": "Reducir compromisos mensuales antes de avanzar.", "benefit": "Mejorar tu relación deuda/ingreso y aumentar tu puntaje."})
     else:
         positivos.append("Carga de deuda aceptable")
 
@@ -598,14 +600,14 @@ def calculate_score(data: Dict) -> Dict:
             components["pie_disponible"] += 5
             score += 5
             positivos.append("Ahorro inicial disponible")
-            recomendaciones.append("Aumentar ahorro para acercarse a una posición más solida.")
+            recomendaciones.append({"text": "Aumentar ahorro para acercarse a una posición más sólida.", "benefit": "Alcanzar el 20% de pie recomendado y acceder a mejor evaluación."})
         else:
             components["pie_disponible"] -= 20
             score -= 20
             risk_codes.append("ahorro_bajo")
             risk_codes.append("precio_objetivo")
             riesgos.append("El ahorro disponible podría ser bajo para el objetivo de compra declarado.")
-            recomendaciones.append("Aumentar ahorro o evaluar una alternativa de compra más gradual.")
+            recomendaciones.append({"text": "Aumentar ahorro o evaluar una alternativa de compra más gradual.", "benefit": "Ajustar tu objetivo a un rango alcanzable y no sobreendeudarte."})
     else:
         # Si no existe referencia de comuna, se conserva una regla simple de respaldo.
         if ahorro < dividendo:
@@ -613,7 +615,7 @@ def calculate_score(data: Dict) -> Dict:
             score -= 10
             risk_codes.append("ahorro_bajo")
             riesgos.append("El ahorro disponible podría ser bajo para iniciar el proceso.")
-            recomendaciones.append("Aumentar ahorro para cubrir pie y gastos iniciales")
+            recomendaciones.append({"text": "Aumentar ahorro para cubrir pie y gastos iniciales.", "benefit": "Contar con el capital mínimo necesario para iniciar el proceso."})
         else:
             positivos.append("Ahorro disponible adecuado")
 
@@ -625,35 +627,35 @@ def calculate_score(data: Dict) -> Dict:
     elif contrato == "independiente":
         if continuidad in ("entre_1_y_3_anios", "mas_3_anios"):
             positivos.append("Ingreso independiente con continuidad declarada")
-            recomendaciones.append("Mantener respaldos consistentes de ingresos independientes.")
+            recomendaciones.append({"text": "Mantener respaldos consistentes de ingresos independientes.", "benefit": "Facilitar la verificación de ingresos en una evaluación formal."})
         else:
             score -= 5
             risk_codes.append("contrato_independiente")
             riesgos.append("Los ingresos independientes pueden requerir mayor respaldo de continuidad.")
-            recomendaciones.append("Ordenar antecedentes que demuestren estabilidad de ingresos.")
+            recomendaciones.append({"text": "Ordenar antecedentes que demuestren estabilidad de ingresos.", "benefit": "Aumentar la confianza del evaluador en tu capacidad de pago."})
     elif contrato == "plazo_fijo":
         score -= 18
         risk_codes.append("contrato_plazo_fijo")
         riesgos.append("El contrato a plazo fijo puede dificultar una evaluación hipotecaria formal.")
-        recomendaciones.append("Fortalecer estabilidad contractual antes de avanzar.")
+        recomendaciones.append({"text": "Fortalecer estabilidad contractual antes de avanzar.", "benefit": "Cumplir con requisitos mínimos de una evaluación hipotecaria formal."})
     elif contrato == "honorarios_variable":
         score -= 10
         risk_codes.append("contrato_honorarios_variable")
         riesgos.append("Los ingresos por honorarios o variables pueden requerir mayor respaldo.")
-        recomendaciones.append("Ordenar antecedentes que demuestren continuidad y consistencia de ingresos.")
+        recomendaciones.append({"text": "Ordenar antecedentes que demuestren continuidad y consistencia de ingresos.", "benefit": "Respaldar tu capacidad de pago ante una evaluación formal."})
 
     if continuidad == "menos_6_meses":
         components["estabilidad_laboral"] -= 15
         score -= 15
         risk_codes.append("continuidad_baja")
         riesgos.append("La continuidad laboral declarada podría requerir mayor consolidación.")
-        recomendaciones.append("Mantener estabilidad laboral antes de solicitar una evaluación formal.")
+        recomendaciones.append({"text": "Mantener estabilidad laboral antes de solicitar una evaluación formal.", "benefit": "Demostrar solvencia y continuidad a largo plazo."})
     elif continuidad == "entre_6_y_12_meses":
         components["estabilidad_laboral"] -= 8
         score -= 8
         risk_codes.append("continuidad_media")
         riesgos.append("La continuidad laboral aún podría ser un punto a fortalecer.")
-        recomendaciones.append("Seguir consolidando antiguedad y estabilidad de ingresos.")
+        recomendaciones.append({"text": "Seguir consolidando antigüedad y estabilidad de ingresos.", "benefit": "Fortalecer tu perfil para obtener mejor clasificación."})
     elif continuidad == "mas_3_anios":
         components["estabilidad_laboral"] += 5
         score += 5
@@ -667,13 +669,13 @@ def calculate_score(data: Dict) -> Dict:
             score -= 25
         risk_codes.append("morosidad_alta")
         riesgos.append("La morosidad declarada es un riesgo relevante para avanzar.")
-        recomendaciones.append("Regularizar o aclarar pagos pendientes antes de continuar.")
+        recomendaciones.append({"text": "Regularizar o aclarar pagos pendientes antes de continuar.", "benefit": "Limpiar tu historial crediticio para no afectar la evaluación formal."})
     elif morosidad == "no_lo_se":
         components["historial_crediticio"] -= 12
         score -= 12
         risk_codes.append("morosidad_media")
         riesgos.append("Existe incertidumbre sobre la situación de pagos actual.")
-        recomendaciones.append("Revisar tu situación financiera antes de avanzar.")
+        recomendaciones.append({"text": "Revisar tu situación financiera antes de avanzar.", "benefit": "Despejar dudas que podrían bloquear una evaluación formal."})
 
     if edad > 0 and plazo_credito > 0 and edad + plazo_credito > 70:
         components["perfil_compra"] -= 3
@@ -721,36 +723,36 @@ def calculate_score(data: Dict) -> Dict:
             score -= 5
             risk_codes.append("complemento_sin_datos")
             riesgos.append("Falta información detallada del co-deudor para evaluar el riesgo.")
-            recomendaciones.append("Completa los datos del co-deudor antes de considerarlo como apoyo de renta.")
+            recomendaciones.append({"text": "Completar los datos del co-deudor antes de considerarlo como apoyo de renta.", "benefit": "Evaluar correctamente si el complemento mejora tu perfil."})
         else:
             if comp_morosidad == "si":
                 components["perfil_compra"] -= 20
                 score -= 20
                 risk_codes.append("complemento_morosidad_alta")
                 riesgos.append("La persona complementaria declara morosidad, por lo que no mejora esta preevaluación.")
-                recomendaciones.append("Considera complementar renta con una persona sin morosidad declarada.")
+                recomendaciones.append({"text": "Considerar complementar renta con una persona sin morosidad declarada.", "benefit": "Que el co-deudor aporte realmente a tu capacidad de compra."})
 
             if comp_relacion in relaciones_debiles:
                 score -= 5
                 risk_codes.append("complemento_relacion_debil")
                 riesgos.append("La relacion declarada para complementar renta podría requerir mayor respaldo.")
-                recomendaciones.append("Valida si esa relacion sería aceptada en una evaluación hipotecaria formal.")
+                recomendaciones.append({"text": "Validar si esa relación sería aceptada en una evaluación hipotecaria formal.", "benefit": "Evitar sorpresas al momento de presentar documentación."})
 
             if comp_ingreso > 0 and comp_deuda > 0.4 * comp_ingreso:
                 components["perfil_compra"] -= 15
                 score -= 15
                 risk_codes.append("complemento_deuda_alta")
                 riesgos.append("El co-deudor tiene una carga de deuda elevada en relación a sus ingresos.")
-                recomendaciones.append("El co-deudor debería reducir sus deudas antes de comprometerse.")
+                recomendaciones.append({"text": "El co-deudor debería reducir sus deudas antes de comprometerse.", "benefit": "Mejorar la renta combinada y no perjudicar tu evaluación."})
 
             if comp_contrato == "independiente":
                 if comp_continuidad in ("entre_1_y_3_anios", "mas_3_anios"):
-                    recomendaciones.append("Respaldar ingresos independientes del co-deudor con antecedentes formales.")
+                    recomendaciones.append({"text": "Respaldar ingresos independientes del co-deudor con antecedentes formales.", "benefit": "Asegurar que su aporte sea considerado válido."})
                 else:
                     score -= 5
                     risk_codes.append("complemento_contrato_independiente")
                     riesgos.append("El co-deudor trabaja independiente con continuidad aún limitada.")
-                    recomendaciones.append("Respaldar ingresos del co-deudor con antecedentes formales.")
+                    recomendaciones.append({"text": "Respaldar ingresos del co-deudor con antecedentes formales.", "benefit": "Evitar descuentos en la evaluación por falta de respaldo."})
             elif comp_contrato == "plazo_fijo":
                 score -= 10
                 risk_codes.append("complemento_contrato_plazo_fijo")
@@ -765,7 +767,7 @@ def calculate_score(data: Dict) -> Dict:
                 score -= 10
                 risk_codes.append("complemento_continuidad_baja")
                 riesgos.append("El co-deudor tiene baja continuidad laboral.")
-                recomendaciones.append("El co-deudor debería consolidar su estabilidad laboral.")
+                recomendaciones.append({"text": "El co-deudor debería consolidar su estabilidad laboral.", "benefit": "Que su respaldo sea considerado confiable."})
             elif comp_continuidad == "entre_6_y_12_meses":
                 components["perfil_compra"] -= 5
                 score -= 5
@@ -777,7 +779,7 @@ def calculate_score(data: Dict) -> Dict:
                 score -= 15
                 risk_codes.append("complemento_tarjetas_excesivas")
                 riesgos.append("El co-deudor tiene muchas tarjetas de credito activas, lo que puede indicar sobreendeudamiento.")
-                recomendaciones.append("El co-deudor deberia reducir su cantidad de tarjetas activas.")
+                recomendaciones.append({"text": "El co-deudor debería reducir su cantidad de tarjetas activas.", "benefit": "Disminuir señales de sobreendeudamiento en el perfil combinado."})
             elif comp_tarjetas >= 3:
                 components["perfil_compra"] -= 8
                 score -= 8
@@ -830,12 +832,12 @@ def calculate_score(data: Dict) -> Dict:
 
     # Recomendaciones según clasificación
     if clasificacion == "Bajo":
-        recomendaciones.append("Revisar expectativas y plan de ahorro; considerar propiedades con menor dividendo")
+        recomendaciones.append({"text": "Revisar expectativas y plan de ahorro; considerar propiedades con menor dividendo.", "benefit": "Alinear tu objetivo con tu capacidad real para hacer la compra viable."})
     elif clasificacion == "Medio":
-        recomendaciones.append("Mejorar ahorro o reducir deuda para pasar a clasificación Alto")
+        recomendaciones.append({"text": "Mejorar ahorro o reducir deuda para pasar a clasificación Alto.", "benefit": "Acceder a mejores condiciones en una evaluación formal."})
 
     if not ingreso_cubre_dividendo:
-        recomendaciones.append("Ajustar el dividendo objetivo para mantener una carga mensual más sostenible.")
+        recomendaciones.append({"text": "Ajustar el dividendo objetivo para mantener una carga mensual más sostenible.", "benefit": "Evitar un sobreesfuerzo financiero que ponga en riesgo tu compra."})
 
     recomendaciones.extend(_contextual_recommendations(data, financial_indicators))
 

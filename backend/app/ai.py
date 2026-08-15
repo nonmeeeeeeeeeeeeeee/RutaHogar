@@ -23,7 +23,7 @@ def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
     if Groq is None:
         return "Resumen IA no disponible en entorno local."
 
-    api_key = "os.environ.get("GROQ_API_KEY")"
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
         return "Resumen IA no disponible: GROQ_API_KEY no configurada."
 
@@ -194,7 +194,7 @@ def generate_commercial_guidance(
     Sugiere una acción comercial concreta al ejecutivo según el perfil del lead.
     """
     riesgos_txt        = "\n".join(f"- {r}" for r in risks) or "- Sin riesgos relevantes"
-    recomendaciones_txt = "\n".join(f"- {r}" for r in recommendations) or "- Sin recomendaciones"
+    recomendaciones_txt = "\n".join(f"- {r['text'] if isinstance(r, dict) else r}" for r in recommendations) or "- Sin recomendaciones"
     positive_indicators_txt = "\n".join(f"- {p}" for p in positive_indicators) or"- Sin indicadores positivos"
     professional_context = _professional_context(
         financial_indicators=financial_indicators,
