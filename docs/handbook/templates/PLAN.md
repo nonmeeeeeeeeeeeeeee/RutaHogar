@@ -15,7 +15,7 @@
 | :- | :------- | :----- |
 | 1 | Touches scoring? Which ALG, numbers changed? | |
 | 2 | Needs RLS / multi-tenant scoping? | |
-| 3 | Works without Supabase (localStorage path)? | |
+| 3 | Needs a migration? Who applies it to hosted Supabase? | |
 | 4 | Changes the `POST /score` contract? | |
 | 5 | Consent / privacy impact? | |
 
@@ -42,7 +42,7 @@ Referenced, never restated:
 
 - `ALG-3` — implemented as-is, no changes.
 - `ALG-5` — **modified** by this story; see `docs/algorithms/ALG-5-project-fit.md`, updated in
-  this PR. Numbers changed: … (requires CFO sign-off).
+  this PR. Numbers changed: … · assumptions logged: … .
 
 ### Local logic
 

@@ -16,7 +16,7 @@ Draft of .github/pull_request_template.md — moved there at ratification.
 | :- | :------- | :----- |
 | 1 | Touches scoring? Which ALG, numbers changed? | |
 | 2 | Needs RLS / multi-tenant scoping? | |
-| 3 | Works without Supabase? | |
+| 3 | Needs a migration? Who applies it? | |
 | 4 | Changes the `POST /score` contract? | |
 | 5 | Consent / privacy impact? | |
 
@@ -24,7 +24,7 @@ Draft of .github/pull_request_template.md — moved there at ratification.
 
 - [ ] `PLAN.md` is committed in this PR.
 - [ ] `ALG-*` documents and their `cases.json` updated, if shared logic changed.
-- [ ] Any changed **number** flagged for CFO sign-off below.
+- [ ] Any number decided by judgment is in the ALG **assumptions log**.
 - [ ] Commits are conventional, and each one either moves files **or** changes behavior.
 - [ ] Tier 1 is green — I did not request review on a red build.
 - [ ] Every acceptance criterion is implemented; none silently dropped.
@@ -42,9 +42,13 @@ Draft of .github/pull_request_template.md — moved there at ratification.
 - [ ] Standing-question answers match what the diff actually touches.
 - [ ] Safeguards in `docs/handbook/04-safeguards.md` intact.
 
-## Sign-off
+## Scoring changes
 
-<!-- Required only when a weight, threshold or cutoff changed. -->
+<!-- Only when scoring_engine/, an ALG doc, or the POST /score contract was touched. -->
 
-- [ ] **CFO** — the values in the ALG rules table are correct: @<user>
 - [ ] **CTO** — code review of `scoring_engine/` changes: @<user>
+- [ ] Assumptions logged for every number decided by judgment (linked below).
+
+| Number changed | From → to | Basis | Logged in |
+| :------------- | :-------- | :---- | :-------- |
+| | | regulator / bank / client / **judgment** | `ALG-N` |

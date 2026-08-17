@@ -48,9 +48,10 @@ feat|fix|docs|refactor|chore|test(scope): subject
 - **1 approving review required.**
 - **Reviewer is never the author.** Rotating pool, claimed first-come.
 - **Exception — PRs touching `scoring_engine/`, an `ALG-*` doc, or the `POST /score` contract:**
-  the CTO reviews the code, and if any *number* changed, the CFO signs off on the ALG table in a
-  PR comment. Signing off is a business act, not a code review: it does not require reading
-  Python.
+  the CTO reviews the code. **No business sign-off blocks the merge.** If a number changed on a
+  developer judgment, it ships, and the judgment is recorded in that algorithm's assumptions log
+  ([`05-algorithms.md`](05-algorithms.md)). The reviewer's job is to confirm the assumption was
+  *logged*, not to approve the value.
 - The PR carries the checklist in [`templates/pull-request.md`](templates/pull-request.md).
 
 ## Gates
@@ -76,8 +77,9 @@ thing that broke everything.
 
 ## Testing
 
-- **Golden fixtures** (`backend/tests/golden/`) freeze full `POST /score` responses for
-  representative payloads. They exist so a refactor can be *proved* behavior-preserving.
+- **Golden fixtures** (`backend/tests/golden/`) freeze full `POST /score` responses for the
+  representative payloads below. They exist so a refactor can be *proved* behavior-preserving:
+  captured before the refactor, byte-identical after, or the build is red.
 - **ALG cases** (`docs/algorithms/ALG-N-cases.json`) are asserted by the suite. Changing a
   number without changing its document turns the build red. This is what makes an algorithm
   document governance rather than description.
@@ -87,6 +89,29 @@ thing that broke everything.
 - **`src/lib/` is unit-tested; components are not**, unless a component holds logic that should
   have been in `lib/`. Tests against 1,000-line components are expensive, brittle, and get
   discarded by the next refactor.
+
+### The representative payloads
+
+One `POST /score` request each, chosen so that **every branch of the engine is exercised at
+least once**. They are the golden set; adding a branch to the engine means adding a payload
+here.
+
+| # | Payload | Exercises |
+| :- | :------ | :-------- |
+| 1 | `perfil_solido` — high income, low debt, `indefinido`, `mas_3_anios`, ample ahorro | the happy path: every component scoring well, no blocker |
+| 2 | `morosidad_vigente` — payload 1 with `morosidad_actual: "si"` + monto + antigüedad | the blocker downgrade path (`Alto` → `Medio`) |
+| 3 | `morosidad_incierta` — `morosidad_actual: "no_lo_se"` | the partial-penalty branch |
+| 4 | `pie_insuficiente` — ahorro far below the comuna's minimum | the down-payment blocker + savings plan |
+| 5 | `deuda_alta` — deuda above 40% of ingreso | the debt blocker + reduction plan |
+| 6 | `contrato_precario` — `independiente` + `menos_6_meses` | the stability penalties, stacked |
+| 7 | `complemento_completo` — valid complemento de renta | the complemento bonus path |
+| 8 | `complemento_incompleto` — complemento declared, fields missing | **`"Requiere antecedentes"`** — the classification most likely to regress unnoticed |
+| 9 | `sin_comuna` — `comuna_objetivo` omitted | the optional-field path and the fallback property value |
+| 10 | `limites` — zeroes and boundary values across the numeric fields | clamping, division guards, no crash on degenerate input |
+| 11 | `sin_groq` — payload 1 with no `GROQ_API_KEY` in the environment | proves S1: the score is identical with and without AI |
+
+Every payload is valid against the contract (`consentimiento: true`, all required fields
+present). Contract *violations* are endpoint-validation tests, not golden fixtures.
 
 ## Secrets and configuration
 

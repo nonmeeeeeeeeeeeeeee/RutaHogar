@@ -34,7 +34,9 @@ Templates in [`templates/`](templates/): `PLAN.md`, `ALG-N.md`, `ALG-N-cases.jso
 4. **Build in a fresh session**, from a kickoff prompt.
 5. **Green CI before review.** A reviewer who is not the author verifies every acceptance
    criterion in the running app.
-6. **When reality diverges, fix the document in the same PR.** Never write a second document to
+6. **When the build gets it wrong, fix it at the layer that was wrong** — code, plan, or
+   algorithm — and add the test that would have caught it.
+7. **When reality diverges, fix the document in the same PR.** Never write a second document to
    correct the first.
 
 ## Why this exists

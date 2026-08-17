@@ -30,13 +30,13 @@ Every story answers all five. They are recorded as one line each in `PLAN.md`, a
 the answers against the diff** — answering "no" to a question the diff contradicts fails the
 build.
 
-| # | Question | Why it is standing |
-| :- | :------- | :----------------- |
-| 1 | **Does it touch scoring?** Which `ALG-N`, and do any numbers change? | Numbers are a business decision with an owner; changing them silently is the failure this process exists to stop. |
-| 2 | **Does it need RLS or multi-tenant scoping?** | Leads are personal financial data belonging to a specific inmobiliaria. A missing policy is a data leak, not a bug. |
-| 3 | **Does it still work without Supabase?** | The localStorage path is a supported mode, not a fallback. Everything must run with no env vars set. |
-| 4 | **Does it change the `POST /score` contract?** | The contract is frozen ([`04-safeguards.md`](04-safeguards.md)). Changing it is a deliberate, separately-approved act. |
-| 5 | **What is the consent / privacy impact?** | We hold financial data under explicit consent, with ARCO obligations. New fields, new storage and new exports all change that surface. |
+| #   | Question                                                             | Why it is standing                                                                                                                     |
+| :-- | :------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Does it touch scoring?** Which `ALG-N`, and do any numbers change? | A changed number changes what leads are told and which ones executives see. The developer decides it, but it must be recorded as a stated assumption, never as a silent edit. |
+| 2   | **Does it need RLS or multi-tenant scoping?**                        | Leads are personal financial data belonging to a specific inmobiliaria. A missing policy is a data leak, not a bug.                    |
+| 3   | **Does it need a database migration, and who applies it?**           | Migrations are **not** auto-applied to hosted Supabase. An unapplied migration is a story that passes review and breaks production.    |
+| 4   | **Does it change the `POST /score` contract?**                       | The contract is frozen ([`04-safeguards.md`](04-safeguards.md)). Changing it is a deliberate, separately-approved act.                 |
+| 5   | **What is the consent / privacy impact?**                            | We hold financial data under explicit consent, with ARCO obligations. New fields, new storage and new exports all change that surface. |
 
 ## Question bank
 
@@ -53,13 +53,15 @@ that turns out to be load-bearing.
 - Which tables, columns, RLS policies or endpoints does this touch or add?
 - Does it change data anyone has already stored? Is a migration needed, and who applies it?
 - What is the shape of the data crossing each boundary — form, service, endpoint, database?
-- Is there a matching localStorage path, and does it store the same shape?
+- If a migration is needed: is it reversible, what happens to rows that already exist, and who
+  runs `supabase db push` against the hosted project?
 
 ### Algorithms
 - Is there logic here that someone will want to tune later? Then it is an algorithm
   ([`05-algorithms.md`](05-algorithms.md)), not an implementation detail.
 - Is it new, or does it amend an existing `ALG-N`?
-- Where do its numbers come from, and who signs them off?
+- Where does each number come from — a regulator, a bank's published criteria, a client
+  statement, or a developer judgment? A judgment is an **assumption** and gets logged as one.
 - Which invariants must hold for every possible input?
 
 ### Architecture

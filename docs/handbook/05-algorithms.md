@@ -50,8 +50,8 @@ do its job. Template: [`templates/ALG-N.md`](templates/ALG-N.md).
 
 ### 1. Header — narrative
 
-Purpose and trigger · runs on (backend/frontend) · inputs → outputs · **version** · **owner and
-sign-off** · invariants · edge cases · why it is this way.
+Purpose and trigger · runs on (backend/frontend) · inputs → outputs · **version** ·
+**assumptions log** · invariants · edge cases · why it is this way.
 
 This is the part that survives a rewrite. Prose alone drifts, which is why it is not the only
 layer.
@@ -60,8 +60,9 @@ layer.
 
 Every threshold, weight and cutoff as rows: condition → effect → code → message.
 
-This is the **sign-off surface**. It is read by people who do not read Python, and a change to
-it is legible in a diff: *this row went from 55 to 60*.
+This is the **review surface**. It is read by people who do not read Python, and a change to it
+is legible in a diff: *this row went from 55 to 60*. It is also what the client is shown when we
+need a number confirmed — a table of rules, not a pull request.
 
 ### 3. Fixtures — the teeth
 
@@ -72,6 +73,26 @@ This is what makes it governance. Change a weight without changing its document 
 goes red**. Without this layer the document is description, and description drifts — the state
 the project is in today, where one threshold exists in three places with two different values.
 
+### The assumptions log
+
+A table in every ALG document recording each number that rests on a **developer judgment** rather
+than an external source:
+
+| Assumption | Made by | Date | Would be wrong if | Status |
+| :--------- | :------ | :--- | :---------------- | :----- |
+| A lead is `Alto` from 75, not 70 | | | the client was told 70, or 75 starves the executive pipeline | open |
+
+It exists because we do not block delivery on business approval, and the cost of that choice is
+that judgments become invisible unless we write them down. The log is the antidote: it turns
+"someone picked 75 at some point" into a dated, attributable, answerable statement.
+
+It has two consumers. The **per-entrega reconciliation** walks the open rows and closes what it
+can. The **client conversation** uses them to ask specific questions — *"we assumed Alto starts
+at 75; is that where you want it?"* — which is a question a client can actually answer, unlike
+an invitation to review the scoring engine.
+
+An assumption is closed by confirming or changing it, and the row keeps its history.
+
 ## Rules
 
 1. **Written before the code.** The ALG document and its fixtures are authored in the design
@@ -81,8 +102,11 @@ the project is in today, where one threshold exists in three places with two dif
 3. **The plan references, never restates.** A plan says *"Step 4 implements ALG-3; no threshold
    changes"* or *"Step 4 modifies ALG-3 — see the updated document in this PR"*. Two documents
    cannot contradict each other if only one may state the rule.
-4. **Numbers have a business owner.** Any changed weight, threshold or cutoff is signed off by
-   the CFO on the PR before merge.
+4. **Numbers rest on a stated basis.** Every weight, threshold and cutoff names where it comes
+   from: a regulator, a bank's published criteria, a client statement, or a developer judgment.
+   A judgment is fine and does not block the merge — but it goes in the **assumptions log** with
+   what would have to be true for it to be right. Silent numbers are the failure this process
+   exists to stop; unapproved ones are not.
 5. **Every tunable lives in `constants.py`, once.** A literal threshold inside a function is a
    defect even when the value is right.
 6. **The document leads.** Changing behavior means editing the ALG document in the same PR.

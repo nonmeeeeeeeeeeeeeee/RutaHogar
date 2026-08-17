@@ -79,8 +79,12 @@ literal inside a function is a defect, even when it is correct — it is the mec
 - **No premature abstraction.** No helper, hook or context without three real consumers.
 - **No error handling for impossible states.** Validate at the system boundary — request
   parsing, form submit, service entry — and trust the inside.
-- **The localStorage path is a supported mode.** Every service works with no Supabase env vars
-  set. It is how the project runs locally and it is tested, not tolerated.
+- **Supabase is the datastore.** The product is built to run on it — persistence, auth and RLS
+  are not optional features to be mirrored elsewhere. New services target Supabase directly and
+  are not expected to ship a parallel local implementation.
+  - The existing `isSupabaseDataConfigured` localStorage branches are **legacy**, kept because
+    removing them is its own story with a data-migration question attached (the `scoreleads_*`
+    keys hold real local state). Do not extend them; do not delete them casually.
 
 ## Decisions on record
 

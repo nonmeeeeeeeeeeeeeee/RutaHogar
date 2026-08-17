@@ -6,7 +6,7 @@
 | **Runs on** | backend / frontend |
 | **Implemented in** | `backend/app/scoring_engine/<module>.py` |
 | **Cases** | `docs/algorithms/ALG-<N>-cases.json` |
-| **Owner (numbers)** | CFO — sign-off required on any changed value |
+| **Open assumptions** | count — see the assumptions log below |
 | **Last changed** | YYYY-MM-DD · PR #… · what changed and why |
 
 ## Purpose
@@ -30,8 +30,17 @@ not read Python.
 | … | … | … | … |
 
 **Source of the numbers:** where each threshold comes from — a regulator, a bank's published
-criteria, a client decision, or a team judgment. A number with no stated source is a number
-nobody can defend when the client asks.
+criteria, a client decision, or a developer judgment. A number with no stated source is a number
+nobody can defend when the client asks. Every judgment gets a row below.
+
+## Assumptions log
+
+Numbers we decided ourselves. Logging one does not block the merge; **not** logging one is a
+review failure.
+
+| Assumption | Made by | Date | Would be wrong if | Status |
+| :--------- | :------ | :--- | :---------------- | :----- |
+| | | | | open / confirmed / changed |
 
 ## Invariants
 
@@ -53,6 +62,6 @@ rejected, and what constraint produced the current shape.
 
 ## Changes
 
-| Date | PR | Change | Signed off |
-| :--- | :- | :----- | :--------- |
+| Date | PR | Change | Assumptions added / closed |
+| :--- | :- | :----- | :------------------------- |
 | | | | |
