@@ -1,9 +1,13 @@
-# ScoreLeads — Engineering Handbook
+# RutaHogar — Engineering Handbook
 
 **Status: draft, pending ratification.** Reviewed as a PR, then walked through in one team
 meeting. Until then, nothing here is enforced.
 
-This is the **single source of truth** for how we build ScoreLeads. If `CLAUDE.md`, `AGENTS.md`,
+> **The product is RutaHogar.** The repository, the Vercel project and the `Wiki ScoreLeads/`
+> vault still carry the old *ScoreLeads* name; those are paths and identifiers, not the product,
+> and they are renamed only by a deliberate story. In new prose, write **RutaHogar**.
+
+This is the **single source of truth** for how we build RutaHogar. If `CLAUDE.md`, `AGENTS.md`,
 `.github/copilot-instructions.md`, a skill, or a code comment disagrees with it, the handbook
 wins and the other file is a bug to fix — not a second opinion to keep.
 

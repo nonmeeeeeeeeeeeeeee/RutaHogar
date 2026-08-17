@@ -104,5 +104,6 @@ Recorded so the first author does not rediscover it:
 - **`ALGORITHM_VERSION = "1.1.0-prep"`** with a comment saying the layers are not integrated,
   while the orchestrator imports and calls all nine of them. `REGLAS_SCORING.md` meanwhile
   documents version `1.0.1`. One of these is true.
-- **`REGLAS_SCORING.md` lives on `main` only**, not on `develop`, and names the product
-  *RutaHogar*.
+- **`REGLAS_SCORING.md` lives on `main` only**, not on `develop`. It is in Spanish and uses the
+  current product name, RutaHogar; the ALG documents it seeds are written in English per
+  [`03-norms.md`](03-norms.md), keeping every domain term verbatim.

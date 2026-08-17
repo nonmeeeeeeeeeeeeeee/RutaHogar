@@ -2,7 +2,7 @@
 
 **Status: draft, pending ratification.** Nothing here is enforced until the team approves it.
 
-This handbook is the single source of truth for how we build ScoreLeads. If `CLAUDE.md`,
+This handbook is the single source of truth for how we build RutaHogar. If `CLAUDE.md`,
 `AGENTS.md`, `.github/copilot-instructions.md`, a skill, or a comment disagrees with it, the
 handbook wins and the other file is a bug.
 

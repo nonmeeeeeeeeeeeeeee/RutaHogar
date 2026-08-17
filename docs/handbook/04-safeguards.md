@@ -68,7 +68,7 @@ lead or profile data has an RLS policy, and a new table without one does not shi
 
 ## S7 — The system does not approve credit
 
-ScoreLeads produces an orientative pre-qualification. It does not approve, pre-approve or
+RutaHogar produces an orientative pre-qualification. It does not approve, pre-approve or
 guarantee a mortgage, does not replace a formal bank evaluation, and does not give personalized
 financial advice. Every user-facing surface that shows a score says so.
 
