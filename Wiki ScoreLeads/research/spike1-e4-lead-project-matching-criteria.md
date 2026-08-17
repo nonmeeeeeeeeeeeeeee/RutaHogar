@@ -227,20 +227,43 @@ afinidad <  45 -> "Marginal"
 
 Pair-specific, not lead-global. A lead who clears a UF 2.500 project but is pie-blocked on a UF 4.000 one has *different* main blockers on the two cards, and showing a generic lead-level blocker on both tells the executive nothing actionable.
 
-Resolution order — first match wins:
+### 6.1 Reference price and shortfall
+
+`restriccion_vinculante` is a **lead-global** property — it always holds `"pie"` or `"renta"` whenever capacity computes. It therefore cannot by itself decide whether *this pair* has a blocker. The pair-scoped question is whether the lead falls short **of this project's reference price**:
+
+| Case | Reference price `precio_ref_uf` | Meaning |
+| :--- | :------------------------------ | :------ |
+| Pair in `matches` (clears `precio_min`) | `precio_max_uf` | "what it takes to reach the top of this project's range" |
+| Pair in `excluidos` (below `precio_min`) | `precio_min_uf` | "what it takes to qualify at all" |
+
+```
+brecha_valor_uf = max(0, precio_ref_uf - capacidad_compra_estimada_uf)
+```
+
+Because `capacidad_compra_estimada_uf = min(por_renta, por_pie)`, a positive `brecha_valor_uf` is by construction attributable to `restriccion_vinculante`. **A lead whose capacity reaches or exceeds `precio_ref_uf` has `brecha_valor_uf = 0` and therefore no pair-scoped blocker.**
+
+Translate the shortfall into the resource the lead must actually add:
+
+```
+if restriccion_vinculante == "pie":
+    brecha_recurso_clp = brecha_valor_uf * PIE_RATIO_BASE * uf_value_clp     # additional savings
+
+if restriccion_vinculante == "renta":
+    principal_req_uf   = precio_ref_uf * (1 - PIE_RATIO_BASE)
+    dividendo_req_clp  = principal_req_uf / annuity_factor * uf_value_clp
+    ingreso_req_clp    = dividendo_req_clp / RATIO_DIVIDENDO_MAX
+    brecha_recurso_clp = max(0, ingreso_req_clp - ingreso_total)             # additional monthly income
+```
+
+### 6.2 Resolution order — first match wins
 
 1. **Critical blocker present** → that blocker. (Pair is excluded anyway; this is the reason.)
-2. **`restriccion_vinculante = "pie"`** → `pie_insuficiente_para_proyecto`, with the gap in UF and CLP.
-3. **`restriccion_vinculante = "renta"`** → `renta_insuficiente_para_proyecto`, with the required-income gap.
+2. **`brecha_valor_uf > 0` and `restriccion_vinculante = "pie"`** → `pie_insuficiente_para_proyecto`.
+3. **`brecha_valor_uf > 0` and `restriccion_vinculante = "renta"`** → `renta_insuficiente_para_proyecto`.
 4. **Any non-critical blocker** → highest severity; ties broken by declaration order in `blockers.py`, which is already deterministic and reviewable. No new precedence table.
 5. **None** → `null`.
 
-**Gap reference point:**
-
-| Case | Gap measured against |
-| :--- | :------------------- |
-| Pair in `matches` (already clears `precio_min`) | `precio_max_uf` — "what it takes to reach the top of this project's range" |
-| Pair in `excluidos` (below `precio_min`) | `precio_min_uf` — "what it takes to qualify at all" |
+**The `brecha_valor_uf > 0` guard on steps 2–3 is load-bearing.** Without it, `restriccion_vinculante` — which is always set — makes steps 2–3 fire for every pair, so a lead comfortably above `precio_max_uf` would be shown a fabricated `pie_insuficiente_para_proyecto`, and steps 4–5 would be unreachable. With the guard, a lead who clears the whole price range correctly falls through to their real remaining blocker (step 4) or to `null` (step 5).
 
 Steps 2–3 reuse the `main_gap` vocabulary (`"income"` / `"down_payment"`) already emitted by `project_fit.py`, so the frontend renders one concept. Steps 1 and 4 reuse `blockers.py` verbatim. Only two new codes are introduced, deliberately named so they cannot be confused with the lead-global `pie_insuficiente`.
 
@@ -316,7 +339,12 @@ matchLeadToProjects(evaluacion, proyectos) -> {
   clasificacion,                // 'Compatible' | 'Cercano' | 'Marginal'
   motivo_exclusion,             // null on matches
   reorientable,                 // bool
-  bloqueador_principal: { codigo, titulo, brecha_uf, brecha_clp } | null,
+  bloqueador_principal: {       // null when the lead clears precio_ref and has no
+    codigo, titulo,             // remaining non-critical blocker -- see §6.2
+    brecha_valor_uf,            // property-value shortfall vs precio_ref_uf (> 0)
+    brecha_recurso_clp,         // savings (pie) or monthly income (renta) to add
+    brecha_recurso_tipo         // 'ahorro' | 'ingreso' | null (steps 1 & 4)
+  } | null,
   evidencia: {                  // HU 13 E3 lead card
     capacidad_uf, pie_disponible_uf, clasificacion_financiera,
     restriccion_vinculante, plazo_anios, plazo_origen,
@@ -396,11 +424,33 @@ blockers:   pie_insuficiente (high)                                   =  -7,0
                                                               afinidad = 62,1  -> "Cercano"
 
 reorientable = true            (gates OK · 62,1 >= 45 · comuna diverges)
-bloqueador   = pie_insuficiente_para_proyecto
-               brecha = 3.200 × 0,20 − 611,9 UF = 28,1 UF ≈ $1,15 MM
+
+precio_ref      = precio_max = 3.200 UF        (pair is in `matches`)
+brecha_valor    = max(0 ; 3.200 − 3.060) = 140,4 UF     > 0  -> step 2 fires
+bloqueador      = pie_insuficiente_para_proyecto        (restriccion = "pie")
+brecha_recurso  = 140,4 × 0,20 × 40.854 ≈ $1,15 MM in additional savings
 ```
 
 That gap figure is the deliverable's payoff: the executive is told the lead needs roughly **$1,15 MM more in savings** to reach the top of this project's range — not merely that they are "Medio".
+
+**Contrast — same lead vs. Parque Lo Espejo** (Lo Espejo, departamento, 1.800–2.600 UF), which demonstrates the §6.2 guard:
+
+```
+gates:      3.060 >= 1.800 OK  ·  no critical blocker  OK
+holgura:    capacidad 3.060 >= precio_max 2.600  ->  no penalty          =   0,0
+comuna:     Ñuñoa != Lo Espejo                                           = -15,0
+tipo:       departamento == departamento                                 =   0,0
+clasif.:    Medio                                                        =  -8,0
+blockers:   pie_insuficiente (high, lead-level)                          =  -7,0
+                                                                afinidad = 70,0  -> "Compatible"
+
+precio_ref      = 2.600 UF
+brecha_valor    = max(0 ; 2.600 − 3.060) = 0            -> steps 2-3 SKIPPED
+bloqueador      = pie_insuficiente                       (step 4: lead-level blocker)
+brecha_recurso  = null
+```
+
+The lead clears this project's entire price range, so no pair-scoped shortfall is reported. Without the `brecha_valor_uf > 0` guard the card would have claimed `pie_insuficiente_para_proyecto` here — a blocker that does not exist for this pair. The same lead legitimately shows **different** main blockers on the two cards, which is the whole reason §6 is pair-scoped.
 
 ### 9.3 Sensitivity — why no band is carried
 
