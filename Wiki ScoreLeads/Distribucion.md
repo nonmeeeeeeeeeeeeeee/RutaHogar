@@ -10,7 +10,7 @@ Tentative distribution of user stories and research spikes across the three spri
 
 | ID | Name | Category | SP | Page |
 | :- | :--- | :------- | :-: | :--- |
-| Spike 1 | Financial research: scoring, CMF, subsidies, financial education | Spike / Research | 10 | — |
+| Spike 1 | Financial research: scoring, CMF, subsidies, financial education | Spike / Research | 10 | [[research/spike1-e4-lead-project-matching-criteria\|E4 — Matching criteria]] |
 | HU 5 | Basic system security | Important | 8 | [[UserStories/HU5-BasicSecurity\|HU 5]] |
 | HU 7 | Personalized improvement plan generator | Important | 8 | [[UserStories/HU7-ImprovementPlan\|HU 7]] ✅ |
 | HU 12 | Contextual financial academy | Essential | 8 | [[UserStories/HU12-FinancialAcademy\|HU 12]] |

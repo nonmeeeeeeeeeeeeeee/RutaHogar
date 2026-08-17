@@ -60,6 +60,6 @@
 
 ## Notes
 
-- Matching criteria (estimated capacity, comuna, price range, down payment, classification, main blocker) are defined in **Spike 1**.
+- Matching criteria (estimated capacity, comuna, price range, down payment, classification, main blocker) are defined in **Spike 1 · E4** — see [[research/spike1-e4-lead-project-matching-criteria\|Lead–Project Matching Criteria]], which carries the frozen contract this story must code against.
 - Requires the project catalog from [[HU17-ProjectCatalog\|HU 17]] to know which projects are actually available.
 - Complements the priority dashboard [[HU2-LeadPrioritization\|HU 2]] by adding a project-centric view.

@@ -62,6 +62,6 @@ Lets a lead check or simulate whether they qualify for housing subsidies, to red
 
 ## Notes
 
-- Subsidy rules and eligibility criteria are researched in **Spike 1** / validated in **Spike 2**.
+- Subsidy rules and eligibility criteria are researched in **Spike 1** / validated in **Spike 2**. FOGAES parameters (90% LTV, UF 4.500 cap → UF 6.000 pending bill) and the `desbloqueable_con_fogaes` flag are already documented in [[research/spike1-e4-lead-project-matching-criteria\|Spike 1 · E4 — Lead–Project Matching Criteria]].
 - A recalculated dividend (E2) is a scoring-recalculation trigger for [[HU33-ImmutableEvaluationHistory\|HU 33]].
 - Related simulations: [[HU20-EconomicSimulation\|HU 20]], [[HU26-CreditTermSimulation\|HU 26]].

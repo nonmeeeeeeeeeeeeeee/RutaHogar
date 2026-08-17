@@ -59,6 +59,8 @@ See the full sprint breakdown and the two research spikes in [[Distribucion\|Dis
 | Spike 1 | Financial research: scoring, financial education, commercial prioritization criteria | 10 | Sprint 1 |
 | Spike 2 | Technical validation: privacy, roles, traceability, documents, external integrations | 20 | Sprint 2 |
 
+**Spike 1 deliverables:** [[research/spike1-e4-lead-project-matching-criteria|E4 — Lead–Project Matching Criteria]] (capacity model + frozen contract for HU 13).
+
 ---
 
 ## Actors
