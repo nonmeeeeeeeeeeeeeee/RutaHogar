@@ -92,9 +92,16 @@ thing that broke everything.
 
 ### The representative payloads
 
-One `POST /score` request each, chosen so that **every branch of the engine is exercised at
-least once**. They are the golden set; adding a branch to the engine means adding a payload
-here.
+One `POST /score` request each. This is a **behavior-preservation baseline, not branch
+coverage** — it pins the main outcome paths so a refactor can be proved not to have moved them.
+It does **not** exercise every branch of the engine, and it should not be described as if it
+does: `blockers.py` alone has eleven distinct codes, and there are four contract types, four
+continuity tiers, six commercial actions and four project-fit classes to combine with them.
+
+Branch coverage is the job of the per-algorithm `ALG-N-cases.json` files, where each algorithm's
+own branches are enumerated against its rules table, and it is **measured rather than asserted**
+— `pytest --cov=backend/app/scoring_engine` reports it, and the gap is visible instead of
+claimed.
 
 | # | Payload | Exercises |
 | :- | :------ | :-------- |
@@ -112,6 +119,10 @@ here.
 
 Every payload is valid against the contract (`consentimiento: true`, all required fields
 present). Contract *violations* are endpoint-validation tests, not golden fixtures.
+
+The set grows when a refactor turns out to have moved something it did not pin: **the regression
+that escaped becomes payload twelve.** That is the honest way this list gets to good coverage —
+by paying for each gap once.
 
 ## Secrets and configuration
 
