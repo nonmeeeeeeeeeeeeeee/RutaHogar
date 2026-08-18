@@ -17,17 +17,17 @@ help:
 
 install-backend:
 	python3 -m venv $(BACKEND_DIR)/.venv
-	$(BACKEND_DIR)/.venv/bin/pip install -r $(BACKEND_DIR)/requirements.txt
+	$(BACKEND_DIR)/.venv/Scripts/activate && pip -m install -r $(BACKEND_DIR)/requirements.txt
 
 install-frontend:
 	cd $(FRONTEND_DIR) && npm install
 
 run-backend:
-	cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --port 8000
+	cd $(BACKEND_DIR) && source .venv/Scripts/activate && uvicorn app.main:app --reload --port 8000
 
 run-frontend:
 	cd $(FRONTEND_DIR) && npm run dev -- --host 0.0.0.0
 
 run: install-backend install-frontend
 	@echo "Starting backend in the background..."
-	(cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --port 8000 >/dev/null 2>&1 &) ; cd $(FRONTEND_DIR) && npm run dev -- --host 0.0.0.0
+	(cd $(BACKEND_DIR) && source .venv/Scripts/activate && uvicorn app.main:app --reload --port 8000 >/dev/null 2>&1 &) ; cd $(FRONTEND_DIR) && npm run dev -- --host 0.0.0.0

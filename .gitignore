@@ -3,13 +3,18 @@ backend/.venv/
 frontend/.env
 backend/ .env
 .env
+.env.local
+supabase/functions/.env.local
+supabase/.env
+supabase/.temp/
+Makefile
 
 # Dependencies
 node_modules/
 frontend/node_modules/
 
 # Build output
-frontend/dist/
+frontend/dist
 
 # Python cache
 **/__pycache__/
@@ -19,6 +24,8 @@ frontend/dist/
 **/.obsidian/workspace.json
 .vercel
 .env*
+!.env.example
+!**/.env.example
 
 stuff.txt
 

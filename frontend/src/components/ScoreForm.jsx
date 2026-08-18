@@ -6,6 +6,14 @@ import FieldTooltip from "./FieldTooltip";
 import DataConsent from "./DataConsent";
 
 const FALLBACK_UF_VALUE_CLP = 40695;
+const FALLBACK_MORTGAGE_ANNUAL_RATE = 0.049;
+const configuredMortgageRate = Number(import.meta.env.VITE_REFERENTIAL_MORTGAGE_RATE);
+const REFERENTIAL_MORTGAGE_ANNUAL_RATE =
+  Number.isFinite(configuredMortgageRate) && configuredMortgageRate > 0
+    ? configuredMortgageRate
+    : FALLBACK_MORTGAGE_ANNUAL_RATE;
+const DEBUG_SCORE_REQUESTS =
+  import.meta.env.DEV && import.meta.env.VITE_DEBUG_SCORE === "true";
 
 const currentYear = new Date().getFullYear();
 const dayOptions = Array.from({ length: 31 }, (_, i) => {
@@ -32,6 +40,19 @@ function buildBirthDateIso({ birth_day, birth_month, birth_year }) {
   const year = onlyDigits(birth_year, 4);
   if (year.length !== 4 || day.length !== 2 || month.length !== 2) return "";
   return `${year}-${month}-${day}`;
+}
+
+function normalizeBirthDate(value) {
+  const raw = String(value || "").trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+
+  const match = raw.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (match) {
+    const [, day, month, year] = match;
+    return `${year}-${month}-${day}`;
+  }
+
+  return "";
 }
 
 function BirthDateField({ name, value, placeholder, ariaLabel, maxLength, options, activeDropdown, onOpen, onClose, onBlur, onChange, onSelect }) {
@@ -78,6 +99,54 @@ const buyerObjectives = new Set([
   "prepararme",
   "evaluar_capacidad",
 ]);
+const referencePropertyValuesUf = {
+  Buin: 2800,
+  "Calera de Tango": 4300,
+  Cerrillos: 3000,
+  "Cerro Navia": 2400,
+  Colina: 3800,
+  Conchalí: 2800,
+  "El Bosque": 2300,
+  "Estación Central": 3100,
+  Huechuraba: 4700,
+  Independencia: 3300,
+  "La Cisterna": 3200,
+  "La Florida": 3900,
+  "La Granja": 2500,
+  "La Pintana": 2200,
+  "La Reina": 7200,
+  Lampa: 3000,
+  "Las Condes": 9200,
+  "Lo Barnechea": 10500,
+  "Lo Espejo": 2200,
+  "Lo Prado": 2700,
+  Macul: 4100,
+  Maipú: 3600,
+  Melipilla: 2400,
+  Ñuñoa: 6200,
+  "Padre Hurtado": 3000,
+  Paine: 2700,
+  "Pedro Aguirre Cerda": 2600,
+  Peñaflor: 2900,
+  Peñalolén: 4700,
+  Pirque: 4300,
+  Providencia: 7600,
+  Pudahuel: 2900,
+  "Puente Alto": 3100,
+  Quilicura: 3200,
+  "Quinta Normal": 3300,
+  Recoleta: 3400,
+  Renca: 2600,
+  "San Bernardo": 2800,
+  "San Joaquín": 3500,
+  "San José de Maipo": 3300,
+  "San Miguel": 4500,
+  "San Ramón": 2400,
+  Santiago: 3800,
+  Talagante: 3100,
+  Vitacura: 12000,
+};
+const DEFAULT_REFERENCE_PROPERTY_VALUE_UF = 3500;
 const weakComplementRelations = new Set(["amigo", "otro"]);
 const continuityMinimumYears = {
   menos_6_meses: 0,
@@ -104,6 +173,26 @@ function roundCurrency(value) {
   return Math.round((Number(value) || 0) * 100) / 100;
 }
 
+function formatPercent(value) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) return null;
+  return `${Math.round(numericValue * 1000) / 10}%`;
+}
+
+function normalizePurchaseTermForScore(value) {
+  const labels = {
+    "0_3_meses": "inmediato",
+    "3_6_meses": "3_a_6_meses",
+    "6_12_meses": "6_a_12_meses",
+    "3_a_6_meses": "3_a_6_meses",
+    "6_a_12_meses": "6_a_12_meses",
+    inmediato: "inmediato",
+    mas_12_meses: "mas_12_meses",
+    solo_explorando: "solo_explorando",
+  };
+  return labels[value] || undefined;
+}
+
 function buildPropertyValues(value, unit, ufValueClp) {
   const numericValue = Number(value);
   if (!Number.isFinite(numericValue) || numericValue <= 0) {
@@ -123,6 +212,50 @@ function buildPropertyValues(value, unit, ufValueClp) {
     property_value_unit: unit,
     property_value_uf: roundCurrency(valueUf),
     property_value_clp: Math.round(valueClp),
+  };
+}
+
+function buildReferencePropertyValues(commune, ufValueClp) {
+  const referenceUf =
+    referencePropertyValuesUf[commune] || DEFAULT_REFERENCE_PROPERTY_VALUE_UF;
+  return {
+    property_value: referenceUf,
+    property_value_unit: "uf",
+    property_value_uf: referenceUf,
+    property_value_clp: Math.round(referenceUf * ufValueClp),
+    property_value_source: referencePropertyValuesUf[commune]
+      ? "referencia_comuna"
+      : "referencia_general",
+  };
+}
+
+function calculateMortgageDividend({ propertyValueClp, savingsClp, termYears, annualRate }) {
+  const propertyValue = Number(propertyValueClp) || 0;
+  const principal = Math.max(0, propertyValue - (Number(savingsClp) || 0));
+  const months = Number(termYears) * 12;
+  const monthlyRate = Number(annualRate) / 12;
+
+  if (!Number.isFinite(months) || months <= 0 || propertyValue <= 0) {
+    return { dividend: null, principalClp: principal };
+  }
+
+  if (principal <= 0) {
+    return { dividend: 0, principalClp: principal };
+  }
+
+  if (!Number.isFinite(monthlyRate) || monthlyRate <= 0) {
+    return {
+      dividend: Math.round(principal / months),
+      principalClp: principal,
+    };
+  }
+
+  const compound = Math.pow(1 + monthlyRate, months);
+  const dividend = principal * ((monthlyRate * compound) / (compound - 1));
+
+  return {
+    dividend: Math.round(dividend),
+    principalClp: Math.round(principal),
   };
 }
 
@@ -148,9 +281,38 @@ function isContinuityIncompatibleWithAge(continuity, age) {
   return minimumYears > Math.max(0, age - 18);
 }
 
+function resolveApiBase() {
+  const configuredUrl =
+    import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+  const fallbackUrl = import.meta.env.DEV ? "http://127.0.0.1:8000" : "";
+  return String(configuredUrl || fallbackUrl).replace(/\/$/, "");
+}
+
+function findInvalidScoringNumbers(payload) {
+  const requiredNumericFields = [
+    "ingreso_mensual",
+    "deuda_mensual",
+    "edad",
+    "ahorro_disponible",
+    "plazo_credito_hipotecario",
+    "dividendo_estimado",
+    "uf_value_clp",
+  ];
+
+  return requiredNumericFields
+    .filter((field) => !Number.isFinite(Number(payload[field])))
+    .concat(
+      payload.property_value_uf != null &&
+        !Number.isFinite(Number(payload.property_value_uf))
+        ? ["property_value_uf"]
+        : [],
+    );
+}
+
 export default function ScoreForm({
   targetCommune,
   objective,
+  onboardingData,
   birthDate,
   profile,
   consentGranted,
@@ -158,13 +320,17 @@ export default function ScoreForm({
   onResult,
   onConsentAccept,
   onViewConsent,
+  onBirthDateSave,
 }) {
   const debtIncomeMessage =
     "El monto de deuda mensual no puede ser mayor a tus ingresos declarados. Revisa este valor antes de continuar.";
-  const needsBirthDate = birthDate == null || birthDate === "";
+  const storedBirthDate = normalizeBirthDate(
+    birthDate || profile?.birth_date || profile?.fecha_nacimiento || "",
+  );
+  const needsBirthDate = !storedBirthDate;
   const [birthFields, setBirthFields] = useState({ birth_day: "", birth_month: "", birth_year: "" });
   const [activeDateDropdown, setActiveDateDropdown] = useState(null);
-  const effectiveBirthDate = needsBirthDate ? buildBirthDateIso(birthFields) : birthDate;
+  const effectiveBirthDate = needsBirthDate ? buildBirthDateIso(birthFields) : storedBirthDate;
   const declaredAge = useMemo(() => calculateAge(effectiveBirthDate), [effectiveBirthDate]);
   const asksPropertyValue = buyerObjectives.has(objective);
 
@@ -197,6 +363,7 @@ export default function ScoreForm({
 
   // Estado paralelo solo para mostrar los valores formateados en pantalla
   const [displayValues, setDisplayValues] = useState({});
+  const [dividendWasManuallyEdited, setDividendWasManuallyEdited] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -207,10 +374,10 @@ export default function ScoreForm({
 
   const consentDate = consentTimestamp
     ? new Date(consentTimestamp).toLocaleDateString("es-CL", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    })
     : null;
 
   const debtExceedsIncome =
@@ -255,6 +422,51 @@ export default function ScoreForm({
       : ufStatus === "live"
         ? `Valor UF referencial actualizado: $${ufValueClp.toLocaleString("es-CL")}.`
         : `Valor UF referencial: $${ufValueClp.toLocaleString("es-CL")} (respaldo interno).`;
+
+  const propertyValuesForDividend = useMemo(
+    () =>
+      asksPropertyValue
+        ? buildPropertyValues(form.property_value, form.property_value_unit, ufValueClp)
+        : buildReferencePropertyValues(targetCommune, ufValueClp),
+    [asksPropertyValue, form.property_value, form.property_value_unit, targetCommune, ufValueClp],
+  );
+  const mortgageEstimate = useMemo(
+    () =>
+      calculateMortgageDividend({
+        propertyValueClp: propertyValuesForDividend.property_value_clp,
+        savingsClp: form.ahorro_disponible,
+        termYears: form.plazo_credito_hipotecario,
+        annualRate: REFERENTIAL_MORTGAGE_ANNUAL_RATE,
+      }),
+    [
+      propertyValuesForDividend.property_value_clp,
+      form.ahorro_disponible,
+      form.plazo_credito_hipotecario,
+    ],
+  );
+  const savingsDownPaymentRatio = useMemo(() => {
+    const propertyValueClp = Number(propertyValuesForDividend.property_value_clp);
+    const savingsClp = Number(form.ahorro_disponible);
+    if (
+      !Number.isFinite(propertyValueClp) ||
+      propertyValueClp <= 0 ||
+      !Number.isFinite(savingsClp) ||
+      savingsClp < 0
+    ) {
+      return null;
+    }
+    return savingsClp / propertyValueClp;
+  }, [propertyValuesForDividend.property_value_clp, form.ahorro_disponible]);
+  const savingsDownPaymentLabel = formatPercent(savingsDownPaymentRatio);
+  const calculatedDividend = mortgageEstimate.dividend;
+  const effectiveDividend =
+    dividendWasManuallyEdited || calculatedDividend == null
+      ? Number(form.dividendo_estimado)
+      : calculatedDividend;
+  const hasValidDividend =
+    Number.isFinite(effectiveDividend) &&
+    effectiveDividend >= 0 &&
+    (form.dividendo_estimado !== "" || calculatedDividend != null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -309,6 +521,32 @@ export default function ScoreForm({
     };
   }, [consentModalOpen]);
 
+  useEffect(() => {
+    if (dividendWasManuallyEdited) return;
+
+    if (calculatedDividend == null) {
+      setForm((prev) => (prev.dividendo_estimado === "" ? prev : { ...prev, dividendo_estimado: "" }));
+      setDisplayValues((prev) => {
+        if (!("dividendo_estimado" in prev)) return prev;
+        const next = { ...prev };
+        delete next.dividendo_estimado;
+        return next;
+      });
+      return;
+    }
+
+    const nextDividend = String(calculatedDividend);
+    setForm((prev) =>
+      prev.dividendo_estimado === nextDividend
+        ? prev
+        : { ...prev, dividendo_estimado: nextDividend },
+    );
+    setDisplayValues((prev) => ({
+      ...prev,
+      dividendo_estimado: formatInteger(nextDividend),
+    }));
+  }, [calculatedDividend, dividendWasManuallyEdited]);
+
   const handleBirthFieldChange = (e) => {
     const { name, value } = e.target;
     const maxLen = name === "birth_year" ? 4 : 2;
@@ -335,6 +573,9 @@ export default function ScoreForm({
     if (integerFormattedFields.has(name)) {
       const raw = stripFormat(value); // "1200000"
       const formatted = formatInteger(raw); // "1.200.000"
+      if (name === "dividendo_estimado") {
+        setDividendWasManuallyEdited(true);
+      }
       setDisplayValues((prev) => ({ ...prev, [name]: formatted }));
       setForm((prev) => {
         const next = { ...prev, [name]: raw };
@@ -377,6 +618,17 @@ export default function ScoreForm({
     if (raw === "" || raw == null) return "";
     if (integerFormattedFields.has(name)) return formatInteger(raw);
     return raw;
+  };
+
+  const useCalculatedDividend = () => {
+    if (calculatedDividend == null) return;
+    const nextDividend = String(calculatedDividend);
+    setDividendWasManuallyEdited(false);
+    setForm((prev) => ({ ...prev, dividendo_estimado: nextDividend }));
+    setDisplayValues((prev) => ({
+      ...prev,
+      dividendo_estimado: formatInteger(nextDividend),
+    }));
   };
 
   const switchPropertyUnit = () => {
@@ -452,7 +704,7 @@ export default function ScoreForm({
       if (!form.antiguedad_morosidad) missing.push("Antiguedad de morosidad");
     }
     if (!targetCommune) missing.push("Comuna objetivo preliminar");
-    if (form.dividendo_estimado === "") missing.push("Dividendo estimado");
+    if (!hasValidDividend) missing.push("Dividendo estimado");
 
     if (form.complemento_renta && complementFieldsIncomplete) {
       setError(
@@ -507,7 +759,7 @@ export default function ScoreForm({
       ],
       [
         "Dividendo estimado",
-        form.dividendo_estimado,
+        effectiveDividend,
         (value) => value >= 0,
         "no puede ser negativo.",
       ],
@@ -593,14 +845,23 @@ export default function ScoreForm({
     if (!validate()) return;
 
     setLoading(true);
+    let scoreUrl = "";
+    let scorePayload = null;
     try {
-      const propertyValues = asksPropertyValue
-        ? buildPropertyValues(
-            form.property_value,
-            form.property_value_unit,
-            ufValueClp,
-          )
-        : buildPropertyValues("", form.property_value_unit, ufValueClp);
+      const propertyValues = propertyValuesForDividend;
+      const dividendValue =
+        dividendWasManuallyEdited || calculatedDividend == null
+          ? Number(form.dividendo_estimado)
+          : calculatedDividend;
+      if (!Number.isFinite(dividendValue) || dividendValue < 0) {
+        setError("No pudimos calcular un dividendo estimado válido. Revisa monto de vivienda, ahorro disponible y plazo del crédito.");
+        setLoading(false);
+        return;
+      }
+      const dividendSource =
+        dividendWasManuallyEdited || calculatedDividend == null
+          ? "manual"
+          : "calculado_referencial";
 
       const payload = {
         birth_date: effectiveBirthDate || undefined,
@@ -622,7 +883,19 @@ export default function ScoreForm({
             ? form.antiguedad_morosidad
             : undefined,
         comuna_objetivo: targetCommune,
-        dividendo_estimado: parseFloat(form.dividendo_estimado),
+        dividendo_estimado: dividendValue,
+        dividendo_esperado: dividendValue,
+        dividendo_estimado_origen: dividendSource,
+        dividendo_estimado_calculado: calculatedDividend ?? undefined,
+        dividendo_estimado_manual:
+          dividendSource === "manual" ? dividendValue : undefined,
+        dividendo_tasa_anual_referencial: REFERENTIAL_MORTGAGE_ANNUAL_RATE,
+        dividendo_monto_credito_estimado_clp: mortgageEstimate.principalClp,
+        dividendo_monto_credito_estimado_uf:
+          mortgageEstimate.principalClp && ufValueClp
+            ? roundCurrency(mortgageEstimate.principalClp / ufValueClp)
+            : undefined,
+        dividendo_uf_referencial_clp: ufValueClp,
         complemento_renta: form.complemento_renta,
         ingreso_mensual_complementario:
           form.complemento_renta && form.ingreso_mensual_complementario !== ""
@@ -650,20 +923,84 @@ export default function ScoreForm({
             : 0,
         patrimonio_unit: form.patrimonio_unit,
         uf_value_clp: ufValueClp,
+        plazo_compra: normalizePurchaseTermForScore(onboardingData?.plazo_compra),
+        tiene_propiedad_vista: onboardingData?.tiene_propiedad_vista === true,
       };
+      scorePayload = payload;
 
-      const apiBase =
-        import.meta.env.VITE_API_URL ||
-        (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
-      const res = await axios.post(`${apiBase}/score`, payload, {
+      if (needsBirthDate && effectiveBirthDate && onBirthDateSave) {
+        try {
+          await onBirthDateSave(effectiveBirthDate);
+        } catch (saveError) {
+          console.warn("No se pudo guardar la fecha de nacimiento en el perfil.", saveError);
+        }
+      }
+
+      const invalidNumbers = findInvalidScoringNumbers(payload);
+      if (invalidNumbers.length) {
+        if (DEBUG_SCORE_REQUESTS) {
+          console.error("ScoreLeads /score payload inválido", {
+            invalidNumbers,
+            payload,
+          });
+        } else {
+          console.warn("ScoreLeads /score payload inválido", {
+            invalidNumbers,
+          });
+        }
+        setError(
+          `No se pudo enviar el formulario porque estos campos no tienen un número válido: ${invalidNumbers.join(", ")}.`,
+        );
+        return;
+      }
+
+      const apiBase = resolveApiBase();
+      scoreUrl = `${apiBase}/score`;
+      if (DEBUG_SCORE_REQUESTS) {
+        console.info("ScoreLeads /score request", {
+          url: scoreUrl,
+          payload,
+          onboarding_data: onboardingData || {
+            objetivo_principal: objective,
+            comuna_interes: targetCommune,
+          },
+          dividendo_esperado: payload.dividendo_esperado,
+          property_value_uf: payload.property_value_uf,
+          ahorro_disponible: payload.ahorro_disponible,
+          plazo_credito_hipotecario: payload.plazo_credito_hipotecario,
+          uf_value_clp: payload.uf_value_clp,
+        });
+      }
+
+      const res = await axios.post(scoreUrl, payload, {
         timeout: 60000,
       });
 
       onResult(res.data, payload);
     } catch (err) {
-      console.error(err);
+      const calledUrl = scoreUrl || `${resolveApiBase()}/score`;
+      const errorLog = {
+        url: calledUrl,
+        status: err?.response?.status,
+        message: err?.message,
+        code: err?.code,
+      };
+      if (DEBUG_SCORE_REQUESTS) {
+        errorLog.responseBody = err?.response?.data;
+        errorLog.payload = scorePayload;
+        errorLog.error = err;
+      }
+      console.error("ScoreLeads /score error", errorLog);
       if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
         setError("La petición tardó demasiado, por favor intenta nuevamente.");
+      } else if (import.meta.env.DEV && err.response?.status) {
+        setError(
+          `No se pudo calcular el score. El backend respondió ${err.response.status}. Revisa la consola para ver el detalle.`,
+        );
+      } else if (import.meta.env.DEV && err.request) {
+        setError(
+          `No se pudo conectar con el backend local en ${calledUrl}. Verifica que FastAPI esté corriendo en el puerto 8000.`,
+        );
       } else {
         setError(
           "Hubo un problema con la petición, por favor intenta nuevamente.",
@@ -768,7 +1105,7 @@ export default function ScoreForm({
           <div className="field-wrap">
             <div className="field-label-row">
               <label htmlFor="deuda_mensual">Deuda mensual</label>
-              <FieldTooltip text="Considera el total de tus compromisos financieros mensuales vigentes: créditos de consumo, automotrices e hipotecarios, cuota mínima de tarjetas de crédito, avances o superavances, créditos estudiantiles, préstamos de cooperativas, cajas de compensación, casas comerciales y pensiones alimenticias. No considera gastos comunes, servicios básicos, alimentación ni otros gastos cotidianos." />
+              <FieldTooltip text="Considera el total de tus compromisos financieros mensuales vigentes: créditos de consumo, automotrices e hipotecarios, cuota mínima de tarjetas de crédito, línea de crédito, avances o superavances, créditos estudiantiles, préstamos de cooperativas, cajas de compensación, casas comerciales y pensiones alimenticias. No considera gastos comunes, servicios básicos, alimentación ni otros gastos cotidianos." />
             </div>
             <input
               type="text"
@@ -791,7 +1128,7 @@ export default function ScoreForm({
           <div className="field-wrap">
             <div className="field-label-row">
               <label htmlFor="ahorro_disponible">Ahorro disponible</label>
-              <FieldTooltip text="Dinero disponible para el pago inicial de la vivienda. Incluye todo lo que puedas aportar hoy: APV, Cuenta 2, ahorros propios o subsidio habitacional. Los bancos generalmente exigen entre un 10% y 20% del valor de la propiedad." />
+              <FieldTooltip text="Dinero disponible hoy para el pago inicial de la vivienda: ahorros propios, APV o Cuenta 2 que puedas usar. No incluyas apoyos no confirmados como si ya fueran ahorro disponible." />
             </div>
             <input
               type="text"
@@ -802,6 +1139,11 @@ export default function ScoreForm({
               onChange={handleChange}
               placeholder="Ej: 3.000.000"
             />
+            {savingsDownPaymentLabel && (
+              <span className="field-help">
+                Equivale aproximadamente al {savingsDownPaymentLabel} del valor objetivo.
+              </span>
+            )}
           </div>
 
           {/* Monto estimado de la vivienda */}
@@ -841,23 +1183,6 @@ export default function ScoreForm({
             </div>
           )}
 
-          {/* Dividendo estimado */}
-          <div className="field-wrap">
-            <div className="field-label-row">
-              <label htmlFor="dividendo_estimado">Dividendo estimado</label>
-              <FieldTooltip text="Cuota mensual estimada que pagarías por el crédito hipotecario." />
-            </div>
-            <input
-              type="text"
-              inputMode="numeric"
-              id="dividendo_estimado"
-              name="dividendo_estimado"
-              value={displayVal("dividendo_estimado")}
-              onChange={handleChange}
-              placeholder="Ej: 250.000"
-            />
-          </div>
-
           {/* Plazo estimado */}
           <div
             className={`field-wrap${showMortgageAgeWarning ? " field-with-warning" : ""}`}
@@ -889,7 +1214,46 @@ export default function ScoreForm({
               </span>
             )}
           </div>
+
+          {/* Dividendo estimado */}
+          <div className="field-wrap calculated-field">
+            <div className="field-label-row">
+              <label htmlFor="dividendo_estimado">Dividendo estimado</label>
+              <FieldTooltip text="Cuota mensual referencial calculada con monto de vivienda, ahorro disponible, plazo y tasa hipotecaria referencial." />
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              id="dividendo_estimado"
+              name="dividendo_estimado"
+              value={displayVal("dividendo_estimado")}
+              onChange={handleChange}
+              placeholder={
+                calculatedDividend == null
+                  ? "Ej: 250.000"
+                  : "Calculado automaticamente"
+              }
+            />
+            <span className="field-help">
+              Calculado de forma referencial según monto de vivienda, ahorro
+              disponible y plazo del crédito. No corresponde a una oferta
+              bancaria formal.
+            </span>
+            <span className="field-help">
+              Si no lo sabes, puedes usar esta estimación desde valor, pie y plazo. Puedes modificarlo si ya tienes una simulación bancaria.
+            </span>
+            {dividendWasManuallyEdited && calculatedDividend != null && (
+              <button
+                type="button"
+                className="secondary-button compact-button calculated-reset"
+                onClick={useCalculatedDividend}
+              >
+                Usar cálculo referencial
+              </button>
+            )}
+          </div>
         </div>
+
       </div>
 
       {/* ── Trabajo y antecedentes ── */}
@@ -898,7 +1262,6 @@ export default function ScoreForm({
           <span className="eyebrow">Trabajo y antecedentes declarados</span>
           <p>
             La morosidad es autodeclarada y sólo se usa como señal orientativa.
-            No consultamos CMF, DICOM ni APIs externas.
           </p>
         </div>
         <div className="form-grid">
@@ -1267,8 +1630,7 @@ export default function ScoreForm({
             </div>
           </div>
           <p className="field-help">
-            Declara el valor comercial estimado de tus activos. Esto fortalece
-            tu perfil de cara a una evaluación hipotecaria.
+            Puedes ingresarlo en UF o CLP. {ufHelpText}
           </p>
         </div>
       )}

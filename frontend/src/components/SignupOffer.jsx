@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import DataConsent from "./DataConsent";
+import { formatPhone, normalizePhone, onlyPhoneDigits, PHONE_ERROR_MESSAGE } from "../utils/phone";
 
 function getPasswordStrength(password) {
   const checks = [
@@ -24,7 +25,7 @@ const scoreCopy = {
 };
 
 export default function SignupOffer({ result, anonBirthDate, onSignup, onContinueWithout, loading, error }) {
-  const [form, setForm] = useState({ full_name: "", email: "", password: "" });
+  const [form, setForm] = useState({ full_name: "", email: "", phone: "", password: "" });
   const [consentData, setConsentData] = useState(null);
   const [showConsent, setShowConsent] = useState(false);
   const [formError, setFormError] = useState("");
@@ -32,7 +33,7 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: name === "phone" ? onlyPhoneDigits(value, 8) : value }));
   };
 
   const handleSubmit = (e) => {
@@ -40,6 +41,15 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
     setFormError("");
     if (!form.full_name.trim()) { setFormError("Ingresa tu nombre para continuar."); return; }
     if (!form.email) { setFormError("Ingresa tu correo electrónico."); return; }
+    const normalizedPhone = normalizePhone(form.phone);
+    if (!form.phone.trim()) {
+      setFormError("Ingresa tu teléfono para crear la cuenta.");
+      return;
+    }
+    if (!normalizedPhone) {
+      setFormError(PHONE_ERROR_MESSAGE);
+      return;
+    }
     if (!form.password || form.password.length < 6) {
       setFormError("La contraseña debe tener al menos 6 caracteres.");
       return;
@@ -51,6 +61,7 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
     onSignup({
       full_name: form.full_name.trim(),
       email: form.email,
+      phone: normalizedPhone,
       password: form.password,
       birth_date: anonBirthDate || "",
       consentData,
@@ -139,6 +150,24 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
         </label>
 
         <label>
+          Teléfono
+          <div className="phone-input">
+            <span>+56 9</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              name="phone"
+              value={formatPhone(form.phone)}
+              onChange={handleChange}
+              maxLength="9"
+              placeholder="1234 5678"
+              autoComplete="tel"
+              aria-label="8 dígitos restantes del teléfono"
+            />
+          </div>
+        </label>
+
+        <label>
           Contraseña
           <input
             type="password"
@@ -178,7 +207,7 @@ export default function SignupOffer({ result, anonBirthDate, onSignup, onContinu
             <div className="consent-required">
               <p>Para crear tu cuenta debes aceptar la autorización de tratamiento de datos personales.</p>
               <button type="button" className="consent-accept-btn" onClick={() => setShowConsent(true)}>
-                Aceptar términos de datos
+                Ver términos y condiciones
               </button>
             </div>
           )}

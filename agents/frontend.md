@@ -1,6 +1,11 @@
-# Frontend — ScoreLeads MVP
+# Frontend — ScoreLeads Plataforma Profesional
 
 React 18 + Vite 8 + axios. Sin react-router (ruteo por estado en App.jsx). Sin librería de UI.
+
+ScoreLeads ya no es MVP. El frontend debe comunicar una plataforma profesional
+de precalificación financiera inmobiliaria. El score es orientativo y explicable:
+no aprueba créditos ni reemplaza evaluación bancaria formal. La IA solo redacta
+explicaciones; no decide el score.
 
 ## Estructura actual
 
@@ -15,7 +20,7 @@ frontend/src/
 │   ├── ProfilePage.jsx       # Perfil + historial evaluaciones + scoring_history
 │   ├── FinancialTracking.jsx # Seguimiento financiero con metas
 │   ├── MonthlyPlan.jsx       # Plan mensual de una meta
-│   ├── Recommendations.jsx   # Recomendaciones basadas en última evaluación
+│   ├── Recommendations.jsx   # Recomendaciones basadas en última evaluación (text + benefit)
 │   ├── ObjectiveReview.jsx   # Revisión objetivo inmobiliario
 │   ├── Navbar.jsx            # Navegación según rol
 │   ├── AdminPanel.jsx        # Vista admin
@@ -29,7 +34,7 @@ frontend/src/
 │   ├── getScoringHistory.js  # Historial inmutable scoring_history
 │   ├── goalsService.js       # CRUD metas
 │   ├── financialTracking.js  # buildFinancialTracking()
-│   ├── recommendationService.js
+│   ├── recommendationService.js  # Retorna {text, benefit} en recommendations
 │   └── monthlyPlanService.js
 ├── utils/
 │   ├── supabase.ts           # Cliente Supabase (null si faltan env vars)
@@ -38,7 +43,7 @@ frontend/src/
 │   └── helpers.js            # calculateAge, formatScore, etc.
 ├── constants/
 │   ├── index.js              # plazoLabels, propertyLabels
-│   └── comunas.js            # comunasMvp[]
+│   └── comunas.js            # comunasMvp[] (nombre heredado, no renombrar sin tarea explícita)
 ├── App.jsx                   # Entry point + state machine de páginas
 ├── main.jsx                  # createRoot(document.getElementById("root"))
 └── styles.css                # Único stylesheet
@@ -64,8 +69,24 @@ frontend/src/
 ## Constantes centralizadas
 
 - `constants/index.js`: `plazoLabels` y `propertyLabels` — importados por ObjectiveReview, App, ProfilePage.
-- `constants/comunas.js`: `comunasMvp` — lista plana de comunas.
+- `constants/comunas.js`: `comunasMvp` — lista plana de comunas. Mantener el nombre heredado salvo refactor explícito.
 - No duplicar labels inline; importar desde constants.
+
+## Evolución de vistas financieras
+
+Preparar nuevas vistas o extensiones sin romper el flujo actual:
+
+- Score financiero: desglose por componentes ponderados y versión del algoritmo.
+- Bloqueador principal: razón dominante que impide avanzar o exige preparación.
+- Project fit: compatibilidad entre comuna, tipo de propiedad, plazo, valor y
+  capacidad financiera.
+- Prioridad comercial: señal para ejecutivos separada del score financiero.
+- Historial versionado: comparar evaluaciones por `algorithm_version`,
+  componentes, bloqueadores y textos generados.
+
+Mantener el contrato de `POST /score`, el fallback localStorage, Supabase
+condicional y la integración Groq. No hardcodear API keys ni consultar datos
+financieros externos sin consentimiento explícito.
 
 ## Páginas (estado `page`)
 

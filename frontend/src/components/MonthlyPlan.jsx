@@ -1,14 +1,42 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { buildMonthlyPlan, formatClp, isMonetaryPlanGoal, serializeMonthlyProgress } from "../services/monthlyPlanService";
+import { formatMoneyInput, stripMoneyInput } from "../services/moneyFormat";
+import { getCurrentMonthId, partitionMonths } from "../services/monthTimeline";
+
+const statusLabels = {
+  pendiente: "Pendiente",
+  logrado: "Logrado",
+  no_logrado: "No logrado",
+};
 
 export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }) {
   const [progressData, setProgressData] = useState(goal?.progress_data || null);
+  const [expandedClosedIds, setExpandedClosedIds] = useState(() => new Set());
   const hasMonetaryGoal = isMonetaryPlanGoal(goal);
   const plan = useMemo(() => buildMonthlyPlan(evaluation, progressData), [evaluation, progressData]);
 
   useEffect(() => {
     setProgressData(goal?.progress_data || null);
   }, [goal?.id, goal?.progress_data]);
+
+  const currentMonthId = getCurrentMonthId();
+  const { open: openMonths, closed: closedMonths } = useMemo(
+    () => partitionMonths(plan.monthsData, currentMonthId),
+    [plan.monthsData, currentMonthId],
+  );
+  const closedTotal = closedMonths.reduce((sum, month) => sum + (Number(month.savedAmount) || 0), 0);
+
+  const toggleClosedMonth = (monthId) => {
+    setExpandedClosedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(monthId)) {
+        next.delete(monthId);
+      } else {
+        next.add(monthId);
+      }
+      return next;
+    });
+  };
 
   const updateMonth = (monthId, value) => {
     const nextAmount = value === "" ? "" : Math.max(Number(value) || 0, 0);
@@ -25,6 +53,34 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
     setProgressData(serializedProgress);
     onSaveProgress?.(goal.id, serializedProgress);
   };
+
+  const renderMonthCard = (month) => (
+    <article className={"month-card " + month.status} key={month.id}>
+      <div>
+        <span className="eyebrow">{month.label}</span>
+        <h3>{statusLabels[month.status]}</h3>
+        <p>Meta base: {formatClp(month.baseTarget)}</p>
+        <p>Deficit anterior: {formatClp(month.previousDeficit)}</p>
+        <strong>Meta ajustada: {formatClp(month.adjustedTarget)}</strong>
+      </div>
+
+      <label>
+        ¿Cuánto lograste ahorrar este mes?
+        <input
+          type="text"
+          inputMode="numeric"
+          value={formatMoneyInput(month.savedAmount)}
+          onChange={(event) => updateMonth(month.id, stripMoneyInput(event.target.value))}
+          placeholder="Ej: 100.000"
+        />
+      </label>
+
+      <div className="month-footer">
+        <span>Acumulado esperado: {formatClp(month.expectedAccumulated)}</span>
+        <span>Acumulado real: {formatClp(month.accumulated)}</span>
+      </div>
+    </article>
+  );
 
   return (
     <section className="section-block monthly-plan">
@@ -68,34 +124,45 @@ export default function MonthlyPlan({ evaluation, goal, onBack, onSaveProgress }
           </div>
 
           <div className="monthly-timeline">
-            {plan.monthsData.map((month) => (
-              <article className={`month-card ${month.status}`} key={month.id}>
-                <div>
-                  <span className="eyebrow">{month.label}</span>
-                  <h3>{statusLabels[month.status]}</h3>
-                  <p>Meta base: {formatClp(month.baseTarget)}</p>
-                  <p>Deficit anterior: {formatClp(month.previousDeficit)}</p>
-                  <strong>Meta ajustada: {formatClp(month.adjustedTarget)}</strong>
+            {closedMonths.length > 0 && (
+              <div className="month-summary">
+                <div className="month-summary-header">
+                  <strong>Meses registrados</strong>
+                  <span>Total: {formatClp(closedTotal)}</span>
                 </div>
+                {closedMonths.map((month) => (
+                  <div
+                    className={"month-summary-row" + (expandedClosedIds.has(month.id) ? " is-open" : "")}
+                    key={month.id}
+                  >
+                    <button
+                      type="button"
+                      className="month-summary-toggle"
+                      onClick={() => toggleClosedMonth(month.id)}
+                      aria-expanded={expandedClosedIds.has(month.id)}
+                    >
+                      <span className="month-summary-label">{month.label}</span>
+                      <span className="month-summary-amount">
+                        {month.savedAmount === "" ? "Sin registrar" : formatClp(month.savedAmount)}
+                      </span>
+                      <span className={"month-status-badge " + month.status}>
+                        {month.status === "logrado"
+                          ? "\u2713 Logrado"
+                          : month.status === "no_logrado"
+                            ? "Parcial"
+                            : "Pendiente"}
+                      </span>
+                      <span className="month-summary-chevron">{expandedClosedIds.has(month.id) ? "\u25b4" : "\u25be"}</span>
+                    </button>
+                    {expandedClosedIds.has(month.id) && (
+                      <div className="month-summary-detail">{renderMonthCard(month)}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-                <label>
-                  ¿Cuánto lograste ahorrar este mes?
-                  <input
-                    type="number"
-                    min="0"
-                    inputMode="numeric"
-                    value={month.savedAmount}
-                    onChange={(event) => updateMonth(month.id, event.target.value)}
-                    placeholder="Ej: 100000"
-                  />
-                </label>
-
-                <div className="month-footer">
-                  <span>Acumulado esperado: {formatClp(month.expectedAccumulated)}</span>
-                  <span>Acumulado real: {formatClp(month.accumulated)}</span>
-                </div>
-              </article>
-            ))}
+            {openMonths.map((month) => renderMonthCard(month))}
           </div>
         </>
       )}

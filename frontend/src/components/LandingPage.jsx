@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { submitFeedback } from "../services/feedbackService";
 
 export const landingStyles = `
 .sl * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,6 +37,16 @@ export const landingStyles = `
   font-family: inherit;
 }
 .sl-nav-cta:hover { background: #142348; }
+.sl-nav-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.sl-nav-secondary,
+.sl-nav-link {
+  padding: 9px 14px; border-radius: 8px; min-height: unset; cursor: pointer;
+  font-family: inherit; font-size: 13px; font-weight: 600;
+}
+.sl-nav-secondary { background: #fff; color: #1B2F5E; border: 1px solid #cbd5e1; }
+.sl-nav-secondary:hover { background: #EEF3F8; }
+.sl-nav-link { background: transparent; color: #4a5568; border: none; }
+.sl-nav-link:hover { background: #EEF3F8; color: #1B2F5E; }
 
 /* ── Hero ── */
 .sl-hero {
@@ -232,6 +243,46 @@ export const landingStyles = `
 .sl-faq-chevron.open { transform: rotate(180deg); }
 .sl-faq-a { font-size: 14px; color: #718096; line-height: 1.65; padding: 0 0 1rem; }
 
+/* ── Feedback ── */
+.sl-feedback-section { background: #fff; padding: 3.5rem 2rem; }
+.sl-feedback-inner {
+  max-width: 920px; margin: 0 auto;
+  display: grid; grid-template-columns: minmax(220px, .85fr) minmax(0, 1.35fr);
+  gap: 1.75rem; align-items: start;
+}
+.sl-feedback-copy p { font-size: 14px; color: #4a5568; line-height: 1.7; margin-top: .75rem; }
+.sl-feedback-points { list-style: none; padding: 0; margin: 1.25rem 0 0; display: grid; gap: 9px; }
+.sl-feedback-points li { display: flex; align-items: center; gap: 9px; font-size: 13px; color: #4a5568; margin: 0; }
+.sl-feedback-points span {
+  width: 18px; height: 18px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #E1F5EE; color: #0F6E56; font-size: 12px; font-weight: 800;
+  flex-shrink: 0;
+}
+.sl-feedback-form {
+  background: #F7FAFC; border: 1px solid #dde5f0; border-radius: 12px;
+  padding: 1.15rem; display: grid; gap: 10px;
+}
+.sl-feedback-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.sl-feedback-form label { display: grid; gap: 6px; font-size: 12px; font-weight: 700; color: #1B2F5E; }
+.sl-feedback-form input,
+.sl-feedback-form select,
+.sl-feedback-form textarea {
+  width: 100%; min-height: 42px; margin: 0; padding: 10px 11px;
+  border: 1px solid #bfccd8; border-radius: 8px; background: #fff;
+  color: #172033; font: inherit; font-size: 14px; resize: vertical;
+}
+.sl-feedback-form textarea { min-height: 62px; line-height: 1.45; }
+.sl-feedback-form input:focus,
+.sl-feedback-form select:focus,
+.sl-feedback-form textarea:focus {
+  border-color: #2AACAD; outline: 3px solid rgba(42,172,173,.16);
+}
+.sl-feedback-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 2px; }
+.sl-feedback-status { font-size: 13px; color: #4a5568; line-height: 1.5; }
+.sl-feedback-status.ok { color: #0F6E56; }
+.sl-feedback-status.error { color: #b83232; }
+
 /* ── Final CTA ── */
 .sl-cta-section { background: #2AACAD; padding: 4.5rem 2rem; text-align: center; }
 .sl-cta-inner   { max-width: 520px; margin: 0 auto; }
@@ -281,13 +332,19 @@ export const landingStyles = `
   .sl-hero h1        { font-size: 28px; }
   .sl-score-inner    { grid-template-columns: 1fr; }
   .sl-nav            { padding: .875rem 1.25rem; }
+  .sl-nav-actions    { gap: 4px; }
+  .sl-nav-secondary,
+  .sl-nav-link       { padding: 8px 10px; }
   .sl-hero           { padding: 3rem 1.25rem; }
   .sl-steps-section,
   .sl-benefits-section,
   .sl-faq-section,
+  .sl-feedback-section,
   .sl-cta-section,
   .sl-ei-section,
   .sl-score-section  { padding: 2.5rem 1.25rem; }
+  .sl-feedback-inner  { grid-template-columns: 1fr; }
+  .sl-feedback-row    { grid-template-columns: 1fr; }
   .sl-footer         { flex-direction: column; align-items: flex-start; }
   .sl-footer-note    { max-width: 100%; }
 }
@@ -321,6 +378,35 @@ const faqs = [
   },
 ];
 
+const testerTypes = ["Usuario", "Ejecutivo", "Banco", "Inmobiliaria", "Otro"];
+
+const initialFeedback = {
+  name: "",
+  email: "",
+  phone: "",
+  tester_type: "Usuario",
+  first_impression: "",
+  confusing_part: "",
+  improvement_suggestion: "",
+  clarity_rating: "5",
+};
+
+const testerTypeByRole = {
+  usuario: "Usuario",
+  ejecutivo: "Ejecutivo",
+  admin: "Otro",
+};
+
+function buildInitialFeedback(profile) {
+  return {
+    ...initialFeedback,
+    name: profile?.full_name || "",
+    email: profile?.email || "",
+    phone: profile?.phone || "",
+    tester_type: profile ? testerTypeByRole[profile.role] || "Otro" : initialFeedback.tester_type,
+  };
+}
+
 function FaqItem({ question, answer }) {
   const [open, setOpen] = useState(false);
   return (
@@ -336,7 +422,191 @@ function FaqItem({ question, answer }) {
   );
 }
 
-export default function LandingPage({ onStart, onLogin }) {
+function FeedbackSection({ profile }) {
+  const [form, setForm] = useState(() => buildInitialFeedback(profile));
+  const [submitting, setSubmitting] = useState(false);
+  const [status, setStatus] = useState(null);
+
+  useEffect(() => {
+    setForm(buildInitialFeedback(profile));
+    setStatus(null);
+  }, [profile?.id, profile?.full_name, profile?.email, profile?.phone, profile?.role]);
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const hasComment =
+      form.first_impression.trim() ||
+      form.confusing_part.trim() ||
+      form.improvement_suggestion.trim();
+
+    if (!hasComment) {
+      setStatus({
+        type: "error",
+        message: "Cuéntanos al menos una impresión, dificultad o sugerencia.",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    setStatus(null);
+
+    try {
+      await submitFeedback(form);
+      setForm(buildInitialFeedback(profile));
+      setStatus({
+        type: "ok",
+        message: "Gracias, recibimos tu feedback.",
+      });
+    } catch (error) {
+      console.error(error);
+      setStatus({
+        type: "error",
+        message: "No pudimos registrar el feedback. Intenta nuevamente.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className="sl-feedback-section">
+      <div className="sl-feedback-inner">
+        <div className="sl-feedback-copy">
+          <div className="sl-section-eyebrow">Feedback de testers</div>
+          <h2 className="sl-section-title">Ayúdanos a afinar ScoreLeads</h2>
+          <p>
+            Tus comentarios nos ayudan a detectar si la propuesta se entiende,
+            qué parte del flujo genera dudas y qué deberíamos mejorar antes de
+            una versión final.
+          </p>
+          <ul className="sl-feedback-points">
+            <li><span>1</span> Claridad de la propuesta</li>
+            <li><span>2</span> Fricciones del primer recorrido</li>
+            <li><span>3</span> Mejoras para usuarios y equipos comerciales</li>
+          </ul>
+        </div>
+
+        <form className="sl-feedback-form" onSubmit={handleSubmit}>
+          <div className="sl-feedback-row">
+            <label>
+              Nombre opcional
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                autoComplete="name"
+                placeholder="No informado"
+              />
+            </label>
+            <label>
+              Correo opcional
+              <input
+                type="email"
+                name="email"
+                value={form.email}
+                onChange={handleChange}
+                autoComplete="email"
+                placeholder="No informado"
+              />
+            </label>
+          </div>
+
+          <div className="sl-feedback-row">
+            <label>
+              Teléfono opcional
+              <input
+                type="tel"
+                name="phone"
+                value={form.phone}
+                onChange={handleChange}
+                autoComplete="tel"
+                placeholder="No informado"
+              />
+            </label>
+            <label>
+              Perfil del tester
+              <select name="tester_type" value={form.tester_type} onChange={handleChange}>
+                {testerTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label>
+            Nota de claridad
+            <select name="clarity_rating" value={form.clarity_rating} onChange={handleChange}>
+              {[5, 4, 3, 2, 1].map((rating) => (
+                <option key={rating} value={rating}>{rating}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
+            Primera impresión: ¿qué entendiste que hace ScoreLeads?
+            <textarea
+              name="first_impression"
+              value={form.first_impression}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label>
+            Parte confusa o difícil
+            <textarea
+              name="confusing_part"
+              value={form.confusing_part}
+              onChange={handleChange}
+            />
+          </label>
+
+          <label>
+            Sugerencia de mejora
+            <textarea
+              name="improvement_suggestion"
+              value={form.improvement_suggestion}
+              onChange={handleChange}
+            />
+          </label>
+
+          <div className="sl-feedback-actions">
+            <button type="submit" className="sl-btn-primary" disabled={submitting}>
+              {submitting ? "Enviando..." : "Enviar feedback"}
+            </button>
+            {status && (
+              <span className={`sl-feedback-status ${status.type}`}>
+                {status.message}
+              </span>
+            )}
+          </div>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+export default function LandingPage({
+  profile,
+  onStart,
+  onLogin,
+  onRegister,
+  onDashboard,
+  onProfile,
+  onLogout,
+}) {
+  const isLoggedIn = Boolean(profile);
+  const primaryActionLabel = !isLoggedIn
+    ? "Evalúa tu perfil gratis"
+    : profile.role === "usuario"
+      ? "Continuar con mi perfil"
+      : "Ir al dashboard";
+
   return (
     <>
       <style>{landingStyles}</style>
@@ -345,9 +615,21 @@ export default function LandingPage({ onStart, onLogin }) {
         {/* Nav */}
         <nav className="sl-nav">
           <img src="/Logo ScoreLeads.png" alt="ScoreLeads" className="sl-logo-img" />
-          <button type="button" className="sl-nav-cta" onClick={onLogin}>
-            Iniciar sesión
-          </button>
+          <div className="sl-nav-actions">
+            {isLoggedIn ? (
+              <>
+                {onProfile && (
+                  <button type="button" className="sl-nav-secondary" onClick={onProfile}>Perfil</button>
+                )}
+                <button type="button" className="sl-nav-link" onClick={onLogout}>Cerrar sesión</button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="sl-nav-secondary" onClick={onRegister}>Registrarse</button>
+                <button type="button" className="sl-nav-cta" onClick={onLogin}>Iniciar sesión</button>
+              </>
+            )}
+          </div>
         </nav>
 
         {/* 1. Hero */}
@@ -363,20 +645,20 @@ export default function LandingPage({ onStart, onLogin }) {
             </p>
             <div className="sl-hero-btns">
               <button type="button" className="sl-btn-primary" onClick={onStart}>
-                Evalúa tu perfil gratis
+                {primaryActionLabel}
                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                   <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </button>
-              <button type="button" className="sl-btn-ghost" onClick={onLogin}>
-                Ya tengo cuenta
+              <button type="button" className="sl-btn-ghost" onClick={isLoggedIn ? onDashboard : onLogin}>
+                {isLoggedIn ? "Ir al dashboard" : "Ya tengo cuenta"}
               </button>
             </div>
             <div className="sl-hero-trust">
               <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M10 2l6 2v5c0 4-3 6-6 7-3-1-6-3-6-7V4z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
               </svg>
-              Orientativo · No consultamos DICOM ni CMF
+              Orientativo · No consultamos
             </div>
           </div>
         </section>
@@ -427,9 +709,6 @@ export default function LandingPage({ onStart, onLogin }) {
                   </li>
                 ))}
               </ul>
-              <button type="button" className="sl-btn-primary" onClick={onStart}>
-                Evalúa tu perfil ahora
-              </button>
             </div>
 
             <div className="sl-score-card">
@@ -562,13 +841,19 @@ export default function LandingPage({ onStart, onLogin }) {
           </div>
         </section>
 
+        <FeedbackSection profile={profile} />
+
         {/* Final CTA */}
         <section className="sl-cta-section">
           <div className="sl-cta-inner">
             <h2>¿Listo para conocer tu score?</h2>
-            <p>Es gratis, toma unos minutos y no necesitas crear una cuenta para empezar.</p>
+            <p>
+              {isLoggedIn
+                ? "Tu sesión está activa y puedes continuar con tu precalificación."
+                : "Es gratis, toma unos minutos y no necesitas crear una cuenta para empezar."}
+            </p>
             <button type="button" className="sl-btn-white" onClick={onStart}>
-              Evalúa tu perfil gratis
+              {primaryActionLabel}
               <svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                 <path d="M4 10h12M11 5l5 5-5 5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -587,8 +872,8 @@ export default function LandingPage({ onStart, onLogin }) {
               { name: "Yoyín", type: "Inmobiliaria" },
               { name: "Yoyín", type: "Inmobiliaria" },
               { name: "Yoyín", type: "Inmobiliaria" },
-            ].map((affiliate) => (
-              <div className="sl-ei-item" key={affiliate.name}>
+            ].map((affiliate, index) => (
+              <div className="sl-ei-item" key={`${affiliate.name}-${index}`}>
                 <div className="sl-ei-name">{affiliate.name}</div>
                 <div className="sl-ei-type">{affiliate.type}</div>
               </div>
@@ -601,8 +886,8 @@ export default function LandingPage({ onStart, onLogin }) {
           <p className="sl-footer-note">
             © 2025 ScoreLeads · Herramienta orientativa, no constituye evaluación crediticia formal.
           </p>
-          <button type="button" className="sl-footer-link" onClick={onLogin}>
-            Iniciar sesión
+          <button type="button" className="sl-footer-link" onClick={isLoggedIn ? onDashboard : onLogin}>
+            {isLoggedIn ? "Ir al dashboard" : "Iniciar sesión"}
           </button>
         </footer>
 

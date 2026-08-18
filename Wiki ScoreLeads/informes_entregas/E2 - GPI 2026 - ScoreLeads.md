@@ -135,7 +135,7 @@ En la **HU3**, se cambió el nombre desde **"Generación de Scoring"** hacia **"
 **Criterios de Aceptación:**
 
 **E1 - Completar formulario exitosamente:**
-**Dado** que el usuario ingresa a la plataforma ScoreLeads por primera vez, **cuando** completa todos los campos requeridos (ingresos, deudas, tipo de contrato, número de cargas, edad) y acepta el consentimiento de datos, **entonces** el sistema registra su perfil y lo redirige automáticamente al resultado de su evaluación.
+**Dado** que el usuario ingresa a la plataforma ScoreLeads por primera vez, **cuando** completa todos los campos requeridos (ingresos, deudas, tipo de contrato, edad) y acepta el consentimiento de datos, **entonces** el sistema registra su perfil y lo redirige automáticamente al resultado de su evaluación.
 
 **E2 - Inconsistencia en datos declarados:**
 **Dado** que el usuario está completando el formulario, **cuando** declara un monto de deudas mensual mayor a sus ingresos declarados, **entonces** el sistema muestra una advertencia visual en el campo correspondiente antes de permitir continuar al siguiente paso.
