@@ -45,3 +45,6 @@ COMMERCIAL_ACTIONS = {
     "request_info": "Solicitar antecedentes",
     "do_not_route": "No derivar todavía",
 }
+
+FOGAES_MAX_PROPERTY_UF = 4000
+FOGAES_MIN_PIE_RATIO = 0.10

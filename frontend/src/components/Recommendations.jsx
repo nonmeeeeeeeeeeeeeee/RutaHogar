@@ -117,6 +117,36 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
         </div>
       )}
 
+      {data.housing_benefits?.applicable_benefits?.length > 0 && (
+        <div className="housing-benefits-section" style={{ marginTop: "1.5rem", marginBottom: "1.5rem" }}>
+          <section>
+            <strong>Beneficios habitacionales aplicables</strong>
+            <p style={{ marginBottom: "1rem", color: "var(--color-neutral-700)" }}>{data.housing_benefits.summary}</p>
+            <ul>
+              {data.housing_benefits.applicable_benefits.map((benefit) => (
+                <li key={benefit.type} style={{ marginBottom: "1rem" }}>
+                  <strong>{benefit.name}</strong>
+                  <p>{benefit.notes}</p>
+                  {benefit.conditions_met.length > 0 && (
+                    <p style={{ fontSize: "0.9rem", color: "var(--color-neutral-600)" }}>
+                      Requisitos cumplidos: {benefit.conditions_met.join(", ")}
+                    </p>
+                  )}
+                  {benefit.conditions_not_met.length > 0 && (
+                    <p style={{ fontSize: "0.9rem", color: "var(--color-neutral-600)" }}>
+                      Requisitos pendientes: {benefit.conditions_not_met.join(", ")}
+                    </p>
+                  )}
+                </li>
+              ))}
+            </ul>
+            <p style={{ fontSize: "0.85rem", fontStyle: "italic", color: "var(--color-neutral-500)" }}>
+              {data.housing_benefits.disclaimer}
+            </p>
+          </section>
+        </div>
+      )}
+
       <div className="recommendation-grid">
         <section>
           <strong>Recomendaciones personalizadas</strong>
