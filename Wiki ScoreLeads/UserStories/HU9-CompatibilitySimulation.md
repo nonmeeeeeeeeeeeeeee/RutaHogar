@@ -70,5 +70,5 @@ Lets a lead simulate different objectives, values, comunas, terms, and configura
 
 ## Notes
 
-- Simulation criteria (purchase capacity, home value, savings, debt, minimum adjustments) are defined in **Spike 1**.
+- Simulation criteria (purchase capacity, home value, savings, debt, minimum adjustments) are defined in **Spike 1**. The `capacidad_compra_estimada` primitive is already specified in [[research/spike1-e4-lead-project-matching-criteria\|Spike 1 · E4 — Lead–Project Matching Criteria]]; reuse it rather than defining a second capacity formula.
 - Feeds the accessibility map ([[HU10-AccessibilityMap\|HU 10]]) and complements the economic/subsidy/term simulations ([[HU20-EconomicSimulation\|HU 20]], [[HU25-SubsidySimulation\|HU 25]], [[HU26-CreditTermSimulation\|HU 26]]).
