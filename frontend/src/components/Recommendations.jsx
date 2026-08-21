@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
+import BankingChecklist from "./BankingChecklist";
 import { buildRecommendations } from "../services/recommendationService";
+
 import {
   formatBooleanText,
   formatClp,
@@ -181,6 +183,8 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           </div>
         </div>
       )}
+
+      {evaluation && <BankingChecklist evaluation={evaluation} />}
 
       <div className="warning-note">
         Esta orientación no reemplaza una evaluación bancaria formal.

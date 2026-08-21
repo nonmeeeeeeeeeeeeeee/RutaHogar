@@ -1,5 +1,7 @@
 import React from "react";
+import BankingChecklist from "./BankingChecklist";
 import {
+
   formatBooleanText,
   formatClp,
   formatPlanActionMeta,
@@ -151,6 +153,9 @@ export default function Result({ data }) {
           </ul>
         </section>
       </div>
+
+      <BankingChecklist result={data} />
     </div>
   );
 }
+
