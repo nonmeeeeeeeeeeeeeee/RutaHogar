@@ -177,12 +177,11 @@ export default function BankingChecklist({ evaluation, input: propInput, result:
       <div className="section-heading compact">
         <span className="eyebrow">Preparación Bancaria</span>
         <h2>Checklist Referencial de Antecedentes</h2>
-        <p>Antecedentes referenciales para tu evaluación formal en la banca chilena (Spike 1).</p>
+        <p>Antecedentes referenciales para tu evaluación formal en la banca chilena.</p>
       </div>
 
       {/* Criterio E1: Clean Sober Disclaimer Banner */}
       <div className="minimal-disclaimer-banner" role="alert">
-        <span className="disclaimer-icon">🛡️</span>
         <div className="disclaimer-body">
           <strong>Checklist Formativo y Referencial</strong>
           <span>No requiere ni solicita carga de documentos sensibles en esta plataforma.</span>
@@ -219,7 +218,7 @@ export default function BankingChecklist({ evaluation, input: propInput, result:
       {/* Criterio E2: Compact Dynamic Priority Documents Block */}
       {priorityItems.length > 0 && (
         <div className="compact-priority-block">
-          <div className="priority-header-tag">🎯 Antecedentes Prioritarios para tu Perfil</div>
+          <div className="priority-header-tag">Antecedentes Prioritarios para tu Perfil</div>
           <ul className="priority-minimal-list">
             {priorityItems.map((item) => (
               <li key={`prio-${item.id}`} className={checked[item.id] ? "is-done" : ""}>
