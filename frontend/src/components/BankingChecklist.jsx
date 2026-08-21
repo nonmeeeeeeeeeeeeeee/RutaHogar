@@ -1,201 +1,142 @@
 import React, { useState, useMemo, useEffect } from "react";
 
-const BASE_CHECKLIST = [
-  {
-    id: "cedula",
-    category: "identificacion",
-    title: "Cédula de Identidad Vigente",
-    subtitle: "Fotocopia legible por ambos lados (Nacional o Extranjero con residencia definitiva).",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "🆔",
-    mitigatesRisks: [],
-  },
-  {
-    id: "domicilio",
-    category: "identificacion",
-    title: "Comprobante de Domicilio Reciente",
-    subtitle: "Boleta de servicio básico (Luz, Agua, Gas, Internet) o Estado de Cuenta bancario con dirección (< 90 días).",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "🏠",
-    mitigatesRisks: [],
-  },
-  {
-    id: "ahorro_vivienda",
-    category: "ahorro",
-    title: "Cartola de Ahorro / Certificado de Fondos para el Pie",
-    subtitle: "Cartola de Cuenta de Ahorro Vivienda, Depósito a Plazo, Fondos Mutuos o comprobante de saldo para Pie.",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "🏦",
-    mitigatesRisks: ["ahorro_bajo", "precio_objetivo", "pie_insuficiente"],
-    mitigationReason: "Demuestra la disponibilidad efectiva del ahorro necesario para cubrir el Pie inicial exigido.",
-    mitigationBadge: "🎯 Destacado para Mitigar Brecha de Pie",
-  },
-  {
-    id: "subsidio_habitacional",
-    category: "ahorro",
-    title: "Certificado de Subsidio Habitacional (Si aplica)",
-    subtitle: "Certificado de asignación o postulación activa a subsidio estatal (DS1, DS19, DS49).",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "📜",
-    mitigatesRisks: ["ahorro_bajo", "precio_objetivo", "pie_insuficiente"],
-    mitigationReason: "El subsidio asignado complementa tu capital inicial y fortalece la viabilidad de aprobación.",
-    mitigationBadge: "🎯 Destacado como Aporte al Pie",
-  },
-  {
-    id: "liquidaciones_sueldo",
-    category: "ingresos_dep",
-    title: "3 a 6 Últimas Liquidaciones de Sueldo",
-    subtitle: "Liquidaciones mensuales consecutivas timbradas o firmadas (3 si renta es fija, 6 si es variable).",
-    requiredFor: ["dependiente"],
-    icon: "📄",
-    mitigatesRisks: [],
-  },
-  {
-    id: "cotizaciones_afp",
-    category: "ingresos_dep",
-    title: "Certificado de Cotizaciones AFP (12 - 24 Meses)",
-    subtitle: "Certificado histórico de cotizaciones previsionales con RUT del empleador visible.",
-    requiredFor: ["dependiente"],
-    icon: "📊",
-    mitigatesRisks: [
-      "continuidad_baja",
-      "continuidad_media",
-      "continuidad_laboral_baja",
-      "contrato_plazo_fijo",
-      "contrato_honorarios_variable",
-      "contrato_inestable",
-    ],
-    mitigationReason: "Acredita tu trayectoria y estabilidad laboral ininterrumpida ante el comité de riesgo bancario.",
-    mitigationBadge: "⚡ Destacado para Mitigar Continuidad Laboral",
-  },
-  {
-    id: "certificado_antiguedad",
-    category: "ingresos_dep",
-    title: "Certificado de Antigüedad Laboral / Anexos de Contrato",
-    subtitle: "Documento oficial del empleador especificando cargo, fecha de ingreso, tipo de contrato y vigencia.",
-    requiredFor: ["dependiente"],
-    icon: "📝",
-    mitigatesRisks: [
-      "continuidad_baja",
-      "continuidad_media",
-      "continuidad_laboral_baja",
-      "contrato_plazo_fijo",
-      "contrato_inestable",
-    ],
-    mitigationReason: "Confirma estabilidad contractual vigente y respalda tu permanencia laboral a largo plazo.",
-    mitigationBadge: "⚡ Destacado para Respaldar Estabilidad",
-  },
-  {
-    id: "carpeta_tributaria_sii",
-    category: "ingresos_indep",
-    title: "Carpeta Tributaria Electrónica (SII) para Crédito Hipotecario",
-    subtitle: "Carpeta oficial emitible en portal SII para 'Solicitud de Crédito' (Formularios 22 y 29 de 24 meses).",
-    requiredFor: ["independiente"],
-    icon: "💼",
-    mitigatesRisks: [
-      "contrato_independiente",
-      "continuidad_baja",
-      "continuidad_media",
-      "continuidad_laboral_baja",
-      "contrato_inestable",
-    ],
-    mitigationReason: "Requisito indispensable para independientes que sintetiza facturación, IVA e Impuesto a la Renta.",
-    mitigationBadge: "⚡ Documento Clave para Independientes",
-  },
-  {
-    id: "boletas_honorarios",
-    category: "ingresos_indep",
-    title: "Resumen Anual de Boletas de Honorarios (12-24 Meses)",
-    subtitle: "Informe de boletas emitidas obtenido del portal SII demostrando ingresos mensuales recurrentes.",
-    requiredFor: ["independiente"],
-    icon: "🧾",
-    mitigatesRisks: ["contrato_independiente", "contrato_honorarios_variable"],
-    mitigationReason: "Demuestra la constancia mensual y recurrencia real de tus ingresos profesionales.",
-    mitigationBadge: "⚡ Destacado para Respaldar Honorarios",
-  },
-  {
-    id: "declaracion_f22",
-    category: "ingresos_indep",
-    title: "Declaración de Impuesto a la Renta (F22) - Últimos 2 Años",
-    subtitle: "Comprobante de declaración y pago del Impuesto Anual a la Renta en SII.",
-    requiredFor: ["independiente"],
-    icon: "🏛️",
-    mitigatesRisks: ["contrato_independiente"],
-    mitigationReason: "Valida la rentabilidad anual neta declarada formalmente ante el Estado.",
-    mitigationBadge: "⚡ Requisito Formal SII",
-  },
-  {
-    id: "aclaracion_morosidad",
-    category: "mitigacion_comercial",
-    title: "Certificado de Aclaración Comercial / Regularización (DICOM / Boletín)",
-    subtitle: "Certificado de Deuda Al Día o Carta de Aclaración de la institución acreedora respaldando el pago completo.",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "🛡️",
-    mitigatesRisks: ["morosidad_alta", "morosidad_media", "morosidad_vigente", "morosidad_desconocida"],
-    mitigationReason: "Documento indispensable para levantar bloqueos por deudas informadas ante la banca.",
-    mitigationBadge: "🔥 Prioridad Máxima: Desbloqueo Comercial",
-  },
-  {
-    id: "finiquito_credito",
-    category: "mitigacion_comercial",
-    title: "Finiquito de Créditos Extinguidos / Estado Cero de Tarjetas",
-    subtitle: "Comprobante de prepago de créditos o carta de extinción de deuda que certifica liberación de carga mensual.",
-    requiredFor: ["dependiente", "independiente"],
-    icon: "💳",
-    mitigatesRisks: ["deuda_alta", "deuda_actual_alta", "carga_total_alta"],
-    mitigationReason: "Demuestra que tus deudas pasadas fueron saldadas, liberando margen inmediato para el dividendo.",
-    mitigationBadge: "🔥 Prioridad Máxima: Reducción de Carga",
-  },
-];
+// Standard background documents from Spike 1 (spike1_e5.md)
+const CHECKLIST_DATA = {
+  common: [
+    {
+      id: "cedula",
+      category: "Identificación y Residencia",
+      title: "Cédula de identidad vigente (RUT titular / cónyuge / codeudor)",
+      subtitle: "Fotocopia legible por ambos lados.",
+      mitigatesRisks: [],
+    },
+    {
+      id: "domicilio",
+      category: "Identificación y Residencia",
+      title: "Certificado de residencia o comprobante de cuenta de servicios",
+      subtitle: "Boleta de servicio básico (luz, agua, gas) a tu nombre (< 90 días).",
+      mitigatesRisks: [],
+    },
+    {
+      id: "ahorro_pie",
+      category: "Identificación y Residencia",
+      title: "Comprobante de ahorro o pie",
+      subtitle: "Cartola de cuenta de ahorro vivienda, fondos mutuos o libreta de ahorro.",
+      mitigatesRisks: ["ahorro_bajo", "precio_objetivo", "pie_insuficiente"],
+      priorityBadge: "Prioritario: Pie Insuficiente",
+      priorityReason: "Acredita el capital inicial requerido para el pie.",
+    },
+  ],
+  dependiente: [
+    {
+      id: "liquidaciones",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Últimas 3 a 6 liquidaciones de sueldo",
+      subtitle: "3 si la renta es fija, 6 si incluye renta variable.",
+      mitigatesRisks: [],
+    },
+    {
+      id: "cotizaciones_afp",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Certificado de cotizaciones previsionales AFP",
+      subtitle: "Histórico de cotizaciones de los últimos 12 a 24 meses con RUT del empleador.",
+      mitigatesRisks: ["continuidad_baja", "continuidad_media", "continuidad_laboral_baja", "contrato_inestable"],
+      priorityBadge: "Prioritario: Continuidad Laboral",
+      priorityReason: "Demuestra estabilidad e historial previsional continuo.",
+    },
+    {
+      id: "antiguedad_laboral",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Certificado de antigüedad laboral emitido por el empleador",
+      subtitle: "Documento oficial que especifica cargo, tipo de contrato y fecha de ingreso.",
+      mitigatesRisks: ["continuidad_baja", "continuidad_laboral_baja", "contrato_plazo_fijo"],
+      priorityBadge: "Prioritario: Antigüedad Laboral",
+      priorityReason: "Confirma permanencia contractual vigente.",
+    },
+  ],
+  independiente: [
+    {
+      id: "f22_sii",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Últimas 2 declaraciones de renta anual (Formulario 22 SII)",
+      subtitle: "Declaraciones de impuesto a la renta de los últimos 2 períodos tributarios.",
+      mitigatesRisks: ["contrato_independiente"],
+      priorityBadge: "Prioritario: Ingresos Independientes",
+      priorityReason: "Valida la rentabilidad y renta anual declarada.",
+    },
+    {
+      id: "boletas_honorarios",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Resumen de boletas de honorarios electrónicas emitidas",
+      subtitle: "Informe emitido en el portal SII correspondiente a los últimos 12 a 24 meses.",
+      mitigatesRisks: ["contrato_independiente", "contrato_honorarios_variable"],
+      priorityBadge: "Prioritario: Boletas de Honorarios",
+      priorityReason: "Respalda la regularidad mensual de ingresos.",
+    },
+    {
+      id: "carpeta_tributaria",
+      category: "Acreditación Laboral e Ingresos",
+      title: "Carpeta Tributaria Electrónica para solicitud de créditos (SII)",
+      subtitle: "Carpeta SII oficial que consolida Formularios 22 y 29 de los últimos 24 meses.",
+      mitigatesRisks: ["contrato_independiente", "continuidad_baja", "continuidad_laboral_baja"],
+      priorityBadge: "Prioritario: Carpeta Tributaria SII",
+      priorityReason: "Requisito formal clave para la evaluación bancaria de independientes.",
+    },
+  ],
+  mitigacion: [
+    {
+      id: "aclaracion_dicom",
+      category: "Antecedentes de Mitigación Comercial",
+      title: "Certificados de aclaración, regularización y deuda al día",
+      subtitle: "Comprobantes de pago o carta de aclaración emitida por el acreedor (DICOM / Boletín).",
+      mitigatesRisks: ["morosidad_alta", "morosidad_media", "morosidad_vigente", "morosidad_desconocida"],
+      priorityBadge: "Prioritario: Aclaración de Morosidad",
+      priorityReason: "Indispensable para levantar observaciones de morosidad comercial.",
+    },
+    {
+      id: "finiquito_deudas",
+      category: "Antecedentes de Mitigación Comercial",
+      title: "Certificados de pago total o finiquitos de deudas liquidadas",
+      subtitle: "Comprobante de prepago de créditos de consumo o tarjetas extinguidas.",
+      mitigatesRisks: ["deuda_alta", "deuda_actual_alta", "carga_total_alta"],
+      priorityBadge: "Prioritario: Reducción de Carga",
+      priorityReason: "Demuestra la liberación de capacidad de pago mensual.",
+    },
+  ],
+};
 
 export default function BankingChecklist({ evaluation, input: propInput, result: propResult }) {
   const result = evaluation?.result || propResult || {};
   const input = evaluation?.input || propInput || {};
 
-  // Determine default work regime from input
   const initialRegime = useMemo(() => {
     const contract = (input.tipo_contrato || "").toLowerCase();
-    if (contract === "independiente" || contract === "honorarios_variable") {
-      return "independiente";
-    }
-    return "dependiente";
+    return contract === "independiente" || contract === "honorarios_variable" ? "independiente" : "dependiente";
   }, [input.tipo_contrato]);
 
   const [workRegime, setWorkRegime] = useState(initialRegime);
 
-  // Sync state if initialRegime changes
   useEffect(() => {
     setWorkRegime(initialRegime);
   }, [initialRegime]);
 
-  // Set of active risk/blocker codes detected by scoring API
+  // Active risk codes set
   const activeRiskCodes = useMemo(() => {
     const codes = new Set();
-    if (Array.isArray(result?.risk_codes)) {
-      result.risk_codes.forEach((c) => codes.add(c));
-    }
-    if (Array.isArray(result?.blockers)) {
-      result.blockers.forEach((b) => b?.code && codes.add(b.code));
-    }
-    if (result?.main_blocker?.code) {
-      codes.add(result.main_blocker.code);
-    }
-    // Also check input properties if risk_codes were omitted
+    if (Array.isArray(result?.risk_codes)) result.risk_codes.forEach((c) => codes.add(c));
+    if (Array.isArray(result?.blockers)) result.blockers.forEach((b) => b?.code && codes.add(b.code));
+    if (result?.main_blocker?.code) codes.add(result.main_blocker.code);
+
     if (input.morosidad_actual === "si") codes.add("morosidad_alta");
     if (input.morosidad_actual === "no_lo_se") codes.add("morosidad_media");
     if (input.tipo_contrato === "independiente") codes.add("contrato_independiente");
     if (input.continuidad_laboral === "menos_6_meses") codes.add("continuidad_baja");
-    if (input.continuidad_laboral === "entre_6_y_12_meses") codes.add("continuidad_media");
     return codes;
   }, [result, input]);
 
-  // Checkbox local state
-  const storageKey = useMemo(() => {
-    const evalId = evaluation?.id || "draft_checklist";
-    return `scoreleads_checklist_state_${evalId}`;
-  }, [evaluation?.id]);
-
-  const [checkedItems, setCheckedItems] = useState(() => {
+  // Local storage state for user checkboxes
+  const storageKey = useMemo(() => `scoreleads_chk_${evaluation?.id || "draft"}`, [evaluation?.id]);
+  const [checked, setChecked] = useState(() => {
     try {
       const stored = localStorage.getItem(storageKey);
       return stored ? JSON.parse(stored) : {};
@@ -205,197 +146,131 @@ export default function BankingChecklist({ evaluation, input: propInput, result:
   });
 
   const toggleCheck = (id) => {
-    const next = { ...checkedItems, [id]: !checkedItems[id] };
-    setCheckedItems(next);
+    const next = { ...checked, [id]: !checked[id] };
+    setChecked(next);
     try {
       localStorage.setItem(storageKey, JSON.stringify(next));
     } catch (e) {
-      console.warn("No se pudo guardar el avance en localStorage", e);
+      console.warn("Error guardando checklist en localStorage", e);
     }
   };
 
-  // Helper to test if an item is highlighted by active risks
-  const isItemHighlighted = (item) => {
-    return item.mitigatesRisks.some((risk) => activeRiskCodes.has(risk));
-  };
-
-  // Items relevant for current work regime
-  const relevantItems = useMemo(() => {
-    return BASE_CHECKLIST.filter((item) => item.requiredFor.includes(workRegime));
+  // Combine items for current regime
+  const currentList = useMemo(() => {
+    return [
+      ...CHECKLIST_DATA.common,
+      ...(workRegime === "independiente" ? CHECKLIST_DATA.independiente : CHECKLIST_DATA.dependiente),
+      ...CHECKLIST_DATA.mitigacion,
+    ];
   }, [workRegime]);
 
-  // Priority / Highlighted items (Criterio E2)
-  const highlightedItems = useMemo(() => {
-    return relevantItems.filter(isItemHighlighted);
-  }, [relevantItems, activeRiskCodes]);
+  // Filter 1 or 2 priority documents for active blocker (Criterio E2)
+  const priorityItems = useMemo(() => {
+    return currentList.filter((item) => item.mitigatesRisks.some((r) => activeRiskCodes.has(r)));
+  }, [currentList, activeRiskCodes]);
 
-  // Progress metrics
-  const completedCount = useMemo(() => {
-    return relevantItems.filter((item) => checkedItems[item.id]).length;
-  }, [relevantItems, checkedItems]);
-
-  const progressPercent = Math.round((completedCount / (relevantItems.length || 1)) * 100);
-
-  const categories = [
-    { id: "identificacion", label: "🆔 Identificación y Domicilio" },
-    { id: "ahorro", label: "🏦 Ahorro y Capital Inicial" },
-    {
-      id: workRegime === "independiente" ? "ingresos_indep" : "ingresos_dep",
-      label: workRegime === "independiente" ? "💼 Antecedentes Independiente / SII" : "📄 Antecedentes Laborales / AFP",
-    },
-    { id: "mitigacion_comercial", label: "🛡️ Antecedentes Especiales y Mitigación" },
-  ];
+  const completedCount = currentList.filter((i) => checked[i.id]).length;
+  const progressPercent = Math.round((completedCount / (currentList.length || 1)) * 100);
 
   return (
-    <section className="section-block banking-checklist-panel">
-      <div className="section-heading">
-        <span className="eyebrow">HU11 · Criterios E1 & E2</span>
-        <h2>Checklist Referencial de Preparación Bancaria</h2>
-        <p>
-          Organiza la documentación exigida por la banca chilena según tu perfil laboral y antecedentes detectados en tu pre-evaluación.
-        </p>
+    <section className="section-block banking-checklist-minimal">
+      <div className="section-heading compact">
+        <span className="eyebrow">Preparación Bancaria</span>
+        <h2>Checklist Referencial de Antecedentes</h2>
+        <p>Antecedentes referenciales para tu evaluación formal en la banca chilena (Spike 1).</p>
       </div>
 
-      {/* Criterio E1: Explicit Visual Disclaimer Banner */}
-      <div className="checklist-disclaimer-banner" role="alert">
-        <div className="disclaimer-icon-badge">🛡️</div>
-        <div className="disclaimer-text-content">
-          <strong>Checklist Formativo y Referencial — NO subas ni envíes documentos a la plataforma</strong>
-          <p>
-            Esta lista es una guía de preparación personal. ScoreLeads <strong>NO solicita, no almacena ni recibe archivos personales o bancarios sensibles</strong> (cédulas, liquidaciones, claves ni cartolas). Conserva tus documentos en tu dispositivo privado.
-          </p>
+      {/* Criterio E1: Clean Sober Disclaimer Banner */}
+      <div className="minimal-disclaimer-banner" role="alert">
+        <span className="disclaimer-icon">🛡️</span>
+        <div className="disclaimer-body">
+          <strong>Checklist Formativo y Referencial</strong>
+          <span>No requiere ni solicita carga de documentos sensibles en esta plataforma.</span>
         </div>
       </div>
 
-      {/* Work Regime Segmented Switch */}
-      <div className="checklist-controls-bar">
-        <div className="regime-toggle-container">
-          <span className="control-label">Régimen Laboral:</span>
-          <div className="segmented-control regime-selector">
-            <button
-              type="button"
-              className={workRegime === "dependiente" ? "is-active" : ""}
-              onClick={() => setWorkRegime("dependiente")}
-            >
-              👔 Trabajador Dependiente
-            </button>
-            <button
-              type="button"
-              className={workRegime === "independiente" ? "is-active" : ""}
-              onClick={() => setWorkRegime("independiente")}
-            >
-              💼 Independiente / Honorarios
-            </button>
-          </div>
+      {/* Regime Toggle & Progress Bar */}
+      <div className="minimal-checklist-toolbar">
+        <div className="regime-segmented-toggle">
+          <button
+            type="button"
+            className={workRegime === "dependiente" ? "is-active" : ""}
+            onClick={() => setWorkRegime("dependiente")}
+          >
+            Dependiente
+          </button>
+          <button
+            type="button"
+            className={workRegime === "independiente" ? "is-active" : ""}
+            onClick={() => setWorkRegime("independiente")}
+          >
+            Independiente / Honorarios
+          </button>
         </div>
 
-        {/* Progress Tracker */}
-        <div className="checklist-progress-tracker">
-          <div className="progress-text-label">
-            <span>Progreso de preparación:</span>
-            <strong>{completedCount} de {relevantItems.length} preparados ({progressPercent}%)</strong>
-          </div>
-          <div className="progress-bar-track">
-            <div className="progress-bar-fill" style={{ width: `${progressPercent}%` }} />
+        <div className="minimal-progress">
+          <span>Preparados: {completedCount} / {currentList.length} ({progressPercent}%)</span>
+          <div className="progress-track">
+            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
           </div>
         </div>
       </div>
 
-      {/* Criterio E2: Highlighted Priority Section */}
-      {highlightedItems.length > 0 && (
-        <div className="priority-mitigation-section">
-          <div className="priority-header">
-            <span className="priority-badge">🎯 Documentos Prioritarios para tu Caso</span>
-            <h3>Antecedentes clave para mitigar observaciones de tu pre-evaluación</h3>
-            <p>Destacados dinámicamente según los factores de riesgo o bloqueadores detectados en tu score:</p>
-          </div>
-
-          <div className="priority-items-grid">
-            {highlightedItems.map((item) => {
-              const isChecked = Boolean(checkedItems[item.id]);
-              return (
-                <div key={`priority-${item.id}`} className={`priority-item-card ${isChecked ? "is-checked" : ""}`}>
-                  <div className="priority-card-top">
-                    <span className="priority-tag">{item.mitigationBadge}</span>
-                    <label className="checkbox-wrap">
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleCheck(item.id)}
-                      />
-                      <span>{isChecked ? "Listo" : "Marcar preparado"}</span>
-                    </label>
+      {/* Criterio E2: Compact Dynamic Priority Documents Block */}
+      {priorityItems.length > 0 && (
+        <div className="compact-priority-block">
+          <div className="priority-header-tag">🎯 Antecedentes Prioritarios para tu Perfil</div>
+          <ul className="priority-minimal-list">
+            {priorityItems.map((item) => (
+              <li key={`prio-${item.id}`} className={checked[item.id] ? "is-done" : ""}>
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(checked[item.id])}
+                    onChange={() => toggleCheck(item.id)}
+                  />
+                  <div>
+                    <strong>{item.title}</strong>
+                    <span className="prio-reason"> — {item.priorityReason}</span>
                   </div>
-                  <div className="priority-card-body">
-                    <span className="item-icon">{item.icon}</span>
-                    <div>
-                      <strong className="item-title">{item.title}</strong>
-                      <p className="item-subtitle">{item.subtitle}</p>
-                    </div>
-                  </div>
-                  {item.mitigationReason && (
-                    <div className="priority-reason-box">
-                      <strong>💡 ¿Por qué es prioritario?:</strong> {item.mitigationReason}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                </label>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
-      {/* Full Categorized Checklist */}
-      <div className="checklist-categories-list">
-        <h3>Listado General de Antecedentes por Categoría</h3>
+      {/* Clean Full List */}
+      <div className="minimal-checklist-group">
+        <h4 className="group-title">Antecedentes Generales y Laborales</h4>
+        <ul className="checklist-minimal-rows">
+          {currentList.map((item) => {
+            const isPrio = item.mitigatesRisks.some((r) => activeRiskCodes.has(r));
+            const isChecked = Boolean(checked[item.id]);
 
-        {categories.map((cat) => {
-          const categoryItems = relevantItems.filter((i) => i.category === cat.id);
-          if (!categoryItems.length) return null;
-
-          return (
-            <div key={cat.id} className="checklist-category-block">
-              <h4 className="category-title">{cat.label}</h4>
-              <div className="category-items-list">
-                {categoryItems.map((item) => {
-                  const isChecked = Boolean(checkedItems[item.id]);
-                  const isHighlighted = isItemHighlighted(item);
-
-                  return (
-                    <div
-                      key={item.id}
-                      className={`checklist-row-item ${isHighlighted ? "is-highlighted" : ""} ${
-                        isChecked ? "is-checked" : ""
-                      }`}
-                    >
-                      <div className="item-checkbox-col">
-                        <input
-                          type="checkbox"
-                          id={`chk-${item.id}`}
-                          checked={isChecked}
-                          onChange={() => toggleCheck(item.id)}
-                        />
-                      </div>
-                      <div className="item-content-col">
-                        <label htmlFor={`chk-${item.id}`} className="item-header-label">
-                          <span className="item-icon">{item.icon}</span>
-                          <strong className="item-name">{item.title}</strong>
-                          {isHighlighted && <span className="highlight-pill">{item.mitigationBadge}</span>}
-                        </label>
-                        <p className="item-desc">{item.subtitle}</p>
-                        {isHighlighted && item.mitigationReason && (
-                          <div className="item-inline-reason">
-                            <strong>Motivo de destacado:</strong> {item.mitigationReason}
-                          </div>
-                        )}
-                      </div>
+            return (
+              <li
+                key={item.id}
+                className={`minimal-row ${isPrio ? "is-priority" : ""} ${isChecked ? "is-checked" : ""}`}
+              >
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleCheck(item.id)}
+                  />
+                  <div className="row-info">
+                    <div className="row-title-line">
+                      <strong>{item.title}</strong>
+                      {isPrio && <span className="prio-pill">{item.priorityBadge}</span>}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+                    <span className="row-desc">{item.subtitle}</span>
+                  </div>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </section>
   );
