@@ -281,7 +281,7 @@ export default function AuthPanel({ onAuth, onBack, onModeChange, initialMode = 
         </div>
       )}
       <div className="auth-copy">
-        <img src="/Logo RutaHogar.png" alt="RutaHogar" />
+        <img src="/brand/rutahogar/logo-rutahogar.svg" alt="RutaHogar" />
         <span className="eyebrow">Acceso a RutaHogar</span>
         <h1>Ingresa a tu pre-evaluación</h1>
         <p>

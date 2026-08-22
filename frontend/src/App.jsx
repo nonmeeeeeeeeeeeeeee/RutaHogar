@@ -17,6 +17,7 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import SimulationPage from "./components/SimulationPage";
 import SignupOffer from "./components/SignupOffer";
 import RegisterMilestone from "./components/RegisterMilestone";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, saveHousingPlanProgress } from "./services/evaluationService";
@@ -228,6 +229,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "home") return "/inicio";
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
   if (page === "recommendations") return "/recomendaciones";
+  if (page === "simulation") return "/simulacion";
   if (page === "academia") return "/academia";
   if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
   if (page === "profile") return "/perfil";
@@ -246,6 +248,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/precalificacion",
     "/pre-evaluacion",
     "/recomendaciones",
+    "/simulacion",
     "/academia",
     "/plan-mejora",
     "/perfil",
@@ -261,7 +264,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "landing", path: path === "/inicio" ? "/" : undefined };
@@ -278,6 +281,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
       };
     }
     if (path === "/recomendaciones") return { page: "recommendations" };
+    if (path === "/simulacion") return { page: "simulation" };
     if (path === "/academia") return { page: "academia" };
     if (path === "/plan-mejora") return { page: "tracking" };
     if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
@@ -1449,6 +1453,12 @@ export default function App() {
           evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
+        />
+      ) : page === "simulation" && profile.role === roles.user ? (
+        <SimulationPage
+          evaluation={currentEvaluation}
+          onboarding={userOnboarding}
+          onStartEvaluation={startEvaluation}
         />
       ) : page === "academia" && profile.role === roles.user ? (
         <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} />

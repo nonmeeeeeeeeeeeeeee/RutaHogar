@@ -4,7 +4,7 @@ export default function AnonHeader({ onLogin, onHome }) {
   return (
     <header className="anon-header">
       <img
-        src="/Logo RutaHogar.png"
+        src="/brand/rutahogar/logo-rutahogar.svg"
         alt="RutaHogar"
         className="anon-header-logo"
         onClick={onHome}

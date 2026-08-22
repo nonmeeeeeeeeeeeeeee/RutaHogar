@@ -4,7 +4,18 @@ Este documento es el punto central para registrar reglas financieras, criterios 
 
 ## Estado actual
 
-No se agregan ni modifican reglas de scoring en esta actualizacion documental.
+No se modifica el scoring implementado. Este documento registra reglas vigentes para que las HUs que simulan compatibilidad no inventen umbrales durante la implementacion.
+
+## Reglas vigentes referenciadas por HU6
+
+Para HU6, la simulacion debe usar estas reglas ya documentadas en el proyecto:
+
+- Pie minimo referencial: 10% del valor de vivienda.
+- Pie recomendado referencial: 20% del valor de vivienda.
+- Dividendo prudente referencial: hasta 25% del ingreso usado para capacidad.
+- Carga alta de deuda: deuda mensual superior al 40% del ingreso mensual.
+
+Estas reglas se usan para orientar compatibilidad de escenarios y no crean un scoring nuevo.
 
 ## Uso esperado
 
@@ -25,4 +36,3 @@ Actualizar este archivo solo cuando el equipo trabaje una HU o cambio que afecte
 - La IA puede explicar resultados calculados, pero no decidir el score.
 - Todo resultado financiero debe mantenerse como referencial.
 - Cualquier regla nueva debe indicar fuente, justificacion y alcance.
-
