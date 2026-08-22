@@ -38,7 +38,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
           onClick={() => handleNavigate("landing")}
           aria-label="Ir al inicio"
         >
-          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
+          <img src="/Logo RutaHogar.png" alt="RutaHogar" />
         </button>
 
         <div className="navbar-right">

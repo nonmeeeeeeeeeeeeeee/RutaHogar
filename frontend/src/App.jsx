@@ -1294,7 +1294,7 @@ export default function App() {
           <section className="hero">
             <div className="hero-copy">
               <span className="eyebrow">Solución inmobiliaria</span>
-              <h1>ScoreLeads</h1>
+              <h1>RutaHogar</h1>
               {result && (
                 <div
                   className={
@@ -1318,7 +1318,7 @@ export default function App() {
               </p>
             </div>
 
-            <aside className="score-preview" aria-label="Resumen de ScoreLeads">
+            <aside className="score-preview" aria-label="Resumen de RutaHogar">
               <span className="preview-label">Flujo activo</span>
               <strong>Formulario - Score - Recomendaciones</strong>
               <p>Resultado orientativo: Alto, Medio o Bajo.</p>
@@ -1332,7 +1332,7 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la visión completa de ScoreLeads.
+                Estas tarjetas muestran la visión completa de RutaHogar.
                 Actualmente están habilitados el objetivo inmobiliario y la
                 pre-evaluación financiera.
               </p>

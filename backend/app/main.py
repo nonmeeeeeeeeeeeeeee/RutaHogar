@@ -26,7 +26,7 @@ VALID_RELATION_TYPES = {
     "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
 }
 
-app = FastAPI(title="ScoreLeads")
+app = FastAPI(title="RutaHogar")
 
 LOCAL_FRONTEND_ORIGINS = [
     "http://localhost:5173",
