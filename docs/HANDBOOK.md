@@ -128,7 +128,7 @@ in the plan, gets no number, and is promoted only when a second consumer appears
 
 **Rules:**
 
-- Written **before** the code, by a human, committed on the story branch.
+- Written **before** the code, by a human or human assisted generative ai, committed on the story branch.
 - The build session implements it and **never invents a number**.
 - The plan **references, never restates**.
 - **The developer decides the numbers.** We do not block a story waiting for business approval —
