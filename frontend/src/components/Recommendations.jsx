@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { buildRecommendations } from "../services/recommendationService";
 import { formatScore } from "../utils/helpers";
 import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
+import AiExplanationBlock from "./AiExplanationBlock";
 
 function LinkedText({ text, onOpenArticle }) {
   return splitTextWithGlossaryTerms(text).map((part, i) =>
@@ -13,7 +14,7 @@ function LinkedText({ text, onOpenArticle }) {
   );
 }
 
-export default function Recommendations({ evaluation, onStartEvaluation, onNavigate }) {
+export default function Recommendations({ evaluation, onStartEvaluation, onNavigate, onRetryExplanation }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
 
   // HU12 - E3: los términos financieros detectados en el texto abren la Academia.
@@ -52,12 +53,19 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
         <p>{data.summary}</p>
       </div>
 
-      {evaluation?.result?.ai_explanation ? (
         <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
           <strong>Explicación mejorada con IA</strong>
-          <p>{evaluation.result.ai_explanation}</p>
+
+          <AiExplanationBlock
+            text={evaluation?.result?.ai_explanation}
+            renderText={(t) => (
+              <p>
+                <LinkedText text={t} onOpenArticle={openInAcademy} />
+              </p>
+            )}
+            onRetry={onRetryExplanation}
+          />
         </section>
-      ) : null}
 
       <div className="recommendation-grid">
         <section>

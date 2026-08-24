@@ -1,13 +1,13 @@
 import React from "react";
-import { normalizeDisplayList, hasUsableAiText } from "../utils/text";
+import { normalizeDisplayList } from "../utils/text";
+import AiExplanationBlock from "./AiExplanationBlock";
 
-export default function Result({ data }) {
-  const { score, classification, risks = [], recommendations = [], ai_explanation } = data;
+export default function Result({ data, onRetryExplanation }) {
+  const { score, classification, risks = [], recommendations = [] } = data;
   const visibleScore = Number.isFinite(Number(score)) ? Math.round(Number(score)) : score;
   const tone = classification === "Alto" ? "high" : classification === "Medio" ? "medium" : "low";
   const visibleRisks = normalizeDisplayList(risks);
   const briefRecommendations = normalizeDisplayList(recommendations).slice(0, 3);
-  const hasExplanation = hasUsableAiText(ai_explanation);
 
   return (
     <div className="result-panel">
@@ -26,11 +26,11 @@ export default function Result({ data }) {
       <div className="result-grid">
         <section>
           <strong>Explicación mejorada con IA</strong>
-          {hasExplanation ? (
-            <p>{ai_explanation}</p>
-          ) : (
-            <p>La explicación automática no está disponible para esta evaluación.</p>
-          )}
+
+          <AiExplanationBlock
+            text={data.ai_explanation}
+            onRetry={onRetryExplanation}
+          />
         </section>
 
         <section>

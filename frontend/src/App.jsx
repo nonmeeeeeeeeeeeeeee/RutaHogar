@@ -1174,7 +1174,12 @@ export default function App() {
             </aside>
           </section>
 
-          {result && <Result data={result} />}
+          {result && (
+        <Result
+          data={result}
+          onRetryExplanation={currentEvaluation ? handleRetryAiExplanation : undefined}
+        />
+      )}
 
           <section className="section-block">
             <div className="section-heading">
@@ -1279,6 +1284,7 @@ export default function App() {
           evaluation={currentEvaluation}
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
+          onRetryExplanation={handleRetryAiExplanation}
         />
       ) : page === "academia" && profile.role === roles.user ? (
         <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} onRetryExplanation={handleRetryAiExplanation} />

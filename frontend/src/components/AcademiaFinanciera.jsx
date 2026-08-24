@@ -10,7 +10,7 @@ import {
   getCapsulesForTopic,
 } from "../constants/academyContent";
 import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
-import { hasUsableAiText } from "../utils/text";
+import AiExplanationBlock from "./AiExplanationBlock";
 
 const LEVEL_ORDER = {
   Básico: 0,
@@ -877,27 +877,6 @@ function InterpretaTab({ evaluation, onStartEvaluation, onOpenArticle, onRetryEx
   const risks = result?.risks || [];
   const positives = result?.positive_indicators || [];
 
-  const [retrying, setRetrying] = useState(false);
-  const [retryFailed, setRetryFailed] = useState(false);
-
-  // La explicación solo se muestra si es contenido real; textos de error o
-  // placeholders de versiones anteriores se tratan como ausentes.
-  const hasExplanation = hasUsableAiText(result?.ai_explanation);
-
-  const handleRetry = async () => {
-    if (!onRetryExplanation || retrying) return;
-    setRetrying(true);
-    setRetryFailed(false);
-    try {
-      const ok = await onRetryExplanation();
-      if (!ok) setRetryFailed(true);
-    } catch {
-      setRetryFailed(true);
-    } finally {
-      setRetrying(false);
-    }
-  };
-
   // Artículos recomendados según los riesgos detectados.
   const suggestedArticles = useMemo(() => {
     if (!result) return [];
@@ -961,54 +940,11 @@ function InterpretaTab({ evaluation, onStartEvaluation, onOpenArticle, onRetryEx
               : "Tu perfil no muestra riesgos relevantes"}
           </h3>
 
-          <p>
-            {hasExplanation
-              ? renderTextWithGlossary(result.ai_explanation, onOpenArticle)
-              : null}
-          </p>
-
-          {!hasExplanation && (
-            <div className="academy-ai-retry">
-              <span className="academy-ai-retry-icon">
-                <i className="ti ti-message-chatbot" aria-hidden="true" />
-              </span>
-
-              <div className="academy-ai-retry-body">
-                <strong>
-                  {retryFailed
-                    ? "No pudimos generar la explicación en este momento"
-                    : "Aún no tienes explicación automática"}
-                </strong>
-
-                <p>
-                  {retryFailed
-                    ? "Espera unos segundos e inténtalo nuevamente."
-                    : "Puedes generar un resumen personalizado de los factores de tu evaluación cuando quieras."}
-                </p>
-              </div>
-
-              {onRetryExplanation && (
-                <button
-                  type="button"
-                  className="academy-ai-retry-btn"
-                  onClick={handleRetry}
-                  disabled={retrying}
-                >
-                  {retrying ? (
-                    <>
-                      <span className="academy-spinner" aria-hidden="true" />
-                      Generando…
-                    </>
-                  ) : (
-                    <>
-                      <i className="ti ti-refresh" aria-hidden="true" />
-                      Intentar de nuevo
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
+          <AiExplanationBlock
+            text={result?.ai_explanation}
+            renderText={(t) => <p>{renderTextWithGlossary(t, onOpenArticle)}</p>}
+            onRetry={onRetryExplanation}
+          />
         </div>
 
         <ScoreDial score={result.score} classification={result.classification} />
