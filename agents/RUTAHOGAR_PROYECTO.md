@@ -62,6 +62,6 @@ Evitar cambios funcionales innecesarios en esta tarea. No renombrar identificado
 
 La planificación vigente de HUs corresponde al PDF actualizado:
 
-`HUs para Sprint 1 (2).pdf`
+`HUs para Sprint 1.pdf`
 
 Este archivo reemplaza versiones anteriores del backlog usadas en documentación previa.

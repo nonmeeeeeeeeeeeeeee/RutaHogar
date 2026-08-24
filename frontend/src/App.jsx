@@ -437,6 +437,11 @@ export default function App() {
         }
       : null;
 
+  useEffect(() => {
+    document.body.classList.toggle("simulation-layout-mode", page === "simulation");
+    return () => document.body.classList.remove("simulation-layout-mode");
+  }, [page]);
+
   const updateBrowserPath = (nextPath, options = {}) => {
     const currentPath = window.location.href.includes("#")
       ? window.location.href.slice(window.location.origin.length)
@@ -1251,7 +1256,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${page === "simulation" ? "simulation-shell" : ""}`}>
       <Navbar
         profile={profile}
         page={page}
@@ -1459,6 +1464,7 @@ export default function App() {
           evaluation={currentEvaluation}
           onboarding={userOnboarding}
           onStartEvaluation={startEvaluation}
+          onNavigate={navigateToPage}
         />
       ) : page === "academia" && profile.role === roles.user ? (
         <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} />

@@ -12,6 +12,12 @@ const statusRank = {
   "Requiere ajuste": 2,
 };
 
+const statusLevel = {
+  Compatible: 3,
+  Cercano: 2,
+  "Requiere ajuste": 1,
+};
+
 const timelineLabels = {
   "0_3_meses": "Tu horizonte es corto, por eso conviene mirar primero brechas inmediatas de pie, deuda y dividendo.",
   "3_6_meses": "Tu horizonte permite ajustar algunas brechas, pero conviene priorizar escenarios con baja diferencia de pie y dividendo.",
@@ -270,6 +276,222 @@ function getPreferenceScore(project, onboarding = {}) {
   return {
     communeMatch: Boolean(targetCommune && projectCommune && targetCommune === projectCommune),
     typeMatch: Boolean(preferredType && projectType && preferredType === projectType),
+  };
+}
+
+function getScenarioPreference(result, preferences = {}) {
+  const scenario = result?.scenario || {};
+  const project = result?.project || scenario.project || {};
+  const targetCommune = normalizeText(preferences.comuna_interes || preferences.comuna_objetivo);
+  const scenarioCommune = normalizeText(scenario.comuna || project.comuna);
+  const preferredType = normalizeType(preferences.tipo_propiedad || preferences.tipo_vivienda_preferida);
+  const scenarioType = normalizeType(scenario.tipo_vivienda || project.tipo_vivienda);
+
+  return {
+    communeMatch: Boolean(targetCommune && scenarioCommune && targetCommune === scenarioCommune),
+    typeMatch: Boolean(preferredType && scenarioType && preferredType === scenarioType),
+  };
+}
+
+function getScenarioLabel(result) {
+  return result?.scenario?.label || result?.project?.nombre || "escenario";
+}
+
+function addAdvantage(target, condition, message) {
+  if (condition) target.push(message);
+}
+
+function compareNumber(currentValue, alternativeValue, tolerance = 0) {
+  const current = toNumber(currentValue);
+  const alternative = toNumber(alternativeValue);
+  if (Math.abs(current - alternative) <= tolerance) return 0;
+  return current < alternative ? -1 : 1;
+}
+
+export function buildComparisonInsights(current, alternative, preferences = {}) {
+  if (!current || !alternative) {
+    return {
+      recommendation: "sin_datos_suficientes",
+      title: "Faltan datos para comparar",
+      summary: "Primero selecciona un escenario actual y una alternativa.",
+      advantages: { current: [], alternative: [] },
+      considerations: ["Selecciona una alternativa para generar un análisis comparativo."],
+      metrics: [],
+    };
+  }
+
+  const currentPreference = getScenarioPreference(current, preferences);
+  const alternativePreference = getScenarioPreference(alternative, preferences);
+  const currentAdvantages = [];
+  const alternativeAdvantages = [];
+  const considerations = [];
+  const currentName = getScenarioLabel(current);
+  const alternativeName = getScenarioLabel(alternative);
+  const valueComparison = compareNumber(current.valueUf, alternative.valueUf, 1);
+  const minDownPaymentComparison = compareNumber(current.pieMinimoUf, alternative.pieMinimoUf, 1);
+  const recommendedDownPaymentComparison = compareNumber(current.pieRecomendadoUf, alternative.pieRecomendadoUf, 1);
+  const gapComparison = compareNumber(current.gapMinimoUf, alternative.gapMinimoUf, 1);
+  const currentStatusRank = statusRank[current.status] ?? 9;
+  const alternativeStatusRank = statusRank[alternative.status] ?? 9;
+
+  addAdvantage(currentAdvantages, currentStatusRank < alternativeStatusRank, "Tiene mejor estado de compatibilidad.");
+  addAdvantage(alternativeAdvantages, alternativeStatusRank < currentStatusRank, "Tiene mejor estado de compatibilidad.");
+  addAdvantage(currentAdvantages, valueComparison < 0, "Tiene menor valor de vivienda.");
+  addAdvantage(alternativeAdvantages, valueComparison > 0, "Tiene menor valor de vivienda.");
+  addAdvantage(currentAdvantages, minDownPaymentComparison < 0, "Requiere menor pie mínimo.");
+  addAdvantage(alternativeAdvantages, minDownPaymentComparison > 0, "Requiere menor pie mínimo.");
+  addAdvantage(currentAdvantages, recommendedDownPaymentComparison < 0, "Requiere menor pie recomendado.");
+  addAdvantage(alternativeAdvantages, recommendedDownPaymentComparison > 0, "Requiere menor pie recomendado.");
+  addAdvantage(currentAdvantages, gapComparison < 0, "Tiene menor brecha de pie.");
+  addAdvantage(alternativeAdvantages, gapComparison > 0, "Tiene menor brecha de pie.");
+  addAdvantage(currentAdvantages, currentPreference.communeMatch && !alternativePreference.communeMatch, "Coincide con tu comuna objetivo.");
+  addAdvantage(alternativeAdvantages, alternativePreference.communeMatch && !currentPreference.communeMatch, "Coincide con tu comuna objetivo.");
+  addAdvantage(currentAdvantages, currentPreference.typeMatch && !alternativePreference.typeMatch, "Coincide con tu tipo de vivienda preferido.");
+  addAdvantage(alternativeAdvantages, alternativePreference.typeMatch && !currentPreference.typeMatch, "Coincide con tu tipo de vivienda preferido.");
+
+  if (gapComparison > 0 && !alternativePreference.communeMatch && currentPreference.communeMatch) {
+    considerations.push("La alternativa reduce la brecha de pie, pero no coincide con tu comuna objetivo.");
+  }
+  if (gapComparison > 0 && !alternativePreference.typeMatch && currentPreference.typeMatch) {
+    considerations.push("La alternativa exige menos ahorro, pero no coincide con tu tipo de vivienda preferido.");
+  }
+  if (gapComparison < 0 && !currentPreference.communeMatch && alternativePreference.communeMatch) {
+    considerations.push("El escenario actual tiene menor brecha, pero la alternativa calza mejor con tu comuna objetivo.");
+  }
+  if (gapComparison < 0 && !currentPreference.typeMatch && alternativePreference.typeMatch) {
+    considerations.push("El escenario actual tiene menor brecha, pero la alternativa calza mejor con tu tipo de vivienda preferido.");
+  }
+  if (currentStatusRank < alternativeStatusRank && alternativePreference.communeMatch && !currentPreference.communeMatch) {
+    considerations.push("El escenario actual tiene mejor compatibilidad, pero la alternativa se acerca mas a tu comuna objetivo.");
+  }
+  if (alternativeStatusRank < currentStatusRank && currentPreference.communeMatch && !alternativePreference.communeMatch) {
+    considerations.push("La alternativa tiene mejor compatibilidad, pero el escenario actual se acerca mas a tu comuna objetivo.");
+  }
+  if (considerations.length === 0 && valueComparison === 0 && gapComparison === 0 && currentStatusRank === alternativeStatusRank) {
+    considerations.push("Ambos escenarios son similares financieramente; la decision depende mas de comuna, tipo de vivienda u horizonte.");
+  }
+  if (considerations.length === 0) {
+    considerations.push("No se detecta una diferencia decisiva; revisa preferencias de comuna, tipo de vivienda y horizonte antes de decidir.");
+  }
+
+  const currentFinancialWins =
+    (currentStatusRank < alternativeStatusRank ? 1 : 0) +
+    (valueComparison < 0 ? 1 : 0) +
+    (gapComparison < 0 ? 1 : 0);
+  const alternativeFinancialWins =
+    (alternativeStatusRank < currentStatusRank ? 1 : 0) +
+    (valueComparison > 0 ? 1 : 0) +
+    (gapComparison > 0 ? 1 : 0);
+  const currentPreferenceWins =
+    (currentPreference.communeMatch && !alternativePreference.communeMatch ? 1 : 0) +
+    (currentPreference.typeMatch && !alternativePreference.typeMatch ? 1 : 0);
+  const alternativePreferenceWins =
+    (alternativePreference.communeMatch && !currentPreference.communeMatch ? 1 : 0) +
+    (alternativePreference.typeMatch && !currentPreference.typeMatch ? 1 : 0);
+
+  let recommendation = "similar";
+  if (currentFinancialWins >= 2 && currentFinancialWins > alternativeFinancialWins) {
+    recommendation = "escenario_actual";
+  } else if (alternativeFinancialWins >= 2 && alternativeFinancialWins > currentFinancialWins) {
+    recommendation = "alternativa";
+  } else if (currentStatusRank < alternativeStatusRank && gapComparison <= 0) {
+    recommendation = "escenario_actual";
+  } else if (alternativeStatusRank < currentStatusRank && gapComparison >= 0) {
+    recommendation = "alternativa";
+  } else if (currentAdvantages.length === 0 && alternativeAdvantages.length === 0) {
+    recommendation = "similar";
+  }
+
+  const titleByRecommendation = {
+    escenario_actual: `Escenario mas conveniente de forma referencial: ${currentName}`,
+    alternativa: `Escenario mas conveniente de forma referencial: ${alternativeName}`,
+    similar: "Ambos escenarios son similares",
+    sin_datos_suficientes: "Faltan datos para comparar",
+  };
+
+  const summaryByRecommendation = {
+    escenario_actual:
+      currentPreferenceWins < alternativePreferenceWins
+        ? "El escenario actual se ve financieramente mas holgado, aunque la alternativa puede estar mejor alineada a tus preferencias."
+        : "El escenario actual concentra mejores condiciones referenciales en compatibilidad, valor o brecha.",
+    alternativa:
+      alternativePreferenceWins < currentPreferenceWins
+        ? "La alternativa se ve financieramente mas holgada, aunque el escenario actual puede estar mejor alineado a tus preferencias."
+        : "La alternativa concentra mejores condiciones referenciales en compatibilidad, valor o brecha.",
+    similar: "No hay una ventaja financiera clara; conviene decidir mirando comuna, tipo de vivienda y horizonte.",
+    sin_datos_suficientes: "Primero selecciona dos escenarios comparables.",
+  };
+
+  const maxValueUf = Math.max(toNumber(current.valueUf), toNumber(alternative.valueUf), 1);
+  const maxPieMinUf = Math.max(toNumber(current.pieMinimoUf), toNumber(alternative.pieMinimoUf), 1);
+  const maxGapUf = Math.max(toNumber(current.gapMinimoUf), toNumber(alternative.gapMinimoUf), 1);
+
+  return {
+    recommendation,
+    title: titleByRecommendation[recommendation],
+    summary: summaryByRecommendation[recommendation],
+    advantages: {
+      current: currentAdvantages.length ? currentAdvantages : ["No presenta una ventaja clara frente a la alternativa."],
+      alternative: alternativeAdvantages.length ? alternativeAdvantages : ["No presenta una ventaja clara frente al escenario actual."],
+    },
+    considerations,
+    preference: {
+      current: currentPreference,
+      alternative: alternativePreference,
+    },
+    deltas: {
+      valueUf: toNumber(alternative.valueUf) - toNumber(current.valueUf),
+      pieMinimoUf: toNumber(alternative.pieMinimoUf) - toNumber(current.pieMinimoUf),
+      pieRecomendadoUf: toNumber(alternative.pieRecomendadoUf) - toNumber(current.pieRecomendadoUf),
+      gapMinimoUf: toNumber(alternative.gapMinimoUf) - toNumber(current.gapMinimoUf),
+      statusChanged: current.status !== alternative.status,
+      communeDifferent:
+        normalizeText(current.scenario?.comuna || current.project?.comuna) !==
+        normalizeText(alternative.scenario?.comuna || alternative.project?.comuna),
+      typeDifferent:
+        normalizeType(current.scenario?.tipo_vivienda || current.project?.tipo_vivienda) !==
+        normalizeType(alternative.scenario?.tipo_vivienda || alternative.project?.tipo_vivienda),
+    },
+    metrics: [
+      {
+        id: "valor",
+        label: "Valor vivienda",
+        current: toNumber(current.valueUf),
+        alternative: toNumber(alternative.valueUf),
+        max: maxValueUf,
+        lowerIsBetter: true,
+        unit: "UF",
+      },
+      {
+        id: "pie-minimo",
+        label: "Pie minimo requerido",
+        current: toNumber(current.pieMinimoUf),
+        alternative: toNumber(alternative.pieMinimoUf),
+        max: maxPieMinUf,
+        lowerIsBetter: true,
+        unit: "UF",
+      },
+      {
+        id: "brecha-pie",
+        label: "Brecha de pie",
+        current: toNumber(current.gapMinimoUf),
+        alternative: toNumber(alternative.gapMinimoUf),
+        max: maxGapUf,
+        lowerIsBetter: true,
+        unit: "UF",
+      },
+      {
+        id: "compatibilidad",
+        label: "Compatibilidad",
+        current: statusLevel[current.status] || 0,
+        alternative: statusLevel[alternative.status] || 0,
+        max: 3,
+        lowerIsBetter: false,
+        unit: "",
+        currentLabel: current.status,
+        alternativeLabel: alternative.status,
+      },
+    ],
   };
 }
 

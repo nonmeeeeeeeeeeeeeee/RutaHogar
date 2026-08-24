@@ -51,10 +51,19 @@ Lead / usuario interesado en comprar vivienda.
 9. El valor maximo estimado debe mostrarse en UF y CLP.
 10. El valor maximo estimado es una orientacion por ahorro/capacidad declarada, no financiamiento real ni monto aprobado.
 11. El pie minimo y el pie recomendado siempre se calculan sobre el valor del escenario; no deben confundirse con el rango referencial por ahorro.
-12. Las alternativas accesibles deben incluir una accion `Comparar` para contrastarlas directamente contra el escenario actual.
+12. Las alternativas accesibles deben incluir una accion `Comparar` o `Comparar con escenario actual` para contrastarlas directamente contra el escenario actual.
 13. La comparacion principal debe estar visible cerca del selector de escenario, mostrando claramente `Escenario A` y `Escenario B`.
 14. Si aun no hay alternativa seleccionada, el panel de comparacion debe indicar que el usuario debe elegir una alternativa desde las opciones accesibles.
 15. Al comparar desde una tarjeta, la vista debe desplazarse al panel superior de comparacion para que el usuario vea el resultado creado.
+16. No se usara la idea de `Seleccionar simulacion` en las tarjetas mientras la UI real use comparacion directa.
+17. La vista `Simulacion` puede usar un contenedor mas ancho que el resto de vistas para aprovechar mejor el espacio horizontal, sin cambiar el layout global de la aplicacion.
+18. La UI debe evitar exceso de marcos anidados; priorizar secciones limpias, separadores y columnas. Los marcos deben reservarse para resultado principal, comparacion, advertencias y elementos repetidos donde aporten claridad.
+19. HU6 debe mostrar un resumen discreto de las preferencias preliminares consideradas: comuna objetivo, tipo de vivienda, horizonte/plazo y objetivo inmobiliario si existen.
+20. HU6 debe explicar conceptos clave con ayudas breves y enlazar a Academia cuando sea posible.
+21. Las explicaciones de HU6 deben ser deterministicas o verificables. La IA no decide compatibilidad, no calcula estados y no modifica reglas.
+22. La comparacion no debe limitarse a valores lado a lado; debe explicar ventajas, desventajas, tradeoffs y una recomendacion referencial.
+23. La comparacion debe usar solo indicadores ya calculados por HU6 y no crear un score nuevo.
+24. La comparacion puede usar barras o graficos simples hechos con HTML/CSS, sin dependencias externas.
 
 ## Dependencias
 
@@ -103,6 +112,23 @@ Para cada escenario, el sistema deberia mostrar:
 - advertencia de caracter referencial.
 
 La simulacion debe priorizar alternativas que respeten preferencias del usuario cuando existan: tipo de vivienda, comuna objetivo, comunas de interes y horizonte de compra.
+
+## Presentacion visual de la vista
+
+La pantalla `Simulacion` puede usar un ancho mayor que las vistas generales para mostrar selector, rango referencial, resultado, comparacion y alternativas sin comprimir la informacion.
+
+La vista debe reducir marcos anidados innecesarios. Se recomiendan:
+
+- superficie principal limpia, sin caja grande adicional cuando ya existe el marco global;
+- secciones separadas por espaciado, titulos y lineas suaves;
+- marcos visibles solo en resultado principal, comparacion, disclaimers, advertencias y tarjetas repetidas;
+- layout responsive que vuelva a una columna en pantallas pequenas.
+
+La pantalla debe incluir un resumen `Preferencias consideradas` con datos preliminares disponibles. Este resumen no permite editar preferencias dentro de HU6; solo informa que datos se estan usando.
+
+Tambien debe incluir ayudas breves tipo `Que significa` para conceptos como pie minimo, pie recomendado, brecha de pie, rango referencial por ahorro, dividendo maximo prudente y estados de compatibilidad. Cuando exista la ruta de Academia, se puede incluir un CTA para profundizar alli sin interrumpir el flujo de simulacion.
+
+Las explicaciones visibles en HU6 deben ser deterministicas o verificables. Si el proyecto usa Groq en otras vistas para explicaciones generales, HU6 no debe delegar en IA la decision de compatibilidad ni el calculo de brechas.
 
 ## Aclaracion de unidades
 
@@ -215,11 +241,28 @@ Las alternativas deben ordenarse por:
 
 El horizonte de compra ajusta mensajes, no cambia el score ni reemplaza el orden financiero.
 
-Cada alternativa debe incluir un boton `Comparar` para contrastarla directamente contra el escenario actual. Si no hay escenario actual, la UI debe mostrar un mensaje controlado: `Primero selecciona o simula un escenario base para comparar`.
+Cada alternativa debe incluir un boton `Comparar` o `Comparar con escenario actual` para contrastarla directamente contra el escenario actual. Si no hay escenario actual, la UI debe mostrar un mensaje controlado: `Primero selecciona un proyecto o ingresa un valor manual para comparar`.
 
-La comparacion principal debe estar visible cerca del selector de escenario. Debe mostrar `Escenario A` como el escenario actual y `Escenario B` como la alternativa seleccionada. Si aun no hay alternativa, debe indicar: `Selecciona una alternativa desde las opciones accesibles para compararla con tu escenario actual`.
+La comparacion principal debe estar visible cerca del selector de escenario. Debe mostrar `Escenario A` como el escenario actual y `Escenario B` como la alternativa seleccionada, incluyendo nombre, valor y estado de compatibilidad para que el usuario no tenga que adivinar que se esta comparando. Si aun no hay alternativa, debe indicar: `Selecciona una alternativa desde las opciones accesibles para compararla con tu escenario actual`.
 
 Cuando se genere una comparacion desde una tarjeta, la interfaz debe llevar la vista al panel superior de comparacion para que el usuario no tenga que buscar el resultado al final de la pagina.
+
+La comparacion debe ir mas alla de una tabla de valores. Debe explicar, de forma deterministica y referencial:
+
+- ventajas del escenario actual;
+- ventajas de la alternativa;
+- tradeoffs entre compatibilidad financiera y preferencias declaradas;
+- diferencias principales en valor, pie minimo, pie recomendado y brecha de pie;
+- una recomendacion referencial: escenario actual, alternativa, similar o sin datos suficientes.
+
+Ejemplos de tradeoff:
+
+- menor valor, pero comuna distinta a la objetivo;
+- menor brecha de pie, pero tipo de vivienda no preferido;
+- escenario Compatible menos alineado a preferencias;
+- escenario Cercano mas alineado a comuna/tipo declarado.
+
+Si un escenario tiene mejor compatibilidad, menor brecha y menor valor, puede marcarse como mas conveniente de forma referencial. Si financieramente es mejor pero se aleja de preferencias, debe explicarse como tradeoff. Si ambos son similares, la decision debe quedar asociada a preferencias de comuna, tipo de vivienda u horizonte de compra.
 
 ## Reglas de integracion con proyectos fake
 

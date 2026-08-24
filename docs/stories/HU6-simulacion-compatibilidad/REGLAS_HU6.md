@@ -254,11 +254,16 @@ Con tu ahorro actual, podrias cubrir el pie recomendado de una vivienda cercana 
 
 El horizonte de compra no debe aumentar el score ni convertir un escenario incompatible en Compatible por si solo.
 
-## Regla de seleccion y comparacion de alternativas
+## Regla de comparacion de alternativas
 
-Cada alternativa accesible debe incluir una accion para seleccionar esa simulacion, no para comparar directamente desde la tarjeta. La comparacion se ejecuta desde un boton ubicado junto a los controles principales de modo (`Proyecto referencial` y `Valor manual`).
+El escenario actual es el proyecto referencial o valor manual que el usuario esta evaluando. Cada alternativa accesible puede incluir una accion `Comparar` o `Comparar con escenario actual` para contrastarse directamente contra ese escenario actual.
 
-Al comparar, la interfaz debe desplazar la vista hacia el bloque de comparacion para que el usuario vea el resultado generado. La comparacion debe mostrar:
+Al comparar, la interfaz debe desplazar la vista hacia el bloque de comparacion para que el usuario vea el resultado generado. La comparacion debe identificar explicitamente:
+
+- `Escenario A`: escenario actual;
+- `Escenario B`: alternativa seleccionada.
+
+La comparacion debe mostrar:
 
 - valor vivienda;
 - pie minimo;
@@ -271,7 +276,76 @@ Al comparar, la interfaz debe desplazar la vista hacia el bloque de comparacion 
 - tipo de vivienda;
 - analisis breve de cual alternativa parece mas conveniente.
 
-La comparacion no crea un score nuevo; reutiliza los indicadores calculados para cada escenario.
+Si no hay escenario actual, la UI debe mostrar un mensaje controlado: `Primero selecciona un proyecto o ingresa un valor manual para comparar`.
+
+La comparacion es referencial y no crea un score nuevo; reutiliza los indicadores calculados para cada escenario.
+
+La comparacion no debe limitarse a mostrar dos columnas de valores. Debe derivar, usando solo indicadores ya calculados por HU6:
+
+- diferencias de valor de vivienda en UF;
+- diferencias de pie minimo;
+- diferencias de pie recomendado;
+- diferencias de brecha de pie;
+- diferencia de estado de compatibilidad;
+- diferencia de comuna;
+- diferencia de tipo de vivienda;
+- coincidencia o no con comuna objetivo y tipo preferido.
+
+La comparacion debe separar:
+
+- ventajas del escenario actual;
+- ventajas de la alternativa;
+- puntos a considerar o tradeoffs.
+
+Reglas simples de recomendacion referencial:
+
+- Si un escenario tiene mejor compatibilidad, menor brecha y menor valor, puede marcarse como mas conveniente.
+- Si un escenario es financieramente mejor pero menos alineado a preferencias, mostrarlo como tradeoff.
+- Si un escenario coincide mejor con preferencias pero exige mayor ahorro, mostrarlo como tradeoff.
+- Si ambos escenarios son similares, indicar que la decision depende mas de comuna, tipo de vivienda u horizonte.
+- Si faltan datos suficientes, no forzar recomendacion.
+
+El resultado de comparacion solo puede ser:
+
+- `escenario_actual`;
+- `alternativa`;
+- `similar`;
+- `sin_datos_suficientes`.
+
+Este resultado no es una decision financiera formal ni una recomendacion bancaria. La comparacion puede usar barras simples HTML/CSS para visualizar diferencias, sin librerias externas ni calculos hipotecarios avanzados.
+
+## Regla de presentacion y ayudas conceptuales
+
+La vista de HU6 puede usar un contenedor mas ancho que otras vistas para mejorar lectura y comparacion. Este ajuste debe quedar acotado a `Simulacion` y no cambiar el layout global de RutaHogar.
+
+La UI debe evitar marcos anidados excesivos. Se deben preferir separadores, columnas, espaciado y jerarquia visual. Los marcos se reservan para:
+
+- resultado principal del escenario;
+- comparacion;
+- disclaimers o advertencias;
+- tarjetas repetidas de alternativas cuando ayuden a escanear opciones.
+
+HU6 debe mostrar las preferencias preliminares que considera si estan disponibles:
+
+- comuna objetivo;
+- tipo de vivienda preferido;
+- horizonte o plazo de compra;
+- objetivo inmobiliario declarado.
+
+HU6 debe explicar conceptos clave con textos breves, sin convertir la pantalla en documentacion extensa. Conceptos minimos:
+
+- pie minimo;
+- pie recomendado;
+- brecha de pie;
+- rango referencial por ahorro;
+- dividendo maximo prudente;
+- Compatible;
+- Cercano;
+- Requiere ajuste.
+
+Cuando exista la ruta o seccion `Academia`, la pantalla puede ofrecer un CTA para revisar conceptos alli.
+
+Las explicaciones de HU6 deben ser deterministicas o verificables. La IA no debe decidir compatibilidad, calcular brechas, modificar estado ni reemplazar reglas financieras. Si Groq se usa en otras partes del proyecto, debe quedar fuera de la decision de compatibilidad de HU6.
 
 ## Supuestos financieros
 
