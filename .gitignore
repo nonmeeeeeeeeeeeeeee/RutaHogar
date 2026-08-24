@@ -29,8 +29,7 @@ frontend/dist
 
 stuff.txt
 
-# Ephemeral SPDD artifacts — see docs/handbook/00-workflow.md
-docs/stories/*/KICKOFF.md
+# Retired orchestration artifacts — see docs/HANDBOOK.md
 story-work/
 
 # Agent worktrees and local server logs
