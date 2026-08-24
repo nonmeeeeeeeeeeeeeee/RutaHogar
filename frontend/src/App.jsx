@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import axios from "axios";
 import AcademiaFinanciera from "./components/AcademiaFinanciera";
 import AdminPanel from "./components/AdminPanel";
 import AnonHeader from "./components/AnonHeader";
@@ -18,9 +19,9 @@ import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations } from "./services/evaluationService";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, updateEvaluationAiContent } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
-import { normalizeDisplayList, normalizeDisplayText } from "./utils/text";
+import { normalizeDisplayList, normalizeDisplayText, sanitizeAiText } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
 import { buildFinancialTracking } from "./services/financialTracking";
@@ -38,6 +39,13 @@ const ONBOARDING_KEY = "scoreleads_onboarding";
 const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
 const ANON_RESULT_KEY = "scoreleads_anon_result";
 const ANON_INPUT_KEY = "scoreleads_anon_input";
+
+function resolveApiBase() {
+  const configuredUrl =
+    import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL;
+  const fallbackUrl = import.meta.env.DEV ? "http://127.0.0.1:8000" : "";
+  return String(configuredUrl || fallbackUrl).replace(/\/$/, "");
+}
 
 function readSessionJson(key) {
   try {
@@ -451,6 +459,46 @@ export default function App() {
       active = false;
     };
   }, [userId]);
+
+  // Regenera la explicación IA de la preevaluación actual vía /score/explain.
+  // Devuelve true si se generó y persistió una explicación utilizable.
+  async function handleRetryAiExplanation() {
+    const evaluation = currentEvaluation;
+    if (!evaluation?.id || !evaluation?.input) return false;
+
+    try {
+      const response = await axios.post(
+        `${resolveApiBase()}/score/explain`,
+        { ...evaluation.input, scope: "user" },
+        { timeout: 45000 },
+      );
+
+      const explanation = sanitizeAiText(response.data?.ai_explanation);
+      if (!explanation) return false;
+
+      const updated = await updateEvaluationAiContent(evaluation.id, {
+        ai_explanation: explanation,
+      });
+
+      if (updated?.id) {
+        setEvaluations((prev) =>
+          prev.map((item) => (item.id === updated.id ? updated : item)),
+        );
+      } else {
+        setEvaluations((prev) =>
+          prev.map((item) =>
+            item.id === evaluation.id
+              ? { ...item, result: { ...item.result, ai_explanation: explanation } }
+              : item,
+          ),
+        );
+      }
+      return true;
+    } catch (error) {
+      console.error("ScoreLeads /score/explain error", error);
+      return false;
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -1233,7 +1281,7 @@ export default function App() {
           onNavigate={navigateToPage}
         />
       ) : page === "academia" && profile.role === roles.user ? (
-        <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} />
+        <AcademiaFinanciera evaluation={currentEvaluation} onStartEvaluation={startEvaluation} onNavigate={navigateToPage} onRetryExplanation={handleRetryAiExplanation} />
       ) : page === "leads" && (profile.role === roles.sales || profile.role === roles.admin) ? (
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (

@@ -149,7 +149,9 @@ def generate_improvement_plan(score_result: Dict, user_data: Dict) -> List[str]:
     return _unique(plan)
 
 
-def calculate_score(data: Dict) -> Dict:
+def calculate_score(data: Dict, include_ai: bool = True) -> Dict:
+    # include_ai=False permite recalcular el scoring sin consumir llamadas al
+    # proveedor de IA (lo usa el endpoint de regeneración de explicaciones).
     ingreso = float(data.get("ingreso_mensual", 0) or 0)
     deuda = float(data.get("deuda_mensual", 0) or 0)
     ahorro = float(data.get("ahorro_disponible", 0) or 0)
@@ -488,31 +490,40 @@ def calculate_score(data: Dict) -> Dict:
         "algorithm_version": SCORING_VERSION,
     }
 
-    result["ai_explanation"] = generate_user_explanation(
-        classification=clasificacion,
-        score=round(score, 1),
-        positive_indicators=uniq_positivos,
-        risks=uniq_riesgos,
-    )
+    if include_ai:
+        explanation = generate_user_explanation(
+            classification=clasificacion,
+            score=round(score, 1),
+            positive_indicators=uniq_positivos,
+            risks=uniq_riesgos,
+        )
+        # Si la generación falla, el campo simplemente no se incluye: nunca
+        # se guarda ni se muestra un texto de error como explicación.
+        if explanation:
+            result["ai_explanation"] = explanation
+
+        executive_summary = generate_executive_summary(
+            classification=clasificacion,
+            score=round(score, 1),
+            positive_indicators=uniq_positivos,
+            risks=uniq_riesgos
+        )
+        if executive_summary:
+            result["executive_summary"] = executive_summary
+
+        commercial_guidance = generate_commercial_guidance(
+            classification=clasificacion,
+            score=round(score, 1),
+            positive_indicators=uniq_positivos,
+            risks=uniq_riesgos,
+            recommendations=uniq_recomendaciones
+        )
+        if commercial_guidance:
+            result["commercial_guidance"] = commercial_guidance
 
     result["improvement_plan"] = generate_improvement_plan(
         result,
         data
-    )
-
-    result["executive_summary"] = generate_executive_summary(
-        classification=clasificacion,
-        score=round(score, 1),
-        positive_indicators=uniq_positivos,
-        risks=uniq_riesgos
-    )
-
-    result["commercial_guidance"] = generate_commercial_guidance(
-        classification=clasificacion,
-        score=round(score, 1),
-        positive_indicators=uniq_positivos,
-        risks=uniq_riesgos,
-        recommendations=uniq_recomendaciones
     )
 
     result.pop("risk_codes", None)

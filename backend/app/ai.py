@@ -17,26 +17,59 @@ if _env_path.exists():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip())
  
-def _ask_groq(prompt: str, max_tokens: int = 300) -> str:
-    """Wrapper interno que llama a llama-3.1-8b-instant vía Groq."""
-    if Groq is None:
-        return "Resumen IA no disponible en entorno local."
+# Groq retiró los modelos Llama 3.x el 16/08/2026. El reemplazo oficial
+# recomendado para llama-3.1-8b-instant es openai/gpt-oss-20b.
+# Se puede cambiar sin tocar código con la variable GROQ_MODEL en backend/.env.
+DEFAULT_GROQ_MODEL = "openai/gpt-oss-20b"
 
-    api_key = "os.environ.get("GROQ_API_KEY")"
+
+def _ask_groq(prompt: str, max_tokens: int = 300) -> str | None:
+    """Wrapper interno que consulta el modelo configurado vía Groq.
+
+    Devuelve el texto generado o None si la IA no está disponible o falló;
+    los textos de estado/error jamás se exponen como contenido.
+    """
+    if Groq is None:
+        print("[ai] Librería de Groq no instalada; IA deshabilitada.", flush=True)
+        return None
+
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        return "Resumen IA no disponible: GROQ_API_KEY no configurada."
+        print("[ai] GROQ_API_KEY no configurada; IA deshabilitada.", flush=True)
+        return None
+
+    model = os.environ.get("GROQ_MODEL", DEFAULT_GROQ_MODEL)
 
     client = Groq(api_key=api_key)
+
+    kwargs = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": max_tokens,
+        "temperature": 0.4,
+    }
+
+    # Los modelos GPT-OSS aceptan controlar el esfuerzo de razonamiento;
+    # "low" basta para textos cortos y evita consumir presupuesto de salida.
+    if model.startswith("openai/gpt-oss"):
+        kwargs["reasoning_effort"] = "low"
+
     try:
-        completion = client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=max_tokens,
-            temperature=0.4,
-        )
-        return completion.choices[0].message.content.strip()
+        try:
+            completion = client.chat.completions.create(**kwargs)
+        except TypeError:
+            # SDK antiguo sin soporte para reasoning_effort.
+            kwargs.pop("reasoning_effort", None)
+            completion = client.chat.completions.create(**kwargs)
+        content = (completion.choices[0].message.content or "").strip()
+        # Ante cualquier fallo se devuelve None: los textos de IA fallidos
+        # nunca deben mostrarse al usuario como contenido.
+        return content or None
     except Exception as e:
-        return f"ERROR IA: {str(e)}"
+        # No se filtra el detalle del error del proveedor hacia el producto;
+        # queda registrado en los logs del servidor.
+        print(f"[ai] Falló la generación con {model}: {e}", flush=True)
+        return None
 
 
 def _clean_generated_text(text: str) -> str:
@@ -108,7 +141,7 @@ NO debes:
 1. Hablar en primera persona por ningún motivo
 Responde solo el resumen, sin títulos ni encabezados."""
 
-    return _clean_generated_text(_ask_groq(prompt, max_tokens=200))
+    return _clean_generated_text(_ask_groq(prompt, max_tokens=200)) or None
 
 
 def generate_commercial_guidance(
@@ -154,7 +187,7 @@ NO debes:
 1. Hablar en primera persona por ningún motivo
 """
 
-    return _clean_generated_text(_ask_groq(prompt, max_tokens=120))
+    return _clean_generated_text(_ask_groq(prompt, max_tokens=120)) or None
 
 
 def generate_user_explanation(
@@ -190,6 +223,9 @@ El párrafo debe:
 Responde solo el párrafo, sin títulos ni encabezados."""
 
     explanation = _clean_generated_text(_ask_groq(prompt, max_tokens=250))
+    if not explanation:
+        return None
+
     disclaimer = "Esta preevaluación es orientativa y no reemplaza una evaluación bancaria formal."
     if disclaimer not in explanation:
         explanation = f"{explanation}\n\n{disclaimer}"

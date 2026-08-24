@@ -1,13 +1,16 @@
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ACADEMY_ARTICLES,
+  ACADEMY_CAPSULES,
   ACADEMY_TOPICS,
   CASE_STUDIES,
   STARTER_ARTICLE_IDS,
   classifyRiskText,
   findMatchingCase,
+  getCapsulesForTopic,
 } from "../constants/academyContent";
 import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
+import { hasUsableAiText } from "../utils/text";
 
 const LEVEL_ORDER = {
   Básico: 0,
@@ -16,31 +19,170 @@ const LEVEL_ORDER = {
 };
 
 const CLASSIFICATION_CLASS = {
-  Alto: "score-high",
-  Medio: "score-medium",
-  Bajo: "score-low",
+  Alto: "is-high",
+  Medio: "is-medium",
+  Bajo: "is-low",
 };
+
+const MONTHS_ES = [
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+// ----------------------------------------------------------------------------
+// UTILIDADES
+// ----------------------------------------------------------------------------
+
+function plural(count, singular, pluralWord) {
+  return `${count} ${count === 1 ? singular : pluralWord}`;
+}
+
+function formatReviewedDate(reviewedAt) {
+  if (!reviewedAt) return null;
+  const [year, month] = reviewedAt.split("-");
+  const monthName = MONTHS_ES[Number(month) - 1];
+  return monthName ? `Revisado en ${monthName} de ${year}` : null;
+}
+
+// Convierte una URL de YouTube/Vimeo en URL de reproductor embebible.
+// Si la URL no corresponde a un proveedor conocido, se devuelve tal cual.
+function toEmbedUrl(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtube.com")) {
+      const videoId = parsed.searchParams.get("v");
+      if (videoId) return `https://www.youtube-nocookie.com/embed/${videoId}`;
+    }
+    if (parsed.hostname === "youtu.be") {
+      return `https://www.youtube-nocookie.com/embed${parsed.pathname}`;
+    }
+    if (parsed.hostname.includes("vimeo.com")) {
+      return `https://player.vimeo.com/video${parsed.pathname}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
+function renderTextWithGlossary(text, onOpenArticle) {
+  return splitTextWithGlossaryTerms(text).map((part, i) =>
+    typeof part === "string" ? (
+      <React.Fragment key={i}>{part}</React.Fragment>
+    ) : (
+      <GlossaryTerm key={i} term={part.term} onOpenArticle={onOpenArticle} />
+    )
+  );
+}
 
 
 // ============================================================================
 // ICONO DE TEMA
 // ============================================================================
 
-function TopicIcon({ topicId }) {
+function TopicIcon({ topicId, size = "md" }) {
   const topic = ACADEMY_TOPICS.find((t) => t.id === topicId);
 
   if (!topic) return null;
 
   return (
     <span
-      className="academy-topic-icon"
+      className={`academy-topic-icon academy-topic-icon--${size}`}
       style={{
         background: `${topic.accent}1a`,
         color: topic.accent,
       }}
     >
-      <i className={`ti ${topic.icon}`} />
+      <i className={`ti ${topic.icon}`} aria-hidden="true" />
     </span>
+  );
+}
+
+
+// ============================================================================
+// CARRUSEL DE CÁPSULAS
+// ============================================================================
+
+// Franja horizontal de cápsulas con flechas laterales en lugar de scrollbar.
+function CapsuleCarousel({ children }) {
+  const stripRef = useRef(null);
+  const [canPrev, setCanPrev] = useState(false);
+  const [canNext, setCanNext] = useState(false);
+
+  const updateArrows = useCallback(() => {
+    const el = stripRef.current;
+    if (!el) return;
+    setCanPrev(el.scrollLeft > 4);
+    setCanNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  useEffect(() => {
+    updateArrows();
+
+    const el = stripRef.current;
+    if (!el) return undefined;
+
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+
+    // Las tarjetas pueden terminar de cargar y cambiar el ancho total.
+    const observer = new ResizeObserver(updateArrows);
+    observer.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+      observer.disconnect();
+    };
+  }, [updateArrows]);
+
+  const scrollByPage = (direction) => {
+    const el = stripRef.current;
+    if (!el) return;
+    const amount = Math.max(el.clientWidth * 0.8, 240) * direction;
+    el.scrollBy({ left: amount, behavior: "smooth" });
+  };
+
+  return (
+    <div
+      className={`academy-carousel ${canPrev ? "has-prev" : ""} ${
+        canNext ? "has-next" : ""
+      }`}
+    >
+      <button
+        type="button"
+        className="academy-carousel-arrow is-left"
+        onClick={() => scrollByPage(-1)}
+        disabled={!canPrev}
+        aria-label="Ver cápsulas anteriores"
+      >
+        <i className="ti ti-chevron-left" aria-hidden="true" />
+      </button>
+
+      <div className="academy-capsule-strip" ref={stripRef}>
+        {children}
+      </div>
+
+      <button
+        type="button"
+        className="academy-carousel-arrow is-right"
+        onClick={() => scrollByPage(1)}
+        disabled={!canNext}
+        aria-label="Ver más cápsulas"
+      >
+        <i className="ti ti-chevron-right" aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
@@ -60,11 +202,9 @@ function ArticleCard({ article, onOpen }) {
       onClick={() => onOpen(article.id)}
     >
       <div className="academy-card-top">
-        <TopicIcon topicId={article.topic} />
+        <TopicIcon topicId={article.topic} size="sm" />
 
-        <span className="academy-level-chip">
-          {article.level}
-        </span>
+        <span className="academy-level-chip">{article.level}</span>
       </div>
 
       <h3>{article.title}</h3>
@@ -72,29 +212,196 @@ function ArticleCard({ article, onOpen }) {
       <p>{article.summary}</p>
 
       <div className="academy-card-footer">
-        <span style={{ color: topic?.accent }}>
+        <span className="academy-card-topic" style={{ color: topic?.accent }}>
           {topic?.label}
         </span>
 
-        <span>
-          <i className="ti ti-clock" /> {article.minutes} min
+        <span className="academy-meta-pill">
+          <i className="ti ti-clock" aria-hidden="true" />
+          {article.minutes} min
         </span>
-      </div>
 
-      {article.sources?.length > 0 && (
-        <div className="academy-card-source">
-          <i className="ti ti-shield-check" />
-
-          <span>
-            {" "}
-            {article.sources.length}{" "}
-            {article.sources.length === 1
-              ? "fuente oficial"
-              : " fuentes oficiales"}
+        {article.sources?.length > 0 && (
+          <span className="academy-meta-pill academy-meta-pill--soft">
+            <i className="ti ti-shield-check" aria-hidden="true" />
+            {plural(article.sources.length, "fuente oficial", "fuentes oficiales")}
           </span>
-        </div>
-      )}
+        )}
+      </div>
     </button>
+  );
+}
+
+
+// ============================================================================
+// TARJETA DE CÁPSULA
+// ============================================================================
+
+function CapsuleCard({ capsule, variant = "row", onOpen }) {
+  const topic = ACADEMY_TOPICS.find((t) => t.id === capsule.topicId);
+  const hasVideo = Boolean(capsule.videoUrl);
+
+  if (variant === "strip") {
+    return (
+      <button
+        type="button"
+        className="academy-capsule-chip"
+        style={{ "--cap-accent": topic?.accent }}
+        onClick={() => onOpen(capsule.id)}
+      >
+        <span className="academy-capsule-play">
+          <i className="ti ti-player-play-filled" aria-hidden="true" />
+        </span>
+
+        <span className="academy-capsule-chip-body">
+          <span className="academy-capsule-kicker">
+            {hasVideo ? "Video" : "Cápsula"} · {topic?.label}
+          </span>
+
+          <span className="academy-capsule-title">{capsule.title}</span>
+        </span>
+
+        <span className="academy-meta-pill academy-meta-pill--soft">
+          <i className="ti ti-clock" aria-hidden="true" />
+          {capsule.minutes} min
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="academy-capsule-row"
+      style={{ "--cap-accent": topic?.accent }}
+      onClick={() => onOpen(capsule.id)}
+    >
+      <span className="academy-capsule-play">
+        <i className="ti ti-player-play-filled" aria-hidden="true" />
+      </span>
+
+      <span className="academy-capsule-row-body">
+        <span className="academy-capsule-kicker">
+          {hasVideo ? "Video" : "Cápsula"} · {plural(capsule.minutes, "minuto", "minutos")}
+        </span>
+
+        <span className="academy-capsule-title">{capsule.title}</span>
+
+        <span className="academy-capsule-desc">{capsule.description}</span>
+      </span>
+
+      <i className="ti ti-chevron-right academy-capsule-arrow" aria-hidden="true" />
+    </button>
+  );
+}
+
+
+// ============================================================================
+// MODAL DE CÁPSULA
+// ============================================================================
+
+function CapsuleModal({ capsule, onClose, onOpenArticle }) {
+  const scrollRef = useRef(null);
+
+  // Al abrir otra cápsula desde un artículo, el modal parte desde arriba.
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [capsule?.id]);
+
+  if (!capsule) return null;
+
+  const topic = ACADEMY_TOPICS.find((t) => t.id === capsule.topicId);
+  const article = capsule.articleId
+    ? ACADEMY_ARTICLES.find((a) => a.id === capsule.articleId)
+    : null;
+
+  return (
+    <div className="academy-modal-backdrop" onClick={onClose}>
+      <div
+        className="academy-modal academy-modal--capsule"
+        role="dialog"
+        aria-modal="true"
+        aria-label={capsule.title}
+        onClick={(e) => e.stopPropagation()}
+        ref={scrollRef}
+      >
+        <button
+          type="button"
+          className="academy-modal-close"
+          onClick={onClose}
+          aria-label="Cerrar"
+          autoFocus
+        >
+          <i className="ti ti-x" aria-hidden="true" />
+        </button>
+
+        <div className="academy-modal-header">
+          <span
+            className="academy-capsule-badge"
+            style={{
+              background: `${topic?.accent}1a`,
+              color: topic?.accent,
+            }}
+          >
+            <i className="ti ti-player-play-filled" aria-hidden="true" />
+          </span>
+
+          <div>
+            <span className="eyebrow" style={{ color: topic?.accent }}>
+              {capsule.videoUrl ? "Video" : "Cápsula"} · {topic?.label}
+            </span>
+
+            <h2>{capsule.title}</h2>
+
+            <p className="academy-capsule-lede">{capsule.description}</p>
+          </div>
+        </div>
+
+        {/* REPRODUCTOR: solo cuando la cápsula tiene video publicado */}
+
+        {capsule.videoUrl && (
+          <div className="academy-video-frame">
+            <iframe
+              src={toEmbedUrl(capsule.videoUrl)}
+              title={capsule.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              loading="lazy"
+            />
+          </div>
+        )}
+
+        {/* MINI-LECCIÓN */}
+
+        <div className="academy-takeaways">
+          <strong>Ideas clave</strong>
+
+          <ol>
+            {capsule.takeaways.map((idea, i) => (
+              <li key={i}>
+                <span className="academy-takeaway-num">{i + 1}</span>
+                <p>{idea}</p>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        {article && (
+          <div className="academy-capsule-footer">
+            <p>¿Quieres profundizar? Este tema se explica en detalle aquí:</p>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => onOpenArticle(article.id)}
+            >
+              <i className="ti ti-book-2" aria-hidden="true" />
+              {article.title}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -103,34 +410,39 @@ function ArticleCard({ article, onOpen }) {
 // MODAL DE ARTÍCULO
 // ============================================================================
 
-function ArticleModal({
-  article,
-  onClose,
-  onOpenArticle,
-  related,
-}) {
+function ArticleModal({ article, onClose, onOpenArticle, onOpenCapsule, related }) {
+  const scrollRef = useRef(null);
+
+  // Al abrir un artículo relacionado desde el modal, el contenido nuevo
+  // debe mostrarse desde el inicio, no a la altura del artículo anterior.
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [article?.id]);
+
   if (!article) return null;
 
-  const topic = ACADEMY_TOPICS.find(
-    (t) => t.id === article.topic
-  );
+  const topic = ACADEMY_TOPICS.find((t) => t.id === article.topic);
+  const reviewedLabel = formatReviewedDate(article.reviewedAt);
+  const topicCapsules = getCapsulesForTopic(article.topic);
 
   return (
-    <div
-      className="academy-modal-backdrop"
-      onClick={onClose}
-    >
+    <div className="academy-modal-backdrop" onClick={onClose}>
       <div
         className="academy-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label={article.title}
         onClick={(e) => e.stopPropagation()}
+        ref={scrollRef}
       >
         <button
           type="button"
           className="academy-modal-close"
           onClick={onClose}
           aria-label="Cerrar"
+          autoFocus
         >
-          <i className="ti ti-x" />
+          <i className="ti ti-x" aria-hidden="true" />
         </button>
 
         {/* HEADER */}
@@ -139,10 +451,7 @@ function ArticleModal({
           <TopicIcon topicId={article.topic} />
 
           <div>
-            <span
-              className="eyebrow"
-              style={{ color: topic?.accent }}
-            >
+            <span className="eyebrow" style={{ color: topic?.accent }}>
               {topic?.label}
             </span>
 
@@ -150,73 +459,97 @@ function ArticleModal({
           </div>
         </div>
 
+        {/* META */}
 
-       
+        <div className="academy-modal-meta">
+          <span className="academy-meta-pill">
+            <i className="ti ti-chart-bar" aria-hidden="true" />
+            {article.level}
+          </span>
 
+          <span className="academy-meta-pill">
+            <i className="ti ti-clock" aria-hidden="true" />
+            {plural(article.minutes, "minuto", "minutos")} de lectura
+          </span>
+
+          {reviewedLabel && (
+            <span className="academy-meta-pill">
+              <i className="ti ti-calendar-check" aria-hidden="true" />
+              {reviewedLabel}
+            </span>
+          )}
+        </div>
 
         {/* CONTENIDO */}
 
         <div className="academy-modal-body">
-          {article.body
-            .split("\n\n")
-            .map((paragraph, i) => (
-              <p key={i}>{paragraph}</p>
-            ))}
+          {article.body.split("\n\n").map((paragraph, i) => (
+            <p key={i}>{paragraph}</p>
+          ))}
         </div>
-
 
         {/* FUENTES OFICIALES */}
 
         {article.sources?.length > 0 && (
           <div className="academy-modal-sources">
-            <div className="academy-modal-sources-header">
-              
+            <div className="academy-sources-intro">
+              <i className="ti ti-shield-check" aria-hidden="true" />
 
               <div>
-                <i className="ti ti-shield-check" />
-                <strong> Fuentes oficiales</strong>
+                <strong>Fuentes oficiales</strong>
 
                 <p>
-                  Información basada en organismos oficiales
-                  chilenos.
+                  Este artículo se basa en información de organismos chilenos.
+                  Verifica los detalles directamente en cada fuente:
                 </p>
               </div>
             </div>
 
-            <div className="academy-source-list">
-              {article.sources.map((source, index) => (
-                <a
-                  key={`${source.institution}-${index}`}
-                  href={source.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="academy-source-link"
-                >
-        
-                  <div>
-                    <div className="academy-source-icon">
-                    <i className="ti ti-external-link" />
-                  
-                    <strong>
-                      {"  "}{source.institution}
-                    </strong>
-
-                    <span>
-                      {"  "}{source.title}
-                    </span>
-                    <i className="ti ti-chevron-right" />
-                  </div>
-                  </div>
-
-                  
-                </a>
+            <ul className="academy-source-list">
+              {article.sources.map((source, i) => (
+                <li key={`${source.institution}-${i}`}>
+                  <a
+                    href={source.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="academy-source-link"
+                  >
+                    <strong>{source.institution}</strong>
+                    <span className="academy-source-comma">,</span>
+                    <em>{source.title}</em>
+                    <i className="ti ti-external-link" aria-hidden="true" />
+                  </a>
+                </li>
               ))}
-            </div>
-
-            
+            </ul>
           </div>
         )}
 
+        {/* CÁPSULAS DEL TEMA */}
+
+        {topicCapsules.length > 0 && (
+          <div className="academy-modal-capsules">
+            <strong>
+              {topicCapsules.length === 1
+                ? "Cápsula relacionada"
+                : "Cápsulas relacionadas"}
+            </strong>
+
+            <div className="academy-capsule-mini-list">
+              {topicCapsules.map((capsule) => (
+                <CapsuleCard
+                  key={capsule.id}
+                  capsule={capsule}
+                  variant="strip"
+                  onOpen={(id) => {
+                    onClose();
+                    onOpenCapsule(id);
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* TÉRMINOS */}
 
@@ -224,18 +557,16 @@ function ArticleModal({
           <div className="academy-modal-terms">
             <strong>Términos relacionados</strong>
 
-            <div className="academy-term-chips">
-              {article.tags.map((tag) => (
-                <GlossaryTerm
-                  key={tag}
-                  term={tag}
-                  onOpenArticle={onOpenArticle}
-                />
+            <p className="academy-term-list">
+              {article.tags.map((tag, i) => (
+                <React.Fragment key={tag}>
+                  {i > 0 && <span className="academy-term-sep">, </span>}
+                  <GlossaryTerm term={tag} onOpenArticle={onOpenArticle} />
+                </React.Fragment>
               ))}
-            </div>
+            </p>
           </div>
         )}
-
 
         {/* RELACIONADOS */}
 
@@ -264,7 +595,12 @@ function ArticleModal({
 // TAB CONCEPTOS
 // ============================================================================
 
-function RouteStop({ topic, index, count, onOpen }) {
+function RouteStop({ topic, index, onOpen }) {
+  const articleCount = ACADEMY_ARTICLES.filter(
+    (article) => article.topic === topic.id
+  ).length;
+  const capsuleCount = getCapsulesForTopic(topic.id).length;
+
   return (
     <li className="route-stop">
       <button
@@ -274,7 +610,7 @@ function RouteStop({ topic, index, count, onOpen }) {
         style={{ "--stop-accent": topic.accent }}
       >
         <span className="route-stop-node">
-          <i className={`ti ${topic.icon}`} />
+          <i className={`ti ${topic.icon}`} aria-hidden="true" />
         </span>
 
         <span className="route-stop-body">
@@ -284,20 +620,18 @@ function RouteStop({ topic, index, count, onOpen }) {
         </span>
 
         <span className="route-stop-count">
-          {count}
-          <em>{count === 1 ? "artículo" : "artículos"}</em>
+          <span>{plural(articleCount, "artículo", "artículos")}</span>
+          <em>{plural(capsuleCount, "cápsula", "cápsulas")}</em>
         </span>
 
-        <i className="ti ti-chevron-right route-stop-arrow" />
+        <i className="ti ti-chevron-right route-stop-arrow" aria-hidden="true" />
       </button>
     </li>
   );
 }
 
-function ConceptosTab({ onOpenArticle }) {
-  const [activeTopic, setActiveTopic] =
-    useState("todos");
-
+function ConceptosTab({ onOpenArticle, onOpenCapsule }) {
+  const [activeTopic, setActiveTopic] = useState("todos");
   const [query, setQuery] = useState("");
 
   const normalizedQuery = query.trim().toLowerCase();
@@ -310,28 +644,12 @@ function ConceptosTab({ onOpenArticle }) {
     article.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
 
   const filteredArticles = useMemo(() => {
-    return ACADEMY_ARTICLES
-      .filter((article) => {
-        const matchesTopic =
-          activeTopic === "todos" ||
-          article.topic === activeTopic;
-
-        return matchesTopic && matchesQuery(article);
-      })
-      .sort(
-        (a, b) =>
-          LEVEL_ORDER[a.level] -
-          LEVEL_ORDER[b.level]
-      );
-  }, [activeTopic, query]);
-
-  const starterArticles = useMemo(
-    () =>
-      STARTER_ARTICLE_IDS
-        .map((id) => ACADEMY_ARTICLES.find((article) => article.id === id))
-        .filter(Boolean),
-    []
-  );
+    return ACADEMY_ARTICLES.filter((article) => {
+      const matchesTopic =
+        activeTopic === "todos" || article.topic === activeTopic;
+      return matchesTopic && matchesQuery(article);
+    }).sort((a, b) => LEVEL_ORDER[a.level] - LEVEL_ORDER[b.level]);
+  }, [activeTopic, normalizedQuery]);
 
   const activeTopicMeta = ACADEMY_TOPICS.find((t) => t.id === activeTopic);
 
@@ -340,113 +658,158 @@ function ConceptosTab({ onOpenArticle }) {
   // muestran los 36 artículos de golpe.
   const showDirectory = activeTopic === "todos" && !isSearching;
 
+  const topicCapsules = useMemo(
+    () => (activeTopicMeta ? getCapsulesForTopic(activeTopicMeta.id) : []),
+    [activeTopicMeta]
+  );
+
+  const handleSearchChange = (event) => {
+    setQuery(event.target.value);
+    if (event.target.value.trim()) setActiveTopic("todos");
+  };
+
   return (
     <div>
-
       {/* INTRODUCCIÓN */}
 
       <div className="academy-intro">
         <div>
-          <span className="eyebrow">
-            Educación financiera
-          </span>
+          <span className="eyebrow">Educación financiera</span>
 
-          <h2>
-            Aprende antes de tomar una decisión
-          </h2>
+          <h2>Aprende antes de tomar una decisión</h2>
 
           <p>
-            Comprende los conceptos financieros y
-            habitacionales más importantes para
-            evaluar una compra de vivienda en Chile.
+            Comprende los conceptos financieros y habitacionales más
+            importantes para evaluar una compra de vivienda en Chile.
           </p>
         </div>
 
         <div className="academy-disclaimer">
-          <i className="ti ti-info-circle" />
+          <i className="ti ti-info-circle" aria-hidden="true" />
 
           <p>
-            Este contenido tiene fines educativos.
-            No constituye una aprobación de crédito,
-            asesoría financiera ni confirmación de
+            Este contenido tiene fines educativos. No constituye una
+            aprobación de crédito, asesoría financiera ni confirmación de
             elegibilidad para un subsidio.
           </p>
         </div>
       </div>
 
-
       {/* BÚSQUEDA */}
 
       <div className="academy-toolbar academy-toolbar-simple">
         <div className="academy-search academy-search-wide">
-          <i className="ti ti-search" />
+          <i className="ti ti-search" aria-hidden="true" />
 
           <input
             type="text"
             placeholder="Buscar por tema, subsidio, tasa, UF..."
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              if (e.target.value.trim()) setActiveTopic("todos");
-            }}
+            onChange={handleSearchChange}
+            aria-label="Buscar artículos de la academia"
           />
         </div>
-      </div>
 
+        {isSearching && (
+          <span className="academy-search-count">
+            {plural(filteredArticles.length, "resultado", "resultados")} para “
+            {query.trim()}”
+          </span>
+        )}
+      </div>
 
       {showDirectory ? (
         <>
-          
+          {/* CÁPSULAS DESTACADAS */}
+
+          <h3 className="academy-directory-heading">
+            Cápsulas rápidas
+          </h3>
+
+          <p className="academy-directory-sub">
+            Ideas clave en 2 o 3 minutos, antes de entrar en detalle.
+          </p>
+
+          <CapsuleCarousel>
+            {ACADEMY_CAPSULES.map((capsule) => (
+              <CapsuleCard
+                key={capsule.id}
+                capsule={capsule}
+                variant="strip"
+                onOpen={onOpenCapsule}
+              />
+            ))}
+          </CapsuleCarousel>
 
           {/* LA RUTA: temas en el orden en que conviene aprenderlos */}
 
-          <h3 className="academy-directory-heading">
+          <h3 className="academy-directory-heading academy-directory-heading--route">
             Tu ruta financiera
           </h3>
+
           <p className="academy-directory-sub">
             10 paradas, del crédito a la compra. Elige por dónde partir.
           </p>
 
           <ol className="route-path">
-            {ACADEMY_TOPICS.map((topic, i) => {
-              const count = ACADEMY_ARTICLES.filter(
-                (article) => article.topic === topic.id
-              ).length;
-
-              return (
-                <RouteStop
-                  key={topic.id}
-                  topic={topic}
-                  index={i + 1}
-                  count={count}
-                  onOpen={setActiveTopic}
-                />
-              );
-            })}
+            {ACADEMY_TOPICS.map((topic, i) => (
+              <RouteStop
+                key={topic.id}
+                topic={topic}
+                index={i + 1}
+                onOpen={setActiveTopic}
+              />
+            ))}
           </ol>
         </>
       ) : (
         <>
           {/* MIGA DE PAN: volver al directorio */}
 
-          {!isSearching && activeTopicMeta && (
+          {!isSearching && (
             <button
               type="button"
               className="academy-back-link"
               onClick={() => setActiveTopic("todos")}
             >
-              <i className="ti ti-arrow-left" />
+              <i className="ti ti-arrow-left" aria-hidden="true" />
               Todos los temas
             </button>
           )}
 
           {!isSearching && activeTopicMeta && (
-            <div className="academy-section-heading">
+            <div className="academy-section-heading academy-topic-heading">
               <TopicIcon topicId={activeTopicMeta.id} />
-              <h2 style={{ color: activeTopicMeta.accent }}>
-                {activeTopicMeta.label}
-              </h2>
+
+              <div>
+                <h2 style={{ color: activeTopicMeta.accent }}>
+                  {activeTopicMeta.label}
+                </h2>
+
+                <p>{activeTopicMeta.description}</p>
+              </div>
             </div>
+          )}
+
+          {/* CÁPSULAS DEL TEMA */}
+
+          {topicCapsules.length > 0 && !isSearching && (
+            <section className="academy-topic-capsules">
+              <h3>
+                <i className="ti ti-player-play" aria-hidden="true" />
+                Cápsulas de este tema
+              </h3>
+
+              <div className="academy-capsule-rows">
+                {topicCapsules.map((capsule) => (
+                  <CapsuleCard
+                    key={capsule.id}
+                    capsule={capsule}
+                    onOpen={onOpenCapsule}
+                  />
+                ))}
+              </div>
+            </section>
           )}
 
           {/* ARTÍCULOS */}
@@ -463,13 +826,9 @@ function ConceptosTab({ onOpenArticle }) {
             </div>
           ) : (
             <div className="empty-state">
-              <strong>
-                No encontramos artículos con ese filtro.
-              </strong>
+              <strong>No encontramos artículos con ese filtro.</strong>
 
-              <p>
-                Prueba con otro tema o modifica la búsqueda.
-              </p>
+              <p>Prueba con otro tema o modifica la búsqueda.</p>
             </div>
           )}
         </>
@@ -483,305 +842,295 @@ function ConceptosTab({ onOpenArticle }) {
 // TAB INTERPRETA TU SCORE
 // ============================================================================
 
-function InterpretaTab({
-  evaluation,
-  onStartEvaluation,
-  onOpenArticle,
-}) {
+// Indicador circular del score (0-100).
+function ScoreDial({ score, classification }) {
+  const RADIUS = 52;
+  const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+  const percent = Math.max(0, Math.min(100, Number(score) || 0)) / 100;
+  const toneClass =
+    CLASSIFICATION_CLASS[classification] || "is-medium";
+
+  return (
+    <div className={`academy-dial ${toneClass}`}>
+      <svg viewBox="0 0 120 120" aria-hidden="true">
+        <circle className="academy-dial-track" cx="60" cy="60" r={RADIUS} />
+        <circle
+          className="academy-dial-value"
+          cx="60"
+          cy="60"
+          r={RADIUS}
+          strokeDasharray={CIRCUMFERENCE}
+          strokeDashoffset={CIRCUMFERENCE * (1 - percent)}
+        />
+      </svg>
+
+      <div className="academy-dial-center">
+        <strong>{score}</strong>
+        <span>{classification}</span>
+      </div>
+    </div>
+  );
+}
+
+function InterpretaTab({ evaluation, onStartEvaluation, onOpenArticle, onRetryExplanation }) {
   const result = evaluation?.result;
-
   const risks = result?.risks || [];
+  const positives = result?.positive_indicators || [];
 
-  const positives =
-    result?.positive_indicators || [];
+  const [retrying, setRetrying] = useState(false);
+  const [retryFailed, setRetryFailed] = useState(false);
 
+  // La explicación solo se muestra si es contenido real; textos de error o
+  // placeholders de versiones anteriores se tratan como ausentes.
+  const hasExplanation = hasUsableAiText(result?.ai_explanation);
 
-  // --------------------------------------------------------------------------
-  // ARTÍCULOS RECOMENDADOS
-  // --------------------------------------------------------------------------
+  const handleRetry = async () => {
+    if (!onRetryExplanation || retrying) return;
+    setRetrying(true);
+    setRetryFailed(false);
+    try {
+      const ok = await onRetryExplanation();
+      if (!ok) setRetryFailed(true);
+    } catch {
+      setRetryFailed(true);
+    } finally {
+      setRetrying(false);
+    }
+  };
 
-  const suggestedArticleIds = useMemo(() => {
+  // Artículos recomendados según los riesgos detectados.
+  const suggestedArticles = useMemo(() => {
     if (!result) return [];
 
     const articleIds = [];
 
     risks.forEach((risk) => {
-      const recommendation =
-        classifyRiskText(risk);
-
+      const recommendation = classifyRiskText(risk);
       if (
         recommendation.articleId &&
-        !articleIds.includes(
-          recommendation.articleId
-        )
+        !articleIds.includes(recommendation.articleId)
       ) {
-        articleIds.push(
-          recommendation.articleId
-        );
+        articleIds.push(recommendation.articleId);
       }
     });
 
-    const finalIds =
-      articleIds.length
-        ? articleIds
-        : STARTER_ARTICLE_IDS;
+    const finalIds = articleIds.length ? articleIds : STARTER_ARTICLE_IDS;
 
-    return [...new Set(finalIds)].slice(0, 3);
+    return [...new Set(finalIds)]
+      .slice(0, 3)
+      .map((id) => ACADEMY_ARTICLES.find((article) => article.id === id))
+      .filter(Boolean);
   }, [result, risks]);
 
-
-  // --------------------------------------------------------------------------
   // SIN EVALUACIÓN
-  // --------------------------------------------------------------------------
 
   if (!result) {
     return (
-      <div className="empty-state">
-        <strong>
-          Aún no tienes una preevaluación.
-        </strong>
+      <div className="academy-empty">
+        <span className="academy-empty-icon">
+          <i className="ti ti-chart-pie" aria-hidden="true" />
+        </span>
+
+        <h3>Aún no tienes una preevaluación</h3>
 
         <p>
-          Completa tu preevaluación financiera para
-          conocer tu score, entender los factores que
-          influyen en él y recibir contenido educativo
-          relevante para tu situación.
+          Completa tu preevaluación financiera para conocer tu score,
+          entender los factores que influyen en él y recibir contenido
+          educativo relevante para tu situación.
         </p>
 
-        <button
-          type="button"
-          onClick={onStartEvaluation}
-        >
+        <button type="button" onClick={onStartEvaluation}>
           Ir a precalificación
+          <i className="ti ti-arrow-right" aria-hidden="true" />
         </button>
       </div>
     );
   }
 
-
-  const suggestedArticles =
-    suggestedArticleIds
-      .map((id) =>
-        ACADEMY_ARTICLES.find(
-          (article) => article.id === id
-        )
-      )
-      .filter(Boolean);
-
-
   return (
-    <div>
-
+    <div className="academy-interpreta">
       {/* RESULTADO */}
 
-      <div className="academy-suggested">
+      <div className="academy-score-hero">
+        <div className="academy-score-hero-text">
+          <span className="eyebrow">Tu resultado</span>
 
-        <div className="academy-suggested-header">
+          <h3>
+            {risks.length
+              ? "Esto está influyendo en tu score"
+              : "Tu perfil no muestra riesgos relevantes"}
+          </h3>
 
-          <div>
-            <span className="eyebrow">
-              Tu resultado
+          <p>
+            {hasExplanation
+              ? renderTextWithGlossary(result.ai_explanation, onOpenArticle)
+              : null}
+          </p>
+
+          {!hasExplanation && (
+            <div className="academy-ai-retry">
+              <span className="academy-ai-retry-icon">
+                <i className="ti ti-message-chatbot" aria-hidden="true" />
+              </span>
+
+              <div className="academy-ai-retry-body">
+                <strong>
+                  {retryFailed
+                    ? "No pudimos generar la explicación en este momento"
+                    : "Aún no tienes explicación automática"}
+                </strong>
+
+                <p>
+                  {retryFailed
+                    ? "Espera unos segundos e inténtalo nuevamente."
+                    : "Puedes generar un resumen personalizado de los factores de tu evaluación cuando quieras."}
+                </p>
+              </div>
+
+              {onRetryExplanation && (
+                <button
+                  type="button"
+                  className="academy-ai-retry-btn"
+                  onClick={handleRetry}
+                  disabled={retrying}
+                >
+                  {retrying ? (
+                    <>
+                      <span className="academy-spinner" aria-hidden="true" />
+                      Generando…
+                    </>
+                  ) : (
+                    <>
+                      <i className="ti ti-refresh" aria-hidden="true" />
+                      Intentar de nuevo
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        <ScoreDial score={result.score} classification={result.classification} />
+      </div>
+
+      {/* RIESGOS */}
+
+      {risks.length > 0 && (
+        <section className="academy-factor-block academy-factor-block--risks">
+          <header>
+            <span className="academy-factor-icon is-risk">
+              <i className="ti ti-alert-triangle" aria-hidden="true" />
             </span>
 
-            <h3>
-              {risks.length
-                ? "Esto está influyendo en tu score"
-                : "Tu perfil no muestra riesgos relevantes"}
-            </h3>
+            <div>
+              <h4>Factores que deberías revisar</h4>
+              <p>
+                Cada factor incluye una explicación y el concepto que conviene
+                repasar.
+              </p>
+            </div>
+          </header>
+
+          <ul className="academy-risk-cards">
+            {risks.map((risk, index) => {
+              const recommendation = classifyRiskText(risk);
+              const article = recommendation.articleId
+                ? ACADEMY_ARTICLES.find(
+                    (item) => item.id === recommendation.articleId
+                  )
+                : null;
+
+              return (
+                <li key={`${risk}-${index}`} className="academy-risk-card">
+                  <div className="academy-risk-text">
+                    {recommendation.term
+                      ? renderTextWithGlossary(risk, onOpenArticle)
+                      : risk}
+                  </div>
+
+                  {article && (
+                    <button
+                      type="button"
+                      className="academy-risk-article"
+                      onClick={() => onOpenArticle(article.id)}
+                    >
+                      <i className="ti ti-book-2" aria-hidden="true" />
+                      Aprender sobre esto
+                      <i className="ti ti-arrow-right" aria-hidden="true" />
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {/* POSITIVOS */}
+
+      {positives.length > 0 && (
+        <section className="academy-factor-block academy-factor-block--positives">
+          <header>
+            <span className="academy-factor-icon is-positive">
+              <i className="ti ti-circle-check" aria-hidden="true" />
+            </span>
+
+            <div>
+              <h4>Lo que ya juega a tu favor</h4>
+              <p>Mantén esas fortalezas al momento de postular.</p>
+            </div>
+          </header>
+
+          <ul className="academy-positive-list">
+            {positives.map((item) => (
+              <li key={item}>
+                <i className="ti ti-circle-check" aria-hidden="true" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ARTÍCULOS RECOMENDADOS */}
+
+      {suggestedArticles.length > 0 && (
+        <section className="academy-recommendations">
+          <div className="academy-recommendations-heading">
+            <span className="eyebrow">Recomendado para ti</span>
+
+            <h3>Contenido relacionado con tu evaluación</h3>
 
             <p>
-              {result.ai_explanation
-                ? splitTextWithGlossaryTerms(
-                    result.ai_explanation
-                  ).map((part, i) =>
-                    typeof part === "string" ? (
-                      <React.Fragment key={i}>
-                        {part}
-                      </React.Fragment>
-                    ) : (
-                      <GlossaryTerm
-                        key={i}
-                        term={part.term}
-                        onOpenArticle={
-                          onOpenArticle
-                        }
-                      />
-                    )
-                  )
-                : "Revisa el detalle de tu evaluación más reciente."}
+              Seleccionamos estos artículos a partir de los factores
+              detectados en tu preevaluación.
             </p>
           </div>
 
-
-          {/* SCORE */}
-
-          <div
-            className={`score-badge-wrap ${
-              CLASSIFICATION_CLASS[
-                result.classification
-              ] || "score-medium"
-            }`}
-          >
-            <span>Score actual</span>
-
-            <strong>{result.score}</strong>
-
-            <small>
-              {result.classification}
-            </small>
+          <div className="academy-suggested-grid">
+            {suggestedArticles.map((article) => (
+              <ArticleCard
+                key={article.id}
+                article={article}
+                onOpen={onOpenArticle}
+              />
+            ))}
           </div>
-        </div>
+        </section>
+      )}
 
+      {/* DISCLAIMER */}
 
-        {/* RIESGOS */}
+      <div className="academy-score-disclaimer">
+        <i className="ti ti-info-circle" aria-hidden="true" />
 
-        {risks.length > 0 && (
-          <div className="academy-risk-list">
-
-            <strong>
-              Factores que deberías revisar
-            </strong>
-
-            <ul>
-              {risks.map((risk, index) => {
-                const recommendation =
-                  classifyRiskText(risk);
-
-                const article =
-                  recommendation.articleId
-                    ? ACADEMY_ARTICLES.find(
-                        (item) =>
-                          item.id ===
-                          recommendation.articleId
-                      )
-                    : null;
-
-                return (
-                  <li
-                    key={`${risk}-${index}`}
-                  >
-                    <div>
-                      {recommendation.term ? (
-                        splitTextWithGlossaryTerms(
-                          risk
-                        ).map((part, i) =>
-                          typeof part ===
-                          "string" ? (
-                            <React.Fragment
-                              key={i}
-                            >
-                              {part}
-                            </React.Fragment>
-                          ) : (
-                            <GlossaryTerm
-                              key={i}
-                              term={part.term}
-                              onOpenArticle={
-                                onOpenArticle
-                              }
-                            />
-                          )
-                        )
-                      ) : (
-                        risk
-                      )}
-                    </div>
-
-                    {article && (
-                      <button
-                        type="button"
-                        className="academy-risk-article"
-                        onClick={() =>
-                          onOpenArticle(
-                            article.id
-                          )
-                        }
-                      >
-                        <i className="ti ti-book-2" />
-
-                        Aprender sobre esto
-
-                        <i className="ti ti-arrow-right" />
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-
-
-        {/* POSITIVOS */}
-
-        {positives.length > 0 && (
-          <div className="academy-positive-list">
-
-            <strong>
-              Lo que ya juega a tu favor
-            </strong>
-
-            <ul>
-              {positives.map((item) => (
-                <li key={item}>
-                  <i className="ti ti-circle-check" />
-
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-
-        {/* ARTÍCULOS RECOMENDADOS */}
-
-        {suggestedArticles.length > 0 && (
-          <div className="academy-recommendations">
-
-            <div className="section-heading compact">
-              <span className="eyebrow">
-                Recomendado para ti
-              </span>
-
-              <h3>
-                Contenido relacionado con tu evaluación
-              </h3>
-
-              <p>
-                Seleccionamos estos artículos a partir
-                de los factores detectados en tu
-                preevaluación.
-              </p>
-            </div>
-
-            <div className="academy-suggested-grid">
-              {suggestedArticles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                  onOpen={onOpenArticle}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-
-        {/* DISCLAIMER */}
-
-        <div className="academy-score-disclaimer">
-          <i className="ti ti-info-circle" />
-
-          <p>
-            Tu score es una herramienta de
-            orientación y no representa una aprobación
-            de crédito. La decisión final corresponde
-            a la institución financiera y depende de
-            sus propios criterios de evaluación.
-          </p>
-        </div>
-
+        <p>
+          Tu score es una herramienta de orientación y no representa una
+          aprobación de crédito. La decisión final corresponde a la
+          institución financiera y depende de sus propios criterios de
+          evaluación.
+        </p>
       </div>
     </div>
   );
@@ -792,215 +1141,186 @@ function InterpretaTab({
 // TAB CASOS PRÁCTICOS
 // ============================================================================
 
-function CasosTab({
-  evaluation,
-  onOpenArticle,
-}) {
+const CASE_SECTIONS = [
+  { key: "situation", icon: "ti-user", label: "La situación" },
+  { key: "why", icon: "ti-help-circle", label: "¿Por qué importa?" },
+  { key: "action", icon: "ti-flag", label: "¿Qué conviene hacer?" },
+];
+
+function CasosTab({ evaluation, onOpenArticle }) {
   const matchingCase = useMemo(
     () => findMatchingCase(evaluation),
     [evaluation]
   );
 
-  const [openCaseId, setOpenCaseId] =
-    useState(matchingCase?.id || null);
+  const [openCaseId, setOpenCaseId] = useState(matchingCase?.id || null);
 
+  const openCaseAndScroll = useCallback((caseId) => {
+    setOpenCaseId(caseId);
+
+    requestAnimationFrame(() => {
+      document
+        .getElementById(`academy-case-${caseId}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, []);
 
   return (
     <div>
+      <div className="academy-cases-intro">
+        <span className="eyebrow">Aprender con ejemplos</span>
 
-      <div className="section-heading compact">
-
-        <span className="eyebrow">
-          Aprender con ejemplos
-        </span>
-
-        <h3>
-          Casos prácticos
-        </h3>
+        <h3>Casos prácticos</h3>
 
         <p>
-          Situaciones ilustrativas que ayudan a
-          entender por qué un determinado perfil puede
-          presentar fortalezas o riesgos.
+          Situaciones ilustrativas que ayudan a entender por qué un
+          determinado perfil puede presentar fortalezas o riesgos.
         </p>
       </div>
-
 
       {/* CASO RELACIONADO CON EL USUARIO */}
 
       {matchingCase && (
         <div className="academy-personal-case">
-
-          <div className="academy-personal-case-label">
-            <i className="ti ti-sparkles" />
-
-            Caso parecido a tu situación
+          <div className="academy-personal-case-icon">
+            <i className="ti ti-sparkles" aria-hidden="true" />
           </div>
 
-          <h3>
-            {matchingCase.title}
-          </h3>
+          <div className="academy-personal-case-body">
+            <span className="academy-personal-case-label">
+              Caso parecido a tu situación
+            </span>
 
-          <p>
-            Encontramos un caso educativo con
-            características similares a algunos
-            factores de tu evaluación.
-          </p>
+            <h4>{matchingCase.title}</h4>
 
-          <button
-            type="button"
-            onClick={() =>
-              setOpenCaseId(matchingCase.id)
-            }
-          >
-            Ver caso
-            <i className="ti ti-arrow-right" />
-          </button>
+            <p>
+              Encontramos un caso educativo con características similares a
+              algunos factores de tu evaluación.
+            </p>
+          </div>
+
+          
         </div>
       )}
-
 
       {/* LISTA */}
 
       <div className="academy-cases">
-
-        {CASE_STUDIES.map((item) => {
-          const isOpen =
-            openCaseId === item.id;
-
-          const isMatch =
-            matchingCase?.id === item.id;
+        {CASE_STUDIES.map((item, index) => {
+          const isOpen = openCaseId === item.id;
+          const isMatch = matchingCase?.id === item.id;
+          const toneClass =
+            CLASSIFICATION_CLASS[item.tag.classification] || "is-medium";
 
           return (
-            <div
+            <article
               key={item.id}
-              className={`academy-case ${
-                isMatch ? "is-match" : ""
-              }`}
+              id={`academy-case-${item.id}`}
+              className={`academy-case ${toneClass} ${
+                isOpen ? "is-open" : ""
+              } ${isMatch ? "is-match" : ""}`}
             >
-
               <button
                 type="button"
                 className="academy-case-header"
-                onClick={() =>
-                  setOpenCaseId(
-                    isOpen ? null : item.id
-                  )
-                }
+                aria-expanded={isOpen}
+                onClick={() => setOpenCaseId(isOpen ? null : item.id)}
               >
-                <div>
+                <span className="academy-case-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
 
+                <span className="academy-case-title-wrap">
                   {isMatch && (
                     <span className="academy-case-match">
+                      <i className="ti ti-sparkles" aria-hidden="true" />
                       Se parece a tu situación
                     </span>
                   )}
 
-                  <strong>
-                    {item.title}
-                  </strong>
-                </div>
+                  <strong>{item.title}</strong>
+                </span>
+
+                <span
+                  className={`academy-class-chip ${toneClass}`}
+                  aria-label={`Clasificación ${item.tag.classification}`}
+                >
+                  {item.tag.classification}
+                </span>
 
                 <i
-                  className={`ti ${
-                    isOpen
-                      ? "ti-chevron-up"
-                      : "ti-chevron-down"
-                  }`}
+                  className={`ti ti-chevron-${
+                    isOpen ? "up" : "down"
+                  } academy-case-chevron`}
+                  aria-hidden="true"
                 />
               </button>
-
 
               {/* CUERPO */}
 
               {isOpen && (
                 <div className="academy-case-body">
+                  {CASE_SECTIONS.map(({ key, icon, label }) => (
+                    <div key={key} className="academy-case-section">
+                      <span className="academy-case-section-label">
+                        <i className={`ti ${icon}`} aria-hidden="true" />
+                        {label}
+                      </span>
 
-                  <p>
-                    <strong>
-                      La situación:
-                    </strong>{" "}
-                    {item.situation}
-                  </p>
-
-                  <p>
-                    <strong>
-                      ¿Por qué importa?
-                    </strong>{" "}
-                    {item.why}
-                  </p>
-
-                  <p>
-                    <strong>
-                      ¿Qué conviene hacer?
-                    </strong>{" "}
-                    {item.action}
-                  </p>
-
+                      <p>{item[key]}</p>
+                    </div>
+                  ))}
 
                   {/* ARTÍCULOS RELACIONADOS */}
 
-                  {item.relatedArticleIds
-                    ?.length > 0 && (
+                  {item.relatedArticleIds?.length > 0 && (
                     <div className="academy-case-links">
+                      <span>Aprende más:</span>
 
-                      <span>
-                        Aprende más:
-                      </span>
+                      <div className="academy-case-links-row">
+                        {item.relatedArticleIds.map((id) => {
+                          const article = ACADEMY_ARTICLES.find(
+                            (a) => a.id === id
+                          );
 
-                      <div>
-                        {item.relatedArticleIds.map(
-                          (id) => {
-                            const article =
-                              ACADEMY_ARTICLES.find(
-                                (item) =>
-                                  item.id === id
-                              );
+                          if (!article) return null;
 
-                            if (!article)
-                              return null;
-
-                            return (
-                              <button
-                                key={id}
-                                type="button"
-                                className="secondary-button"
-                                onClick={() =>
-                                  onOpenArticle(
-                                    id
-                                  )
-                                }
-                              >
-                                {article.title}
-
-                                <i className="ti ti-arrow-up-right" />
-                              </button>
-                            );
-                          }
-                        )}
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              className="secondary-button academy-case-link"
+                              onClick={() => onOpenArticle(id)}
+                            >
+                              <i className="ti ti-book-2" aria-hidden="true" />
+                              {article.title}
+                              <i
+                                className="ti ti-arrow-up-right"
+                                aria-hidden="true"
+                              />
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
                 </div>
               )}
-            </div>
+            </article>
           );
         })}
       </div>
 
-
       {/* AVISO */}
 
       <div className="academy-cases-disclaimer">
-        <i className="ti ti-info-circle" />
+        <i className="ti ti-info-circle" aria-hidden="true" />
 
         <p>
-          Estos casos son ejemplos educativos y no
-          representan una predicción individual ni una
-          garantía de aprobación de crédito.
+          Estos casos son ejemplos educativos y no representan una predicción
+          individual ni una garantía de aprobación de crédito.
         </p>
       </div>
-
     </div>
   );
 }
@@ -1011,21 +1331,9 @@ function CasosTab({
 // ============================================================================
 
 const TABS = [
-  {
-    id: "conceptos",
-    label: "Conceptos",
-    icon: "ti-books",
-  },
-  {
-    id: "interpretar",
-    label: "Interpreta tu score",
-    icon: "ti-chart-bar",
-  },
-  {
-    id: "casos",
-    label: "Casos prácticos",
-    icon: "ti-list-details",
-  },
+  { id: "conceptos", label: "Conceptos", icon: "ti-books" },
+  { id: "interpretar", label: "Interpreta tu score", icon: "ti-chart-bar" },
+  { id: "casos", label: "Casos prácticos", icon: "ti-list-details" },
 ];
 
 
@@ -1036,142 +1344,160 @@ const TABS = [
 export default function AcademiaFinanciera({
   evaluation,
   onStartEvaluation,
-  onNavigate,
+  onRetryExplanation,
 }) {
-  const [activeTab, setActiveTab] =
-    useState("conceptos");
+  const [activeTab, setActiveTab] = useState("conceptos");
+  const [openArticleId, setOpenArticleId] = useState(null);
+  const [openCapsuleId, setOpenCapsuleId] = useState(null);
 
-  const [openArticleId, setOpenArticleId] =
-    useState(null);
+  const openArticle = useCallback((id) => setOpenArticleId(id), []);
+  const openCapsule = useCallback((id) => setOpenCapsuleId(id), []);
 
-
-  // --------------------------------------------------------------------------
-  // ARTÍCULOS
-  // --------------------------------------------------------------------------
-
-  const openArticle = (id) => {
+  // Desde una cápsula, abrir su artículo debe cerrar la cápsula: los dos
+  // modales son excluyentes y si no se limpia, el artículo nunca se muestra.
+  const openArticleFromCapsule = useCallback((id) => {
+    setOpenCapsuleId(null);
     setOpenArticleId(id);
-  };
-
-  const closeArticle = () => {
+  }, []);
+  const closeOverlays = useCallback(() => {
     setOpenArticleId(null);
-  };
-
+    setOpenCapsuleId(null);
+  }, []);
 
   const activeArticle =
-    ACADEMY_ARTICLES.find(
+    ACADEMY_ARTICLES.find((article) => article.id === openArticleId) || null;
+
+  const activeCapsule =
+    ACADEMY_CAPSULES.find((capsule) => capsule.id === openCapsuleId) || null;
+
+  // Esc cierra los modales y se bloquea el scroll de fondo mientras hay
+  // alguno abierto.
+  useEffect(() => {
+    if (!activeArticle && !activeCapsule) return undefined;
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") closeOverlays();
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [activeArticle, activeCapsule, closeOverlays]);
+
+  const relatedArticles = useMemo(() => {
+    if (!activeArticle) return [];
+
+    return ACADEMY_ARTICLES.filter(
       (article) =>
-        article.id === openArticleId
-    ) || null;
-
-
-  // --------------------------------------------------------------------------
-  // RELACIONADOS
-  // --------------------------------------------------------------------------
-
-  const relatedArticles = activeArticle
-    ? ACADEMY_ARTICLES
-        .filter(
-          (article) =>
-            article.topic ===
-              activeArticle.topic &&
-            article.id !== activeArticle.id
-        )
-        .slice(0, 2)
-    : [];
-
+        article.topic === activeArticle.topic &&
+        article.id !== activeArticle.id
+    ).slice(0, 2);
+  }, [activeArticle]);
 
   return (
     <section className="section-block academia-panel">
-
       {/* HEADER */}
 
       <div className="section-heading">
+        <span className="eyebrow">Academia financiera</span>
 
-        <span className="eyebrow">
-          Academia financiera
-        </span>
-
-        <h1>
-          Prepárate antes de comprar
-        </h1>
+        <h1>Prepárate antes de comprar</h1>
 
         <p>
-          Aprende sobre crédito hipotecario, ahorro,
-          endeudamiento, UF, subsidios y compra de
-          vivienda con información respaldada por
+          Aprende sobre crédito hipotecario, ahorro, endeudamiento, UF,
+          subsidios y compra de vivienda con información respaldada por
           fuentes oficiales chilenas.
         </p>
 
-      </div>
+        <div className="academy-stats">
+          <span className="academy-stat">
+            <i className="ti ti-route" aria-hidden="true" />
+            {ACADEMY_TOPICS.length} temas
+          </span>
 
+          <span className="academy-stat">
+            <i className="ti ti-books" aria-hidden="true" />
+            {ACADEMY_ARTICLES.length} artículos
+          </span>
+
+          <span className="academy-stat">
+            <i className="ti ti-player-play" aria-hidden="true" />
+            {ACADEMY_CAPSULES.length} cápsulas
+          </span>
+
+          <span className="academy-stat academy-stat--sources">
+            <i className="ti ti-shield-check" aria-hidden="true" />
+            SERNAC · CMF · MINVU · Banco Central
+          </span>
+        </div>
+      </div>
 
       {/* TABS */}
 
-      <div
-        className="academy-tabs"
-        role="tablist"
-      >
+      <div className="academy-tabs" role="tablist">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
-            aria-selected={
-              activeTab === tab.id
-            }
+            aria-selected={activeTab === tab.id}
             className={`academy-tab ${
-              activeTab === tab.id
-                ? "is-active"
-                : ""
+              activeTab === tab.id ? "is-active" : ""
             }`}
-            onClick={() =>
-              setActiveTab(tab.id)
-            }
+            onClick={() => setActiveTab(tab.id)}
           >
-            <i className={`ti ${tab.icon}`} />
-
+            <i className={`ti ${tab.icon}`} aria-hidden="true" />
             {tab.label}
           </button>
         ))}
       </div>
-
 
       {/* CONTENIDO */}
 
       {activeTab === "conceptos" && (
         <ConceptosTab
           onOpenArticle={openArticle}
+          onOpenCapsule={openCapsule}
         />
       )}
 
       {activeTab === "interpretar" && (
         <InterpretaTab
           evaluation={evaluation}
-          onStartEvaluation={
-            onStartEvaluation
-          }
+          onStartEvaluation={onStartEvaluation}
           onOpenArticle={openArticle}
+          onRetryExplanation={onRetryExplanation}
         />
       )}
 
       {activeTab === "casos" && (
-        <CasosTab
-          evaluation={evaluation}
-          onOpenArticle={openArticle}
+        <CasosTab evaluation={evaluation} onOpenArticle={openArticle} />
+      )}
+
+      {/* MODALES */}
+
+      {activeCapsule && (
+        <CapsuleModal
+          capsule={activeCapsule}
+          onClose={closeOverlays}
+          onOpenArticle={openArticleFromCapsule}
         />
       )}
 
-
-      {/* MODAL */}
-
-      <ArticleModal
-        article={activeArticle}
-        onClose={closeArticle}
-        onOpenArticle={openArticle}
-        related={relatedArticles}
-      />
-
+      {!activeCapsule && (
+        <ArticleModal
+          article={activeArticle}
+          onClose={closeOverlays}
+          onOpenArticle={openArticle}
+          onOpenCapsule={openCapsule}
+          related={relatedArticles}
+        />
+      )}
     </section>
   );
 }

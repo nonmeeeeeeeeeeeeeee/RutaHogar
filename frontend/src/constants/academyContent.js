@@ -133,7 +133,7 @@ export const ACADEMY_ARTICLES = [
     tags: [
       "crédito hipotecario",
       "ingresos",
-      "deudas",
+      "deuda",
       "capacidad de pago",
     ],
     body:
@@ -151,7 +151,7 @@ export const ACADEMY_ARTICLES = [
   {
     id: "credito-3",
     topic: "credito",
-    title: "Preaprobación hipotecaria: ¿qué significa?",
+    title: "Simulación, preaprobación y aprobación: ¿qué cambia?",
     summary:
       "Diferencia una simulación, una evaluación preliminar y la aprobación formal de un crédito.",
     level: "Intermedio",
@@ -177,7 +177,7 @@ export const ACADEMY_ARTICLES = [
       "Qué significa complementar ingresos y por qué también deben considerarse las obligaciones de la otra persona.",
     level: "Intermedio",
     minutes: 5,
-    tags: ["codeudor", "renta complementada", "deudas"],
+    tags: ["codeudor", "renta complementada", "deuda"],
     body:
       "En algunas operaciones es posible que más de una persona participe en la evaluación del financiamiento. La forma concreta en que se considera la renta conjunta depende de las condiciones de la institución y del contrato.\n\nComplementar ingresos no significa simplemente sumar dos sueldos. La evaluación también debe considerar las obligaciones y antecedentes financieros que correspondan a las personas involucradas.\n\nAntes de comprometer a otra persona como codeudor o participante de una operación, es importante entender las responsabilidades que asumirá y revisar las condiciones específicas del crédito.",
     sources: [
@@ -378,7 +378,7 @@ export const ACADEMY_ARTICLES = [
       "Ahorrar para el pie es importante, pero también conviene considerar la liquidez necesaria para enfrentar imprevistos.",
     level: "Intermedio",
     minutes: 4,
-    tags: ["pie", "ahorro", "emergencia"],
+    tags: ["pie", "ahorro", "fondo de emergencia"],
     body:
       "El objetivo de reunir un pie no debería analizarse de manera aislada. Comprar una vivienda también implica asumir una obligación financiera de largo plazo y enfrentar gastos que pueden aparecer antes o después de la compra.\n\nPor eso es útil distinguir entre el dinero destinado al pie y los recursos que necesitas mantener disponibles para gastos inesperados y obligaciones habituales.\n\nLa cantidad adecuada de ahorro disponible depende de cada hogar y de sus gastos. La idea central es evitar que la compra de la vivienda deje al hogar sin liquidez para enfrentar un imprevisto.",
     sources: [
@@ -398,7 +398,7 @@ export const ACADEMY_ARTICLES = [
   {
     id: "costos-1",
     topic: "costos",
-    title: "Tasa de interés: ¿qué significa?",
+    title: "¿Qué es la tasa de interés?",
     summary:
       "La tasa es solo una parte del costo de un crédito. Aprende a distinguirla de otros indicadores.",
     level: "Básico",
@@ -492,7 +492,7 @@ export const ACADEMY_ARTICLES = [
       "Conoce los seguros que la normativa exige para las operaciones hipotecarias.",
     level: "Intermedio",
     minutes: 4,
-    tags: ["seguros", "desgravamen", "incendio"],
+    tags: ["seguro de desgravamen", "seguro de incendio", "seguros"],
     body:
       "En las operaciones de crédito hipotecario existen seguros obligatorios establecidos por la normativa. La CMF señala específicamente el seguro de desgravamen y el seguro de incendio.\n\nEl seguro de desgravamen cubre el saldo de la deuda en caso de fallecimiento del deudor, de acuerdo con las condiciones de la póliza. El seguro de incendio protege el inmueble frente a los riesgos cubiertos por la póliza correspondiente.\n\nAntes de contratar debes revisar las coberturas, exclusiones y costos de los seguros ofrecidos. También es importante diferenciar los seguros obligatorios de otros productos voluntarios.",
     sources: [
@@ -876,7 +876,7 @@ export const ACADEMY_ARTICLES = [
     topic: "vivienda",
     title: "Costos que debes considerar al comprar una vivienda",
     summary:
-      "El precio de publicación y el pie no representan necesariamente todos los recursos que necesitarás.",
+      "El precio de la propiedad y el pie no representan necesariamente todos los recursos que necesitarás.",
     level: "Básico",
     minutes: 4,
     tags: ["gastos", "vivienda", "pie"],
@@ -1059,6 +1059,218 @@ export const ACADEMY_GLOSSARY = {
       "Situación financiera asociada a las obligaciones de deuda que mantiene una persona o familia.",
     articleId: "endeudamiento-4",
   },
+
+  // --- Términos adicionales para cubrir la mayoría de las etiquetas ---
+
+  "crédito hipotecario": {
+    label: "crédito hipotecario",
+    definition:
+      "Financiamiento de largo plazo destinado, entre otros fines, a la compra de una vivienda y garantizado sobre el inmueble.",
+    articleId: "credito-1",
+  },
+
+  ingresos: {
+    label: "ingresos",
+    definition:
+      "Dinero que recibe una persona o hogar de forma periódica y que constituye la base para evaluar su capacidad de pago.",
+    articleId: "credito-2",
+  },
+
+  "capacidad de pago": {
+    label: "capacidad de pago",
+    definition:
+      "Margen que tiene una persona para asumir una nueva obligación financiera considerando sus ingresos y sus deudas actuales.",
+    articleId: "credito-2",
+  },
+
+  "renta complementada": {
+    label: "renta complementada",
+    definition:
+      "Suma de ingresos de más de una persona para evaluar un financiamiento, considerando también las obligaciones de cada participante.",
+    articleId: "credito-4",
+  },
+
+  deuda: {
+    label: "deuda",
+    definition:
+      "Obligación financiera adquirida con una institución u otra persona, que debe pagarse en condiciones definidas.",
+    articleId: "endeudamiento-1",
+  },
+
+  "endeudamiento responsable": {
+    label: "endeudamiento responsable",
+    definition:
+      "Decisión de endeudarse considerando el presupuesto completo, el margen disponible y los posibles imprevistos.",
+    articleId: "endeudamiento-1",
+  },
+
+  presupuesto: {
+    label: "presupuesto",
+    definition:
+      "Comparación entre ingresos y gastos de un hogar que permite conocer cuánto margen hay realmente.",
+    articleId: "endeudamiento-4",
+  },
+
+  tarjetas: {
+    label: "tarjetas",
+    definition:
+      "Productos financieros que permiten comprar a crédito; sus compromisos deben incluirse en el análisis del presupuesto.",
+    articleId: "endeudamiento-3",
+  },
+
+  "línea de crédito": {
+    label: "línea de crédito",
+    definition:
+      "Monto máximo disponible para usar a crédito; solo lo efectivamente utilizado genera obligaciones.",
+    articleId: "endeudamiento-3",
+  },
+
+  "cuenta de ahorro": {
+    label: "cuenta de ahorro",
+    definition:
+      "Instrumento utilizado en varios programas habitacionales para acreditar ahorro previo del postulante.",
+    articleId: "ahorro-3",
+  },
+
+  "fondo de emergencia": {
+    label: "fondo de emergencia",
+    definition:
+      "Recursos mantenidos disponibles para enfrentar gastos inesperados sin comprometer la estabilidad del hogar.",
+    articleId: "ahorro-4",
+  },
+
+  seguros: {
+    label: "seguros",
+    definition:
+      "Productos de cobertura de riesgos; algunos son obligatorios en operaciones hipotecarias según la normativa.",
+    articleId: "costos-5",
+  },
+
+  comparación: {
+    label: "comparación",
+    definition:
+      "Ejercicio de revisar ofertas equivalentes (monto, plazo y condiciones) usando indicadores como CAE y costo total.",
+    articleId: "costos-6",
+  },
+
+  cuota: {
+    label: "cuota",
+    definition:
+      "Pago periódico que se realiza para pagar un crédito; su valor depende del monto, plazo y condiciones.",
+    articleId: "plazos-1",
+  },
+
+  inflación: {
+    label: "inflación",
+    definition:
+      "Aumento generalizado y sostenido de los precios de bienes y servicios, medido a través de variaciones del IPC.",
+    articleId: "uf-2",
+  },
+
+  DS1: {
+    label: "DS1",
+    definition:
+      "Subsidio habitacional para Sectores Medios cuyos requisitos, montos y fechas se definen en cada llamado.",
+    articleId: "subsidios-2",
+  },
+
+  tramo: {
+    label: "tramo",
+    definition:
+      "Segmento de calificación socioeconómica o de postulación utilizado por distintos programas y beneficios.",
+    articleId: "rsh-2",
+  },
+
+  beneficios: {
+    label: "beneficios",
+    definition:
+      "Apoyos otorgados por el Estado bajo condiciones establecidas por cada programa específico.",
+    articleId: "subsidios-1",
+  },
+
+  promesa: {
+    label: "promesa",
+    definition:
+      "Compromiso previo a la escritura de compraventa; conviene revisar bien sus condiciones antes de firmarlo.",
+    articleId: "vivienda-5",
+  },
+
+  contrato: {
+    label: "contrato",
+    definition:
+      "Documento que establece derechos y obligaciones de las partes; debe revisarse completo antes de firmar.",
+    articleId: "vivienda-5",
+  },
+
+  ahorro: {
+    label: "ahorro",
+    definition:
+      "Parte del ingreso que se destina deliberadamente a metas futuras en lugar de gastarse.",
+    articleId: "ahorro-2",
+  },
+
+  crédito: {
+    label: "crédito",
+    definition:
+      "Operación en que una institución entrega dinero u otro bien para pagarlo después bajo condiciones definidas.",
+    articleId: "credito-1",
+  },
+
+  costo: {
+    label: "costo",
+    definition:
+      "Desembolso asociado a una operación financiera; incluye más elementos que la sola tasa de interés.",
+    articleId: "costos-1",
+  },
+
+  costos: {
+    label: "costos",
+    definition:
+      "Conjunto de desembolsos asociados a una operación: capital, intereses, seguros, cargos y trámites.",
+    articleId: "costos-4",
+  },
+
+  gastos: {
+    label: "gastos",
+    definition:
+      "Egresos habituales o eventuales del hogar que deben considerarse al construir un presupuesto.",
+    articleId: "costos-4",
+  },
+
+  evaluación: {
+    label: "evaluación",
+    definition:
+      "Análisis que realiza la institución financiera sobre la solicitud y sus antecedentes antes de decidir.",
+    articleId: "credito-3",
+  },
+
+  requisitos: {
+    label: "requisitos",
+    definition:
+      "Condiciones exigidas por cada programa o producto; varían entre llamados e instituciones.",
+    articleId: "subsidios-4",
+  },
+
+  propiedad: {
+    label: "propiedad",
+    definition:
+      "Inmueble objeto de la compra o garantía; sus antecedentes deben revisarse antes de operar.",
+    articleId: "vivienda-2",
+  },
+
+  compra: {
+    label: "compra",
+    definition:
+      "Operación de adquisición de una vivienda, que involucra precio, trámites, financiamiento y costos asociados.",
+    articleId: "vivienda-4",
+  },
+
+  MINVU: {
+    label: "MINVU",
+    definition:
+      "Ministerio de Vivienda y Urbanismo, autoridad que define los programas habitacionales y publica los llamados oficiales.",
+    articleId: "subsidios-1",
+  },
 };
 
 
@@ -1180,34 +1392,46 @@ export const STARTER_ARTICLE_IDS = [
 // -----------------------------------------------------------------------------
 // CASOS PRÁCTICOS
 // -----------------------------------------------------------------------------
+//
+// `tag.classification` es solo la etiqueta ilustrativa del perfil del caso.
+//
+// La similitud con la evaluación del usuario se determina ÚNICAMENTE por
+// `match.keywordGroups`: grupos de frases que provienen de los textos de
+// riesgo reales que genera el motor de scoring (ver backend/app/scoring.py).
+// Un caso coincide cuando al menos uno de sus grupos aparece en algún riesgo
+// declarado, y entre los casos que coinciden gana el que acumule más grupos.
+// Los casos sin `match` son puramente educativos: sus temas no forman parte
+// del scoring, por lo que nunca se anuncian como "parecidos a tu situación".
 
 export const CASE_STUDIES = [
   {
-    id: "caso-costo-total",
-    title: "La tasa más baja no siempre cuenta toda la historia",
-    tag: {
-      classification: "Medio",
-      riskKeyword: "dividendo",
+    id: "caso-dividendo-ajustado",
+    title: "El dividendo deja poco margen mensual",
+    tag: { classification: "Medio" },
+    match: {
+      // Riesgo real: "El dividendo objetivo podría exigir más holgura financiera."
+      keywordGroups: [["dividendo objetivo", "holgura"]],
     },
     situation:
-      "Una persona encuentra dos alternativas hipotecarias. Una tiene una tasa de interés ligeramente menor, pero la otra presenta una CAE y un costo total más convenientes bajo condiciones comparables.",
+      "El ingreso permite cubrir el dividendo estimado, pero después de considerar las demás obligaciones y gastos queda poco margen para enfrentar imprevistos.",
     why:
-      "La tasa de interés es solamente uno de los componentes del costo del crédito. La CAE y el Costo Total permiten incorporar otros elementos relevantes de la operación.",
+      "La capacidad de pago no debería analizarse solamente preguntando si una persona puede pagar una cuota. También es importante considerar el resto de sus obligaciones y su presupuesto mensual.",
     action:
-      "Comparar ofertas equivalentes revisando tasa, CAE, costo total, seguros, gastos y plazo antes de elegir.",
+      "Comparar alternativas de menor precio, mayor ahorro o diferentes condiciones de financiamiento y evaluar cómo cambia el presupuesto mensual.",
     relatedArticleIds: [
-      "costos-2",
-      "costos-3",
-      "costos-6",
+      "carga-1",
+      "endeudamiento-2",
+      "endeudamiento-4",
     ],
   },
 
   {
     id: "caso-pie-insuficiente",
     title: "Buen perfil, pero el ahorro todavía no alcanza",
-    tag: {
-      classification: "Alto",
-      riskKeyword: "ahorro",
+    tag: { classification: "Alto" },
+    match: {
+      // Riesgo real: "El ahorro disponible podría ser bajo para..."
+      keywordGroups: [["ahorro disponible"]],
     },
     situation:
       "Una persona tiene ingresos suficientes y pocas obligaciones financieras, pero todavía no reúne los recursos propios necesarios para estructurar la compra de la vivienda que está evaluando.",
@@ -1223,52 +1447,147 @@ export const CASE_STUDIES = [
   },
 
   {
-    id: "caso-dividendo-ajustado",
-    title: "El dividendo deja poco margen mensual",
-    tag: {
-      classification: "Medio",
-      riskKeyword: "dividendo",
+    id: "caso-deuda",
+    title: "El ingreso parece suficiente, pero existen otras deudas",
+    tag: { classification: "Bajo" },
+    match: {
+      // Riesgo real: "La carga mensual de deudas podría afectar la evaluación."
+      keywordGroups: [["carga mensual de deudas"]],
     },
     situation:
-      "El ingreso permite cubrir el dividendo estimado, pero después de considerar las demás obligaciones y gastos queda poco margen para enfrentar imprevistos.",
+      "Una persona tiene un ingreso que parece suficiente para el dividendo objetivo, pero además mantiene cuotas de otros créditos y obligaciones financieras.",
     why:
-      "La capacidad de pago no debería analizarse solamente preguntando si una persona puede pagar una cuota. También es importante considerar el resto de sus obligaciones y su presupuesto mensual.",
+      "La capacidad de pago debe considerar el conjunto de obligaciones financieras y no solamente la nueva cuota que se pretende contratar.",
     action:
-      "Comparar alternativas de menor precio, mayor ahorro o diferentes condiciones de financiamiento y evaluar cómo cambia el presupuesto mensual.",
+      "Revisar todas las cuotas, construir un presupuesto completo y evaluar el efecto de las deudas existentes antes de comprometer una nueva obligación.",
     relatedArticleIds: [
       "carga-1",
-      "endeudamiento-2",
-      "uf-3",
+      "endeudamiento-1",
+      "endeudamiento-4",
     ],
   },
 
   {
-    id: "caso-rsh",
-    title: "Tener un RSH no significa tener automáticamente un subsidio",
-    tag: {
-      classification: "Medio",
-      riskKeyword: "subsidio",
+    id: "caso-codeudor",
+    title: "Complementar renta ayuda solo si el respaldo acompaña",
+    tag: { classification: "Medio" },
+    match: {
+      // Riesgos reales asociados al co-deudor / complemento de renta.
+      // Va ANTES que el caso de estabilidad a propósito: varios riesgos del
+      // co-deudor mencionan continuidad o contrato, y al empatar debe ganar
+      // el caso más específico.
+      keywordGroups: [
+        ["co-deudor"],
+        ["persona complementaria", "complementaria declara"],
+        ["complementar renta podría requerir"],
+      ],
     },
     situation:
-      "Una persona conoce su porcentaje del RSH y asume que ese porcentaje por sí solo significa que puede recibir un subsidio habitacional.",
+      "Una persona suma a otra para complementar renta, pero esa persona tiene deudas elevadas, morosidad reciente o poca continuidad laboral.",
     why:
-      "El RSH es uno de los elementos que pueden utilizarse en los procesos de selección de beneficios, pero cada programa establece sus propios requisitos.",
+      "Complementar ingresos no consiste solo en sumar sueldos: las obligaciones y antecedentes de quienes participan en la operación también forman parte de la evaluación.",
     action:
-      "Identificar el programa habitacional concreto y revisar sus requisitos completos en MINVU o ChileAtiende.",
+      "Revisar con transparencia la situación financiera del acompañante y evaluar alternativas antes de comprometerlo en la operación.",
     relatedArticleIds: [
-      "rsh-1",
-      "rsh-2",
-      "subsidios-1",
+      "credito-4",
+      "endeudamiento-3",
+      "credito-2",
+    ],
+  },
+
+  {
+    id: "caso-estabilidad",
+    title: "Ingreso suficiente, pero falta respaldo de estabilidad",
+    tag: { classification: "Medio" },
+    match: {
+      // Riesgos reales de contrato y continuidad laboral propios del usuario.
+      keywordGroups: [
+        ["plazo fijo"],
+        ["honorarios", "variables pueden requerir"],
+        ["independiente", "independientes"],
+        ["continuidad laboral"],
+      ],
+    },
+    situation:
+      "Una persona tiene ingresos suficientes para el dividendo objetivo, pero trabaja con contrato a plazo fijo, por honorarios o lleva pocos meses en su empleo actual.",
+    why:
+      "Las instituciones analizan solvencia y estabilidad antes de contratar una operación. La forma de contrato y su continuidad forman parte de los antecedentes que pueden considerar en la evaluación.",
+    action:
+      "Fortalecer los respaldos de ingresos y continuidad, y revisar con anticipación qué antecedentes solicita cada institución antes de una evaluación formal.",
+    relatedArticleIds: [
+      "credito-2",
+      "credito-3",
+    ],
+  },
+
+  {
+    id: "caso-morosidad",
+    title: "Un pago pendiente puede pesar más que el ingreso",
+    tag: { classification: "Bajo" },
+    match: {
+      // Riesgos reales: morosidad declarada o incertidumbre sobre pagos.
+      keywordGroups: [
+        ["morosidad declarada"],
+        ["incertidumbre sobre la situación de pagos"],
+      ],
+    },
+    situation:
+      "Una persona con ingresos adecuados descubre pagos pendientes, o simplemente no sabe si su situación de pagos está al día, justo cuando quiere iniciar una evaluación para comprar vivienda.",
+    why:
+      "El historial de pagos forma parte del análisis que realiza la institución financiera. Un compromiso irregular o desconocido puede influir más en la decisión que un buen nivel de ingreso.",
+    action:
+      "Identificar y regularizar compromisos pendientes, y confirmar la situación real ante las instituciones correspondientes antes de iniciar trámites.",
+    relatedArticleIds: [
+      "endeudamiento-1",
+      "endeudamiento-4",
+      "carga-1",
+    ],
+  },
+
+  {
+    id: "caso-plazo-edad",
+    title: "La edad y el plazo del crédito también se combinan",
+    tag: { classification: "Medio" },
+    match: {
+      // Riesgo real: "La edad declarada y el plazo hipotecario podrían..."
+      keywordGroups: [["edad declarada"]],
+    },
+    situation:
+      "Una persona cercana a la edad de jubilación busca un plazo largo para reducir el dividendo, pero la suma de edad más plazo complica la estructura de la operación.",
+    why:
+      "El plazo influye tanto en la cuota como en las condiciones generales del crédito, y algunas instituciones aplican criterios adicionales según la edad del deudor.",
+    action:
+      "Comparar plazos menores, revisar el efecto en cuota y costo total, y validar las condiciones posibles antes de comprometer la compra.",
+    relatedArticleIds: [
+      "plazos-1",
+      "costos-1",
+      "costos-3",
+    ],
+  },
+
+  // --- Casos educativos: sin `match`, nunca se muestran como "parecidos" ---
+
+  {
+    id: "caso-costo-total",
+    title: "La tasa más baja no siempre cuenta toda la historia",
+    tag: { classification: "Medio" },
+    situation:
+      "Una persona encuentra dos alternativas hipotecarias. Una tiene una tasa de interés ligeramente menor, pero la otra presenta una CAE y un costo total más convenientes bajo condiciones comparables.",
+    why:
+      "La tasa de interés es solamente uno de los componentes del costo del crédito. La CAE y el Costo Total permiten incorporar otros elementos relevantes de la operación.",
+    action:
+      "Comparar ofertas equivalentes revisando tasa, CAE, costo total, seguros, gastos y plazo antes de elegir.",
+    relatedArticleIds: [
+      "costos-2",
+      "costos-3",
+      "costos-6",
     ],
   },
 
   {
     id: "caso-uf",
     title: "El dividendo está en UF, pero el presupuesto está en pesos",
-    tag: {
-      classification: "Medio",
-      riskKeyword: "dividendo",
-    },
+    tag: { classification: "Medio" },
     situation:
       "Una persona conoce el número de UF de su dividendo, pero no ha considerado que el equivalente en pesos puede cambiar cuando cambia el valor de la UF.",
     why:
@@ -1283,22 +1602,19 @@ export const CASE_STUDIES = [
   },
 
   {
-    id: "caso-deuda",
-    title: "El ingreso parece suficiente, pero existen otras deudas",
-    tag: {
-      classification: "Bajo",
-      riskKeyword: "deuda",
-    },
+    id: "caso-rsh",
+    title: "Tener un RSH no significa tener automáticamente un subsidio",
+    tag: { classification: "Medio" },
     situation:
-      "Una persona tiene un ingreso que parece suficiente para el dividendo objetivo, pero además mantiene cuotas de otros créditos y obligaciones financieras.",
+      "Una persona conoce su porcentaje del RSH y asume que ese porcentaje por sí solo significa que puede recibir un subsidio habitacional.",
     why:
-      "La capacidad de pago debe considerar el conjunto de obligaciones financieras y no solamente la nueva cuota que se pretende contratar.",
+      "El RSH es uno de los elementos que pueden utilizarse en los procesos de selección de beneficios, pero cada programa establece sus propios requisitos.",
     action:
-      "Revisar todas las cuotas, construir un presupuesto completo y evaluar el efecto de las deudas existentes antes de comprometer una nueva obligación.",
+      "Identificar el programa habitacional concreto y revisar sus requisitos completos en MINVU o ChileAtiende.",
     relatedArticleIds: [
-      "carga-1",
-      "endeudamiento-1",
-      "endeudamiento-4",
+      "rsh-1",
+      "rsh-2",
+      "subsidios-1",
     ],
   },
 ];
@@ -1307,21 +1623,253 @@ export const CASE_STUDIES = [
 // -----------------------------------------------------------------------------
 // BUSCAR CASO RELACIONADO CON LA EVALUACIÓN REAL
 // -----------------------------------------------------------------------------
+//
+// Reglas de similitud:
+// 1. Solo se analizan los riesgos declarados por la evaluación; sin riesgos
+//    no hay caso parecido.
+// 2. Cada grupo de palabras clave de un caso cuenta como un punto si alguna
+//    de sus variantes aparece en cualquier texto de riesgo.
+// 3. Gana el caso con más grupos presentes; en empate decide el orden de la
+//    lista. Si ningún caso alcanza al menos un punto, no hay similitud.
 
 export function findMatchingCase(evaluation) {
-  const result = evaluation?.result;
+  const risks = evaluation?.result?.risks;
 
-  if (!result?.classification || !Array.isArray(result.risks)) {
+  if (!Array.isArray(risks) || risks.length === 0) {
     return null;
   }
 
-  return (
-    CASE_STUDIES.find(
-      (item) =>
-        item.tag.classification === result.classification &&
-        result.risks.some((risk) =>
-          risk.toLowerCase().includes(item.tag.riskKeyword)
-        )
-    ) || null
+  const texts = risks.map((risk) => String(risk).toLowerCase());
+
+  let bestCase = null;
+  let bestScore = 0;
+
+  for (const item of CASE_STUDIES) {
+    const groups = item.match?.keywordGroups;
+
+    if (!Array.isArray(groups) || groups.length === 0) continue;
+
+    let score = 0;
+
+    for (const group of groups) {
+      const hit = texts.some((text) =>
+        group.some((keyword) => text.includes(keyword))
+      );
+
+      if (hit) score += 1;
+    }
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestCase = item;
+    }
+  }
+
+  return bestScore > 0 ? bestCase : null;
+}
+
+
+// -----------------------------------------------------------------------------
+// CÁPSULAS / VIDEOS POR TEMA
+// -----------------------------------------------------------------------------
+//
+// Cada tema de la Academia tiene al menos una cápsula: una mini-lección corta
+// (2-3 ideas clave) pensada para leerse en un minuto o verse como video.
+//
+// Para publicar el video real de una cápsula, solo completa `videoUrl`
+// (URL de YouTube o Vimeo). Mientras sea `null`, la cápsula se muestra como
+// mini-lección interactiva dentro de la app; cuando tenga URL, la interfaz
+// la convierte automáticamente en reproductor embebido.
+//
+// Las dos cápsulas con `videoUrl` usan videos públicos de referencia
+// (Meganoticias y Subsecretaría de Bienes Nacionales) solo como ejemplo;
+// reemplázalos por los videos propios del producto cuando estén disponibles.
+//
+// `articleId` conecta la cápsula con su artículo de referencia.
+
+export const ACADEMY_CAPSULES = [
+  {
+    id: "cap-credito-1",
+    topicId: "credito",
+    title: "Crédito hipotecario en 4 ideas",
+    description:
+      "Qué financia realmente, qué lo garantiza y qué revisar antes de contratar.",
+    minutes: 2,
+    takeaways: [
+      "Financia la compra de una vivienda y queda garantizado sobre el inmueble.",
+      "El dividendo mensual no es el costo completo: revisa CAE, seguros y gastos.",
+      "Compara cotizaciones equivalentes antes de comprometerte.",
+    ],
+    articleId: "credito-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-credito-2",
+    topicId: "credito",
+    title: "¿Por qué te evalúan más allá del sueldo?",
+    description:
+      "Deudas actuales, codeudores y continuidad de ingresos también pesan en la decisión.",
+    minutes: 2,
+    takeaways: [
+      "La evaluación considera tus obligaciones financieras existentes.",
+      "Un ingreso alto por sí solo no garantiza la aprobación.",
+      "El codeudor asume responsabilidades: entiéndelas antes de sumarlo.",
+    ],
+    articleId: "credito-2",
+    videoUrl: null,
+  },
+  {
+    id: "cap-endeudamiento-1",
+    topicId: "endeudamiento",
+    title: "El máximo aprobado no es tu meta",
+    description:
+      "Cómo decidir cuánto pedir mirando tu presupuesto real, no el techo del banco.",
+    minutes: 2,
+    takeaways: [
+      "El monto máximo que te aprueban puede exceder lo conveniente para ti.",
+      "Suma todas tus cuotas al presupuesto antes de decidir.",
+      "Deja margen para imprevistos y variaciones de ingresos.",
+    ],
+    articleId: "endeudamiento-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-carga-1",
+    topicId: "carga",
+    title: "Cuánto de tus ingresos ya está comprometido",
+    description:
+      "La carga financiera explicada sin fórmulas mágicas ni porcentajes universales.",
+    minutes: 2,
+    takeaways: [
+      "Mide qué parte de tus ingresos ya se va en cuotas y obligaciones.",
+      "No existe un porcentaje único válido para todos los bancos.",
+      "Una carga alta reduce tu margen para imprevistos y nuevas deudas.",
+    ],
+    articleId: "carga-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-ahorro-1",
+    topicId: "ahorro",
+    title: "El pie: tu primera meta de ahorro",
+    description:
+      "Qué es el pie, cuánto juntar y cómo no descuidar tu fondo de emergencia.",
+    minutes: 2,
+    takeaways: [
+      "El pie es la parte del valor que pagas con recursos propios.",
+      "El porcentaje financiado varía según institución y operación.",
+      "Separa el ahorro del pie de tu fondo de emergencia.",
+    ],
+    articleId: "ahorro-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-costos-1",
+    topicId: "costos",
+    title: "Tasa, CAE y costo total: no son lo mismo",
+    description:
+      "Los tres números que debes mirar antes de firmar cualquier crédito.",
+    minutes: 3,
+    takeaways: [
+      "La tasa es solo uno de los componentes del costo.",
+      "La CAE permite comparar ofertas en condiciones equivalentes.",
+      "El costo total muestra cuánto pagarás en todo el plazo.",
+    ],
+    articleId: "costos-2",
+    videoUrl: null,
+  },
+  {
+    id: "cap-plazos-1",
+    topicId: "plazos",
+    title: "Plazo largo: cuota menor, costo mayor",
+    description:
+      "El trade-off entre lo que pagas cada mes y lo que pagas en total.",
+    minutes: 2,
+    takeaways: [
+      "A mayor plazo, la cuota baja pero pagas intereses por más tiempo.",
+      "Cuota baja no significa crédito barato.",
+      "Compara siempre plazo, CAE y costo total en conjunto.",
+    ],
+    articleId: "plazos-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-uf-1",
+    topicId: "uf",
+    title: "UF: por qué tu dividendo cambia en pesos",
+    description:
+      "Cómo funciona la reajustabilidad y qué significa para tu presupuesto mensual.",
+    minutes: 6,
+    takeaways: [
+      "La UF se reajusta diariamente según la variación del IPC.",
+      "Las UF de tu dividendo pueden mantenerse, pero sus pesos cambian.",
+      "Simula tu presupuesto considerando distintos escenarios de UF.",
+    ],
+    articleId: "uf-1",
+    // Video de ejemplo público; reemplazar por el video propio del producto.
+    videoUrl: "https://www.youtube.com/watch?v=Ijt_aa0qtJY",
+  },
+  {
+    id: "cap-subsidios-1",
+    topicId: "subsidios",
+    title: "Subsidio: un beneficio con reglas propias",
+    description:
+      "Por qué cada programa (y cada llamado) tiene requisitos distintos.",
+    minutes: 2,
+    takeaways: [
+      "Cada programa define sus propios beneficiarios, montos y requisitos.",
+      "Los llamados fijan condiciones específicas que pueden cambiar.",
+      "Revisa siempre el llamado vigente en MINVU antes de postular.",
+    ],
+    articleId: "subsidios-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-rsh-1",
+    topicId: "rsh",
+    title: "Tu % RSH no es un subsidio automático",
+    description:
+      "Qué mide realmente el Registro Social de Hogares y cómo se usa.",
+    minutes: 2,
+    takeaways: [
+      "El RSH califica socioeconómicamente a tu hogar, no otorga beneficios.",
+      "Cada programa puede pedir requisitos adicionales al tramo.",
+      "Revisa los requisitos completos, no solo tu porcentaje.",
+    ],
+    articleId: "rsh-1",
+    videoUrl: null,
+  },
+  {
+    id: "cap-vivienda-1",
+    topicId: "vivienda",
+    title: "Los gastos que vienen con la vivienda",
+    description:
+      "Tasación, estudio de títulos, escritura: el precio no es el único desembolso.",
+    minutes: 4,
+    takeaways: [
+      "La compra puede incluir tasación, estudio de títulos y escritura.",
+      "En compras financiadas súmales intereses, seguros y cargos.",
+      "Presupuesta el precio más los costos de la operación completa.",
+    ],
+    articleId: "vivienda-4",
+    // Video de ejemplo público (Bienes Nacionales); reemplazar por el video propio.
+    videoUrl: "https://www.youtube.com/watch?v=h0Gd_rwttGw",
+  },
+];
+
+
+// -----------------------------------------------------------------------------
+// HELPERS DE CÁPSULAS
+// -----------------------------------------------------------------------------
+
+export function getCapsulesForTopic(topicId) {
+  return ACADEMY_CAPSULES.filter(
+    (capsule) => capsule.topicId === topicId
   );
+}
+
+export function findCapsule(id) {
+  return ACADEMY_CAPSULES.find(
+    (capsule) => capsule.id === id
+  ) || null;
 }

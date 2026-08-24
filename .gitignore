@@ -30,3 +30,5 @@ frontend/dist/
 stuff.txt
 
 backend/vercel.json
+
+*.zip

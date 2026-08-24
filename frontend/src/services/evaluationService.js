@@ -1,5 +1,5 @@
 import { supabase } from "../utils/supabase";
-import { normalizeDisplayList, normalizeDisplayText } from "../utils/text";
+import { normalizeDisplayList, normalizeDisplayText, sanitizeAiText } from "../utils/text";
 import { ensureUserProfile, getAuthenticatedUser, isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 import { buildScoringHistoryRow, readLocalScoringHistory, writeLocalScoringHistory } from "./getScoringHistory";
 
@@ -47,11 +47,11 @@ export function normalizeEvaluation(row, profilesMap = {}) {
       classification: row.classification,
       risks: normalizeDisplayList(recommendationData.risks),
       recommendations: normalizeDisplayList(recommendations),
-      ai_explanation: normalizeDisplayText(row.explanation || ""),
+      ai_explanation: sanitizeAiText(row.explanation),
       improvement_plan: normalizeDisplayList(recommendationData.improvement_plan),
       positive_indicators: normalizeDisplayList(recommendationData.positive_indicators),
-      executive_summary: normalizeDisplayText(row.executive_summary || ""),
-      commercial_guidance: normalizeDisplayText(row.commercial_guidance || ""),
+      executive_summary: sanitizeAiText(row.executive_summary),
+      commercial_guidance: sanitizeAiText(row.commercial_guidance),
     },
   };
 }
@@ -66,11 +66,11 @@ function normalizeLocalEvaluation(entry) {
       ...result,
       risks: normalizeDisplayList(result.risks),
       recommendations: normalizeDisplayList(result.recommendations),
-      ai_explanation: normalizeDisplayText(result.ai_explanation || ""),
+      ai_explanation: sanitizeAiText(result.ai_explanation),
       improvement_plan: normalizeDisplayList(result.improvement_plan),
       positive_indicators: normalizeDisplayList(result.positive_indicators),
-      executive_summary: normalizeDisplayText(result.executive_summary || ""),
-      commercial_guidance: normalizeDisplayText(result.commercial_guidance || ""),
+      executive_summary: sanitizeAiText(result.executive_summary),
+      commercial_guidance: sanitizeAiText(result.commercial_guidance),
     },
   };
 }
@@ -91,7 +91,7 @@ function buildRow(userId, evaluationPayload) {
     alternative_commune: onboarding.comuna_alternativa || null,
     purchase_timeline: onboarding.plazo_compra || null,
     financial_data: evaluationPayload.input || {},
-    explanation: result.ai_explanation || "",
+    explanation: sanitizeAiText(result.ai_explanation),
     recommendations: {
       items: result.recommendations || [],
       risks: result.risks || [],
@@ -288,4 +288,47 @@ export async function acceptEvaluationPlan(evaluationId, userId) {
   }
 
   return null;
+}
+
+// Persiste los textos de IA regenerados para una evaluación existente.
+// Devuelve la evaluación normalizada actualizada, o null si no se encontró.
+export async function updateEvaluationAiContent(
+  evaluationId,
+  { ai_explanation, executive_summary, commercial_guidance } = {},
+) {
+  const updates = {};
+  if (ai_explanation !== undefined) updates.explanation = sanitizeAiText(ai_explanation);
+  if (executive_summary !== undefined) updates.executive_summary = sanitizeAiText(executive_summary);
+  if (commercial_guidance !== undefined) updates.commercial_guidance = sanitizeAiText(commercial_guidance);
+
+  if (!Object.keys(updates).length || !evaluationId) return null;
+
+  if (!isSupabaseDataConfigured) {
+    let updated = null;
+    const next = readLocalEvaluations().map((item) => {
+      if (item.id !== evaluationId) return item;
+      updated = normalizeLocalEvaluation({
+        ...item,
+        result: { ...(item.result || {}), ...updates },
+      });
+      return updated;
+    });
+    writeLocalEvaluations(next);
+    return updated;
+  }
+
+  const user = await getAuthenticatedUser();
+  if (!user?.id) throw new Error("No hay usuario autenticado para actualizar la preevaluación.");
+  await ensureUserProfile(user);
+
+  const { data, error } = await supabase
+    .from("evaluations")
+    .update(updates)
+    .eq("id", evaluationId)
+    .eq("user_id", user.id)
+    .select(evaluationSelectColumns)
+    .maybeSingle();
+
+  if (error) { logSupabaseError(error); throw error; }
+  return data ? normalizeEvaluation(data) : null;
 }
