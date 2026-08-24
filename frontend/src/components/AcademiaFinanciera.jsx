@@ -56,6 +56,7 @@ function ArticleCard({ article, onOpen }) {
     <button
       type="button"
       className="academy-card"
+      style={{ "--card-accent": topic?.accent }}
       onClick={() => onOpen(article.id)}
     >
       <div className="academy-card-top">
@@ -85,10 +86,11 @@ function ArticleCard({ article, onOpen }) {
           <i className="ti ti-shield-check" />
 
           <span>
+            {" "}
             {article.sources.length}{" "}
             {article.sources.length === 1
               ? "fuente oficial"
-              : "fuentes oficiales"}
+              : " fuentes oficiales"}
           </span>
         </div>
       )}
@@ -149,19 +151,7 @@ function ArticleModal({
         </div>
 
 
-        {/* META */}
-
-        <div className="academy-modal-meta">
-          <span>
-            <i className="ti ti-signal-3" />
-            Nivel {article.level}
-          </span>
-
-          <span>
-            <i className="ti ti-clock" />
-            {article.minutes} min de lectura
-          </span>
-        </div>
+       
 
 
         {/* CONTENIDO */}
@@ -180,10 +170,11 @@ function ArticleModal({
         {article.sources?.length > 0 && (
           <div className="academy-modal-sources">
             <div className="academy-modal-sources-header">
-              <i className="ti ti-shield-check" />
+              
 
               <div>
-                <strong>Fuentes oficiales</strong>
+                <i className="ti ti-shield-check" />
+                <strong> Fuentes oficiales</strong>
 
                 <p>
                   Información basada en organismos oficiales
@@ -201,31 +192,28 @@ function ArticleModal({
                   rel="noopener noreferrer"
                   className="academy-source-link"
                 >
-                  <div className="academy-source-icon">
-                    <i className="ti ti-external-link" />
-                  </div>
-
+        
                   <div>
+                    <div className="academy-source-icon">
+                    <i className="ti ti-external-link" />
+                  
                     <strong>
-                      {source.institution}
+                      {"  "}{source.institution}
                     </strong>
 
                     <span>
-                      {source.title}
+                      {"  "}{source.title}
                     </span>
+                    <i className="ti ti-chevron-right" />
+                  </div>
                   </div>
 
-                  <i className="ti ti-chevron-right" />
+                  
                 </a>
               ))}
             </div>
 
-            {article.reviewedAt && (
-              <p className="academy-reviewed">
-                <i className="ti ti-calendar-check" />
-                Contenido revisado: {article.reviewedAt}
-              </p>
-            )}
+            
           </div>
         )}
 
@@ -276,35 +264,59 @@ function ArticleModal({
 // TAB CONCEPTOS
 // ============================================================================
 
+function RouteStop({ topic, index, count, onOpen }) {
+  return (
+    <li className="route-stop">
+      <button
+        type="button"
+        className="route-stop-btn"
+        onClick={() => onOpen(topic.id)}
+        style={{ "--stop-accent": topic.accent }}
+      >
+        <span className="route-stop-node">
+          <i className={`ti ${topic.icon}`} />
+        </span>
+
+        <span className="route-stop-body">
+          <span className="route-stop-index">Parada {index}</span>
+          <h3>{topic.label}</h3>
+          <p>{topic.description}</p>
+        </span>
+
+        <span className="route-stop-count">
+          {count}
+          <em>{count === 1 ? "artículo" : "artículos"}</em>
+        </span>
+
+        <i className="ti ti-chevron-right route-stop-arrow" />
+      </button>
+    </li>
+  );
+}
+
 function ConceptosTab({ onOpenArticle }) {
   const [activeTopic, setActiveTopic] =
     useState("todos");
 
   const [query, setQuery] = useState("");
 
-  const filteredArticles = useMemo(() => {
-    const normalizedQuery =
-      query.trim().toLowerCase();
+  const normalizedQuery = query.trim().toLowerCase();
+  const isSearching = normalizedQuery.length > 0;
 
+  const matchesQuery = (article) =>
+    !normalizedQuery ||
+    article.title.toLowerCase().includes(normalizedQuery) ||
+    article.summary.toLowerCase().includes(normalizedQuery) ||
+    article.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery));
+
+  const filteredArticles = useMemo(() => {
     return ACADEMY_ARTICLES
       .filter((article) => {
         const matchesTopic =
           activeTopic === "todos" ||
           article.topic === activeTopic;
 
-        const matchesQuery =
-          !normalizedQuery ||
-          article.title
-            .toLowerCase()
-            .includes(normalizedQuery) ||
-          article.summary
-            .toLowerCase()
-            .includes(normalizedQuery) ||
-          article.tags.some((tag) =>
-            tag.toLowerCase().includes(normalizedQuery)
-          );
-
-        return matchesTopic && matchesQuery;
+        return matchesTopic && matchesQuery(article);
       })
       .sort(
         (a, b) =>
@@ -312,6 +324,21 @@ function ConceptosTab({ onOpenArticle }) {
           LEVEL_ORDER[b.level]
       );
   }, [activeTopic, query]);
+
+  const starterArticles = useMemo(
+    () =>
+      STARTER_ARTICLE_IDS
+        .map((id) => ACADEMY_ARTICLES.find((article) => article.id === id))
+        .filter(Boolean),
+    []
+  );
+
+  const activeTopicMeta = ACADEMY_TOPICS.find((t) => t.id === activeTopic);
+
+  // Vista por defecto: directorio de temas. Solo se abandona cuando el
+  // usuario elige un tema puntual o escribe una búsqueda — así nunca se
+  // muestran los 36 artículos de golpe.
+  const showDirectory = activeTopic === "todos" && !isSearching;
 
   return (
     <div>
@@ -348,92 +375,104 @@ function ConceptosTab({ onOpenArticle }) {
       </div>
 
 
-      {/* FILTROS */}
+      {/* BÚSQUEDA */}
 
-      <div className="academy-toolbar">
-
-        <div className="academy-topic-pills">
-
-          <button
-            type="button"
-            className={`academy-pill ${
-              activeTopic === "todos"
-                ? "is-active"
-                : ""
-            }`}
-            onClick={() => setActiveTopic("todos")}
-          >
-            Todos
-          </button>
-
-          {ACADEMY_TOPICS.map((topic) => (
-            <button
-              key={topic.id}
-              type="button"
-              className={`academy-pill ${
-                activeTopic === topic.id
-                  ? "is-active"
-                  : ""
-              }`}
-              onClick={() =>
-                setActiveTopic(topic.id)
-              }
-              style={
-                activeTopic === topic.id
-                  ? {
-                      borderColor: topic.accent,
-                      color: topic.accent,
-                    }
-                  : undefined
-              }
-            >
-              <i className={`ti ${topic.icon}`} />
-
-              {topic.label}
-            </button>
-          ))}
-        </div>
-
-
-        {/* BÚSQUEDA */}
-
-        <div className="academy-search">
+      <div className="academy-toolbar academy-toolbar-simple">
+        <div className="academy-search academy-search-wide">
           <i className="ti ti-search" />
 
           <input
             type="text"
             placeholder="Buscar por tema, subsidio, tasa, UF..."
             value={query}
-            onChange={(e) =>
-              setQuery(e.target.value)
-            }
+            onChange={(e) => {
+              setQuery(e.target.value);
+              if (e.target.value.trim()) setActiveTopic("todos");
+            }}
           />
         </div>
       </div>
 
 
-      {/* ARTÍCULOS */}
+      {showDirectory ? (
+        <>
+          
 
-      {filteredArticles.length ? (
-        <div className="academy-grid">
-          {filteredArticles.map((article) => (
-            <ArticleCard
-              key={article.id}
-              article={article}
-              onOpen={onOpenArticle}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <strong>
-            No encontramos artículos con ese filtro.
-          </strong>
+          {/* LA RUTA: temas en el orden en que conviene aprenderlos */}
 
-          <p>
-            Prueba con otro tema o modifica la búsqueda.
+          <h3 className="academy-directory-heading">
+            Tu ruta financiera
+          </h3>
+          <p className="academy-directory-sub">
+            10 paradas, del crédito a la compra. Elige por dónde partir.
           </p>
-        </div>
+
+          <ol className="route-path">
+            {ACADEMY_TOPICS.map((topic, i) => {
+              const count = ACADEMY_ARTICLES.filter(
+                (article) => article.topic === topic.id
+              ).length;
+
+              return (
+                <RouteStop
+                  key={topic.id}
+                  topic={topic}
+                  index={i + 1}
+                  count={count}
+                  onOpen={setActiveTopic}
+                />
+              );
+            })}
+          </ol>
+        </>
+      ) : (
+        <>
+          {/* MIGA DE PAN: volver al directorio */}
+
+          {!isSearching && activeTopicMeta && (
+            <button
+              type="button"
+              className="academy-back-link"
+              onClick={() => setActiveTopic("todos")}
+            >
+              <i className="ti ti-arrow-left" />
+              Todos los temas
+            </button>
+          )}
+
+          {!isSearching && activeTopicMeta && (
+            <div className="academy-section-heading">
+              <TopicIcon topicId={activeTopicMeta.id} />
+              <h2 style={{ color: activeTopicMeta.accent }}>
+                {activeTopicMeta.label}
+              </h2>
+            </div>
+          )}
+
+          {/* ARTÍCULOS */}
+
+          {filteredArticles.length ? (
+            <div className="academy-grid">
+              {filteredArticles.map((article) => (
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                  onOpen={onOpenArticle}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">
+              <strong>
+                No encontramos artículos con ese filtro.
+              </strong>
+
+              <p>
+                Prueba con otro tema o modifica la búsqueda.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

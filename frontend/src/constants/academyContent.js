@@ -16,48 +16,70 @@ export const ACADEMY_TOPICS = [
   {
     id: "credito",
     label: "Crédito hipotecario",
+    description: "Cómo funciona un crédito hipotecario y qué evalúa el banco.",
     icon: "ti-building-bank",
     accent: "#1d4ed8",
   },
   {
     id: "endeudamiento",
     label: "Endeudamiento",
+    description: "Cuánto pedir y cómo mantener tus deudas bajo control.",
     icon: "ti-chart-pie",
     accent: "#7c3aed",
   },
   {
+    id: "carga",
+    label: "Carga financiera",
+    description: "Qué parte de tus ingresos ya está comprometida.",
+    icon: "ti-scale",
+    accent: "#c2410c",
+  },
+  {
     id: "ahorro",
     label: "Ahorro y pie",
+    description: "Cuánto ahorrar y cómo preparar el pie de tu compra.",
     icon: "ti-pig",
     accent: "#246354",
   },
   {
     id: "costos",
     label: "Tasas y costos",
+    description: "Tasa, CAE, dividendo y el costo total del crédito.",
     icon: "ti-percentage",
     accent: "#b42318",
   },
   {
+    id: "plazos",
+    label: "Plazos",
+    description: "Cómo el plazo cambia tu cuota y el costo total.",
+    icon: "ti-calendar-time",
+    accent: "#0e7490",
+  },
+  {
     id: "uf",
     label: "UF e inflación",
+    description: "Qué es la UF y cómo reajusta tu crédito en el tiempo.",
     icon: "ti-chart-line",
     accent: "#0369a1",
   },
   {
     id: "subsidios",
     label: "Subsidios",
+    description: "Apoyo estatal para comprar vivienda y dónde revisarlo.",
     icon: "ti-gift",
     accent: "#9a5b00",
   },
   {
     id: "rsh",
     label: "RSH y beneficios",
+    description: "El Registro Social de Hogares y su rol en los beneficios.",
     icon: "ti-file-description",
     accent: "#0f766e",
   },
   {
     id: "vivienda",
     label: "Compra de vivienda",
+    description: "Vivienda nueva o usada y otros aspectos de la compra.",
     icon: "ti-home",
     accent: "#6d28d9",
   },
@@ -175,14 +197,14 @@ export const ACADEMY_ARTICLES = [
   {
     id: "endeudamiento-1",
     topic: "endeudamiento",
-    title: "¿Qué es la carga financiera?",
+    title: "Pedir el máximo posible no siempre es la mejor decisión",
     summary:
-      "Aprende a relacionar tus ingresos con las obligaciones que ya tienes antes de asumir una nueva deuda.",
+      "El monto máximo que una institución podría prestarte no es necesariamente el monto más conveniente para tu presupuesto.",
     level: "Básico",
     minutes: 4,
-    tags: ["carga financiera", "deuda", "ingresos"],
+    tags: ["endeudamiento responsable", "deuda", "presupuesto"],
     body:
-      "La carga financiera permite analizar qué parte de los ingresos de una persona o familia está comprometida con obligaciones financieras. Es una medida útil para evaluar cuánto margen queda disponible para asumir nuevas cuotas.\n\nUna carga elevada puede reducir la capacidad para enfrentar imprevistos o asumir una nueva deuda. Por eso, antes de solicitar un crédito hipotecario conviene considerar no solamente el futuro dividendo, sino también las cuotas y obligaciones que ya existen.\n\nSERNAC entrega recomendaciones generales sobre endeudamiento, pero los criterios utilizados por cada institución financiera para evaluar una solicitud pueden ser diferentes.",
+      "Que una institución financiera esté dispuesta a prestarte un monto determinado no significa que ese sea el monto más conveniente para tu situación. La evaluación bancaria mide capacidad de pago bajo ciertos criterios, pero no reemplaza tu propio análisis del presupuesto familiar.\n\nAntes de definir cuánto crédito solicitar, conviene revisar tus deudas vigentes, tus gastos habituales, el margen que te quedaría disponible después del nuevo dividendo y tu capacidad para enfrentar cambios en tus ingresos o gastos, como una baja temporal de ingresos o un gasto imprevisto.\n\nUn endeudamiento responsable considera el conjunto de estos factores, no solamente el monto máximo que podrías obtener.",
     sources: [
       {
         institution: "SERNAC",
@@ -251,6 +273,31 @@ export const ACADEMY_ARTICLES = [
         institution: "SERNAC",
         title: "Educación financiera",
         url: "https://www.sernac.cl/educacion-para-el-consumo/",
+      },
+    ],
+    reviewedAt: "2026-08",
+  },
+
+  // ===========================================================================
+  // CARGA FINANCIERA
+  // ===========================================================================
+
+  {
+    id: "carga-1",
+    topic: "carga",
+    title: "¿Qué es la carga financiera?",
+    summary:
+      "Aprende a relacionar tus ingresos con las obligaciones que ya tienes antes de asumir una nueva deuda.",
+    level: "Básico",
+    minutes: 4,
+    tags: ["carga financiera", "deuda", "ingresos"],
+    body:
+      "La carga financiera permite analizar qué parte de los ingresos de una persona o familia está comprometida con obligaciones financieras. Es una medida útil para evaluar cuánto margen queda disponible para asumir nuevas cuotas.\n\nUna carga elevada puede reducir la capacidad para enfrentar imprevistos o asumir una nueva deuda. Por eso, antes de solicitar un crédito hipotecario conviene considerar no solamente el futuro dividendo, sino también las cuotas y obligaciones que ya existen.\n\nSERNAC entrega recomendaciones generales sobre endeudamiento, pero los criterios utilizados por cada institución financiera para evaluar una solicitud pueden ser diferentes. No existe un porcentaje único de carga financiera que aplique como requisito universal: los criterios y ponderaciones pueden variar entre instituciones y productos.",
+    sources: [
+      {
+        institution: "SERNAC",
+        title: "Cuida tus lucas: endeudamiento",
+        url: "https://www.sernac.cl/604/w3-article-9163.html",
       },
     ],
     reviewedAt: "2026-08",
@@ -479,6 +526,31 @@ export const ACADEMY_ARTICLES = [
         institution: "SERNAC",
         title: "Educación financiera: Hoja de resumen",
         url: "https://www.sernac.cl/educacion-para-el-consumo/videos/serie-para-vivir-mejor-educacion-financiera/",
+      },
+    ],
+    reviewedAt: "2026-08",
+  },
+
+  // ===========================================================================
+  // PLAZOS
+  // ===========================================================================
+
+  {
+    id: "plazos-1",
+    topic: "plazos",
+    title: "El plazo del crédito: cuota baja no siempre es costo bajo",
+    summary:
+      "El plazo influye tanto en la cuota mensual como en el costo total del crédito. Aprende a comparar alternativas mirando ambos.",
+    level: "Básico",
+    minutes: 4,
+    tags: ["plazo", "cuota", "costo total"],
+    body:
+      "El plazo de un crédito hipotecario es el período establecido para pagarlo, y es uno de los factores que más influye en el resultado final de la operación.\n\nUn plazo más largo generalmente reduce el monto de la cuota mensual, lo que puede hacer que un crédito parezca más accesible. Sin embargo, un plazo más largo también suele aumentar el costo total pagado durante toda la operación, porque se pagan intereses durante más tiempo.\n\nPor eso, al comparar alternativas de crédito, no basta con mirar cuál tiene la cuota mensual más baja. Conviene revisar en conjunto la tasa, la CAE, el costo total y el plazo de cada alternativa, y evaluar qué combinación es sostenible para tu presupuesto sin comprometer tu margen disponible.",
+    sources: [
+      {
+        institution: "SERNAC",
+        title: "Carga Anual Equivalente y Crédito Hipotecario",
+        url: "https://www.sernac.cl/portal/607/w3-propertyvalue-15048.html",
       },
     ],
     reviewedAt: "2026-08",
@@ -887,7 +959,7 @@ export const ACADEMY_GLOSSARY = {
     label: "carga financiera",
     definition:
       "Medida utilizada para analizar qué parte de los ingresos está comprometida con obligaciones financieras.",
-    articleId: "endeudamiento-1",
+    articleId: "carga-1",
   },
 
   dividendo: {
@@ -971,7 +1043,7 @@ export const ACADEMY_GLOSSARY = {
     label: "plazo",
     definition:
       "Período establecido para pagar el crédito.",
-    articleId: "costos-3",
+    articleId: "plazos-1",
   },
 
   preaprobación: {
@@ -1012,9 +1084,9 @@ export function classifyRiskText(riskText = "") {
 
   if (text.includes("moros") || text.includes("pagos")) {
     return {
-      topic: "endeudamiento",
-      term: "endeudamiento",
-      articleId: "endeudamiento-1",
+      topic: "carga",
+      term: "carga financiera",
+      articleId: "carga-1",
     };
   }
 
@@ -1034,21 +1106,30 @@ export function classifyRiskText(riskText = "") {
     text.includes("cuota")
   ) {
     return {
-      topic: "costos",
+      topic: "uf",
       term: "dividendo",
       articleId: "uf-3",
     };
   }
 
   if (
-    text.includes("deuda") ||
     text.includes("carga") ||
-    text.includes("tarjetas") ||
+    text.includes("tarjetas")
+  ) {
+    return {
+      topic: "carga",
+      term: "carga financiera",
+      articleId: "carga-1",
+    };
+  }
+
+  if (
+    text.includes("deuda") ||
     text.includes("endeud")
   ) {
     return {
       topic: "endeudamiento",
-      term: "carga financiera",
+      term: "endeudamiento",
       articleId: "endeudamiento-1",
     };
   }
@@ -1071,9 +1152,9 @@ export function classifyRiskText(riskText = "") {
     text.includes("plazo")
   ) {
     return {
-      topic: "credito",
+      topic: "plazos",
       term: "plazo",
-      articleId: "costos-3",
+      articleId: "plazos-1",
     };
   }
 
@@ -1155,7 +1236,7 @@ export const CASE_STUDIES = [
     action:
       "Comparar alternativas de menor precio, mayor ahorro o diferentes condiciones de financiamiento y evaluar cómo cambia el presupuesto mensual.",
     relatedArticleIds: [
-      "endeudamiento-1",
+      "carga-1",
       "endeudamiento-2",
       "uf-3",
     ],
@@ -1215,8 +1296,8 @@ export const CASE_STUDIES = [
     action:
       "Revisar todas las cuotas, construir un presupuesto completo y evaluar el efecto de las deudas existentes antes de comprometer una nueva obligación.",
     relatedArticleIds: [
+      "carga-1",
       "endeudamiento-1",
-      "endeudamiento-2",
       "endeudamiento-4",
     ],
   },
