@@ -1,5 +1,5 @@
 -- =============================================================
--- ScoreLeads — Fix 42P17 infinite recursion in profiles RLS
+-- RutaHogar — Fix 42P17 infinite recursion in profiles RLS
 -- =============================================================
 
 -- 1. Función helper SECURITY DEFINER (no dispara RLS)

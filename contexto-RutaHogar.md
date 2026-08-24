@@ -1,8 +1,8 @@
-# Contexto Consolidado del Proyecto – ScoreLeads
+# Contexto Consolidado del Proyecto – RutaHogar
 
 ## 1. Visión General del Proyecto
 
-ScoreLeads es una plataforma de precalificación y preparación financiera para el sector inmobiliario, enfocada en resolver uno de los principales problemas actuales de las inmobiliarias: la incapacidad de identificar tempranamente qué prospectos realmente tienen posibilidades de convertirse en compradores.
+RutaHogar es una plataforma de precalificación y preparación financiera para el sector inmobiliario, enfocada en resolver uno de los principales problemas actuales de las inmobiliarias: la incapacidad de identificar tempranamente qué prospectos realmente tienen posibilidades de convertirse en compradores.
 
 Actualmente, las inmobiliarias reciben un alto volumen de leads provenientes de campañas digitales, salas de venta, portales inmobiliarios y formularios de contacto. Sin embargo, una gran parte de esos interesados no cuenta con las condiciones financieras necesarias para acceder a un crédito hipotecario.
 
@@ -55,7 +55,7 @@ Esto vuelve todavía más importante contar con un sistema que permita evaluar y
 
 # 3. Objetivo Principal del Proyecto
 
-El objetivo principal de ScoreLeads es construir una plataforma que permita:
+El objetivo principal de RutaHogar es construir una plataforma que permita:
 
 - Evaluar preliminarmente la capacidad financiera de un usuario.
 - Determinar qué tan viable es para acceder a un crédito hipotecario.
@@ -69,9 +69,9 @@ El objetivo principal de ScoreLeads es construir una plataforma que permita:
 
 # 4. Propuesta de Valor
 
-La principal propuesta de valor de ScoreLeads es intervenir antes de la evaluación bancaria formal.
+La principal propuesta de valor de RutaHogar es intervenir antes de la evaluación bancaria formal.
 
-A diferencia de plataformas tradicionales que solamente priorizan leads o entregan simulaciones estáticas, ScoreLeads busca:
+A diferencia de plataformas tradicionales que solamente priorizan leads o entregan simulaciones estáticas, RutaHogar busca:
 
 - Evaluar.
 - Priorizar.
@@ -110,7 +110,7 @@ Actualmente el proyecto busca incorporar:
 - Recomendaciones inteligentes.
 - Simulación de escenarios.
 
-Esto transformó ScoreLeads desde un simple sistema de scoring hacia una plataforma de acompañamiento financiero inmobiliario.
+Esto transformó RutaHogar desde un simple sistema de scoring hacia una plataforma de acompañamiento financiero inmobiliario.
 
 ---
 
@@ -462,7 +462,7 @@ Además, se consideran:
 
 # 14. Diferenciación Frente a la Competencia
 
-La principal diferenciación de ScoreLeads es intervenir antes del crédito hipotecario formal.
+La principal diferenciación de RutaHogar es intervenir antes del crédito hipotecario formal.
 
 Mientras otras soluciones:
 
@@ -470,7 +470,7 @@ Mientras otras soluciones:
 - entregan simulaciones,
 - o actúan en etapas tardías,
 
-ScoreLeads busca:
+RutaHogar busca:
 
 - preparar,
 - orientar,

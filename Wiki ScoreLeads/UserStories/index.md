@@ -1,11 +1,15 @@
-# User Stories — ScoreLeads
+# User Stories — RutaHogar
 
+<<<<<<< Updated upstream
 All user stories for the ScoreLeads platform, following the **E4 Plan de Proyecto 2026** numbering (`HU 1–33`).
 
 > **Numbering note:** the E4 plan renumbered the backlog. The E1/E2 informes used `HdU 1–6`; this folder now uses `HU`. Mapping of the previously documented stories: `HdU1→HU1`, `HdU2→HU2`, `HdU3→HU3`, `HdU4→HU7` (Improvement Plan), `HdU5→HU4` (CRM), `HdU6→HU20` (UF/rate simulation).
 
 **Status legend:** ✅ Implemented (PMV) · 🔜 Sprint 1 · 🗓 Sprint 2 · 🗓 Sprint 3
 Every story below has its own page. ✅/🔜 stories carry the full implemented/near-term detail; 🗓 stories are documented for planning.
+=======
+All user stories for the RutaHogar platform. HdU 1–4 are the current active scope. HdU 5–6 are documented but deferred.
+>>>>>>> Stashed changes
 
 ---
 

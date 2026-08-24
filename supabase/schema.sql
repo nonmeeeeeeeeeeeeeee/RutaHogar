@@ -1,6 +1,6 @@
--- ScoreLeads platform schema.
+-- RutaHogar platform schema.
 -- Ejecutar en Supabase SQL Editor o como migracion inicial.
--- Tablas principales de ScoreLeads: profiles, evaluations, improvement_goals, scoring_history.
+-- Tablas principales de RutaHogar: profiles, evaluations, improvement_goals, scoring_history.
 
 create extension if not exists pgcrypto;
 
