@@ -368,7 +368,12 @@ Two separate arrays rather than one array with an `excluido` flag — a single a
 
 ### 8.4 Dependency status
 
-HU 17 is **planned but not merged** (`story-work/HU17/PLAN.md`). `matchLeadToProjects` consumes its frozen contract (`precio_min_uf`, `precio_max_uf`, `comuna`, `tipo`, `estado`, `ejecutivos`). HU 13 cannot ship before HU 17.
+HU 17 is **implemented but not merged** (branch `HU17`). `matchLeadToProjects` consumes its frozen contract (`precio_min_uf`, `precio_max_uf`, `comuna`, `tipo`, `estado`, `ejecutivos`), documented in `docs/project-catalog-contract.md` and mirrored in the header of `frontend/src/services/projectService.js`. HU 13 cannot ship before HU 17.
+
+Two consumer notes from that contract are load-bearing here:
+
+- **`getAvailableProjects()` excludes only `agotado`.** `en_construccion` stays in the feed — venta en verde is a real part of the market — and `estado` travels through so HU 13 can display or weight it. This is consistent with §5.1: `estado` is not a third gate.
+- **`precio_min_uf == precio_max_uf` is valid** (single-price project). The holgura scorer in §5.2 must evaluate the "at/above `precio_max` → 0" branch *before* interpolating; a naive `(capacidad − min) / (max − min)` divides by zero and a `NaN` corrupts the ranking.
 
 ---
 
@@ -503,7 +508,7 @@ FOGAES eligibility cannot be verified from current intake, which is why §4.4 em
 | 1 | UF price range of the client's real projects (Echeverría Izquierdo) — decides whether FOGAES is edge case or norm (§10.5) | Commercial | No — changes a default, not the model |
 | 2 | Complementary-debt defect (§10.1) | HU 3 / HU 15 | No — capacity spec already accounts for it |
 | 3 | Affinity weights are uncalibrated (§5.2) | HU 27 | No — v1 ships, revisit with data |
-| 4 | HU 17 not merged (§8.4) | HU 17 | **Yes for HU 13** |
+| 4 | HU 17 implemented on branch `HU17`, not merged (§8.4) | HU 17 | **Yes for HU 13** |
 | 5 | Spike 1 E5 consolidation must reference this document rather than restate it | Spike 1 | No |
 
 ---
@@ -526,4 +531,4 @@ FOGAES eligibility cannot be verified from current intake, which is why §4.4 em
 **Internal**
 - `backend/app/scoring_engine/` — `indicators.py`, `project_fit.py`, `blockers.py`, `commercial_priority.py`, `constants.py`
 - [[research/scoring_improvement_recommendations|Scoring Improvement Recommendations]] · [[research/competitor_prequalification_audit|Competitor Prequalification Audit]]
-- `story-work/HU17/PLAN.md` — project catalog frozen contract
+- `docs/project-catalog-contract.md` — project catalog frozen contract (HU 17)
