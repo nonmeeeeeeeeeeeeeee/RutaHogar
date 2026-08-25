@@ -26,6 +26,14 @@ Lets an executive/admin analyze the age, income, and debt of prospects to adjust
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU23-EventLogAnalytics\|HU 23]]** — This story's note: *"Consumes the consent-gated event data from HU 23."* E1 orders "the prospect-log data" by the selected filter.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Report visualization ordered by filters

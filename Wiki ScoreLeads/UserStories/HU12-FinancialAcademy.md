@@ -13,7 +13,7 @@
 | **Actor** | Lead |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU7-ImprovementPlan\|HU 7]] |
 | **Required by** | — |
 
 ---
@@ -21,6 +21,16 @@
 ## User Story
 
 > **As** a person interested in buying a home, **I want** to access educational content about mortgage credit, down payment, subsidies, rates, and property types, **in order to** better understand my options and prepare before buying.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E2 triggers on "an identified financial blocker"; this story's note says blocker detection *"reuses the `risk_codes` produced by the scoring engine (HU 3)"*.  `documented`
+
+- **[[HU7-ImprovementPlan\|HU 7]]** — E2 fires when the user reviews "their result **or improvement plan**" — the plan is HU 7's artifact, and this story's note names it alongside HU 3 as the source of blocker detection.  `documented · B1`
 
 ---
 

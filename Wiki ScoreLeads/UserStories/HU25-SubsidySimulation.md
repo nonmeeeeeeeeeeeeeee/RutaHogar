@@ -15,7 +15,7 @@ Lets a lead check or simulate whether they qualify for housing subsidies, to red
 | **Actor** | Lead |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 3 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 | **Required by** | — |
 
 ---
@@ -23,6 +23,16 @@ Lets a lead check or simulate whether they qualify for housing subsidies, to red
 ## User Story
 
 > **As** an interested lead, **I want** to check (or simulate) whether I qualify for subsidies automatically, **in order to** reduce the dividend value and offset a lack of savings.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 triggers when "the lead got a low score mainly due to their income level"; both the score and its drivers come from HU 3.  `documented`
+
+- **[[HU33-ImmutableEvaluationHistory\|HU 33]]** — This story's note: *"A recalculated dividend (E2) is a scoring-recalculation trigger for HU 33."*  `documented · B4`
 
 ---
 

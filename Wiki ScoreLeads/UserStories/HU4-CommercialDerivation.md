@@ -26,6 +26,14 @@ Allows qualified leads to be pushed from ScoreLeads directly into the real estat
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 derives a lead to the CRM once they "finish being scored and are classified as high priority"; that classification is HU 3 E2's output.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Automatic derivation of high-priority leads to the CRM

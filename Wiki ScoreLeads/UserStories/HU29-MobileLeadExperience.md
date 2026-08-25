@@ -24,6 +24,18 @@
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU1-FinancialDataEntry\|HU 1]]** — E1 and E2 render the pre-assessment form on a phone. This story's note: *"mobile counterpart of the lead-facing stories HU 1, HU 3, and HU 7; it adds no new business logic, only responsive delivery."*  `documented`
+
+- **[[HU3-HybridScoring\|HU 3]]** — E3 renders "score, classification, purchase capacity, and recommendations" — HU 3's result payload.  `documented`
+
+- **[[HU7-ImprovementPlan\|HU 7]]** — E4 requires the lead to "review their milestones, record progress" from mobile without losing desktop functionality; that plan is HU 7's.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Responsive pre-assessment flow

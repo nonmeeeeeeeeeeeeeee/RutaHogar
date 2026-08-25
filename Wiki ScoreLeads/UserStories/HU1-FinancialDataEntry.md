@@ -13,14 +13,22 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 | **Actor** | Lead |
 | **Status** | ✅ Implemented (PMV) |
 | **Sprint** | PMV (completed) |
-| **Depends on** | — |
-| **Required by** | [[HU3-HybridScoring\|HU 3]] |
+| **Depends on** | [[HU5-BasicSecurity\|HU 5]] |
+| **Required by** | [[HU3-HybridScoring\|HU 3]], [[HU6-PrivacyPanel\|HU 6]], [[HU23-EventLogAnalytics\|HU 23]], [[HU29-MobileLeadExperience\|HU 29]] |
 
 ---
 
 ## User Story
 
 > **As** a lead (person interested in buying a home), **I want** to complete a guided web form with my financial data and high ease of use, **in order to** start my credit viability assessment without having to talk to a sales executive.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU5-BasicSecurity\|HU 5]]** — Declared by HU 5's `Required by` ("data-handling paths"). HU 1 E1 registers a profile and E3 rejects unconsented submissions — those are the input-validation and controlled-error surfaces HU 5 E1–E2 define.  `inferred`
 
 ---
 

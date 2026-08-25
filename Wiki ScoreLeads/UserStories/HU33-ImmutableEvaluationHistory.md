@@ -15,14 +15,24 @@ Ensures every recalculation or scoring adjustment creates a new versioned, immut
 | **Actor** | Real Estate Admin |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
-| **Required by** | [[HU18-LeadFinancialEvolution\|HU 18]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU16-EvaluationAudit\|HU 16]] |
+| **Required by** | [[HU8-MonthlyPlanTracking\|HU 8]], [[HU15-ScoringParameters\|HU 15]], [[HU18-LeadFinancialEvolution\|HU 18]], [[HU25-SubsidySimulation\|HU 25]], [[HU31-SimulatedCMFQuery\|HU 31]] |
 
 ---
 
 ## User Story
 
 > **As** a real estate admin, **I want** every recalculation or scoring adjustment to generate a new versioned and immutable evaluation linked to the previous one, **in order to** preserve a faithful and traceable history that cannot be altered.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — This story's note: *"Extends the immutable-record requirement of HU 3 E5 into a full version chain."*  `documented`
+
+- **[[HU16-EvaluationAudit\|HU 16]]** — E4 requires an admin to reconstruct the version chain "via HU 16". Previously declared only by HU 16's `Required by`; confirmed from this side 2026-08-08.  `documented · B11`
 
 ---
 

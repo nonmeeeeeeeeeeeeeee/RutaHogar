@@ -15,14 +15,24 @@ Lets executives flag and remove fraudulent or inconsistent leads from the commer
 | **Actor** | Sales Executive / Real Estate Admin |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 3 |
-| **Depends on** | [[HU2-LeadPrioritization\|HU 2]] |
-| **Required by** | — |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU16-EvaluationAudit\|HU 16]] |
+| **Required by** | [[HU30-MobileExecutiveDashboard\|HU 30]] |
 
 ---
 
 ## User Story
 
 > **As** a sales executive, **I want** to remove fraudulent users from my executives' dashboard, **in order to** avoid possible fraud and loss of time and money for the sales executives.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — E2 shows the warning "on the lead's card" and E5 removes discarded leads from the executive's portfolio — both are HU 2's dashboard.  `documented`
+
+- **[[HU16-EvaluationAudit\|HU 16]]** — E7 stores "date, responsible, reason, and previous/subsequent status", which is HU 16's audit record. This story's note: *"E7 aligns with the auditing story HU 16."*  `inferred · S3`
 
 ---
 

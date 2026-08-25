@@ -26,6 +26,14 @@ Lets a sales executive export a consolidated report with the lead's profile and 
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU19-SupportingDocuments\|HU 19]]** — This story's note: *"Requires the uploaded documents from HU 19."* E2 requires the dossier to include those documents.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Export from lead profile

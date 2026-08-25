@@ -26,6 +26,14 @@ Automatically refreshes the accessibility map when the lead changes their financ
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU10-AccessibilityMap\|HU 10]]** — This story's note: *"Extends HU 10 with reactive recomputation; no new classification logic."* E1 and E2 recolour a map that only HU 10 creates.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Re-evaluation when score/income changes

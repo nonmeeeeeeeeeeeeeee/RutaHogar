@@ -26,6 +26,14 @@ Monitors system availability and validates behavior under load, to guarantee ≥
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+_None — this story has no upstream dependencies._
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Uptime monitoring

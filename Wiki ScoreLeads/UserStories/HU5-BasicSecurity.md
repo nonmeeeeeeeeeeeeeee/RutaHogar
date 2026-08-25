@@ -14,13 +14,21 @@
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
 | **Depends on** | — |
-| **Required by** | [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]] (data-handling paths) |
+| **Required by** | [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], [[HU14-RolesAndPermissions\|HU 14]], [[HU30-MobileExecutiveDashboard\|HU 30]] |
 
 ---
 
 ## User Story
 
 > **As** a system administrator, **I want** the platform to implement validations, endpoint protection, and safe error handling, **in order to** protect users' financial information and reduce the risk of vulnerabilities.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+_None — this story has no upstream dependencies._
 
 ---
 

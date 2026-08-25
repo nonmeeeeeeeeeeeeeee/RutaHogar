@@ -26,6 +26,16 @@ A map of the Región Metropolitana with sectors classified by the lead's financi
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E3 "crosses their score with the available sectors" to colour the heat map; the score is HU 3's output.  `documented`
+
+- **[[HU9-CompatibilitySimulation\|HU 9]]** — This story's note: *"Reuses the compatibility logic from HU 9."* E1's accessible / close / out-of-reach classification is HU 9's compatibility test applied per comuna.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Visual classification by neighborhood

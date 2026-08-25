@@ -26,6 +26,14 @@ A general sales-funnel dashboard so an admin/executive can measure whether the s
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU23-EventLogAnalytics\|HU 23]]** — This story's note: *"Builds on the event-log data from HU 23."* E2's average time from pre-assessment to closed deal needs timestamped events that only HU 23 records.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Measure improvement-plan impact

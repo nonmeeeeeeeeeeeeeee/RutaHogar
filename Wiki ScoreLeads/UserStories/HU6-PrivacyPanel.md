@@ -16,13 +16,21 @@ A privacy panel inside the user's profile to manage consent, request actions on 
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
 | **Depends on** | [[HU1-FinancialDataEntry\|HU 1]] |
-| **Required by** | — |
+| **Required by** | [[HU23-EventLogAnalytics\|HU 23]] |
 
 ---
 
 ## User Story
 
 > **As** a registered user, **I want** to access a privacy panel within my profile, **in order to** manage my consent, request actions on my data, and control the use of my information.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU1-FinancialDataEntry\|HU 1]]** — E1 lets the user view and modify "the consent associated with the use of their data". That consent record is created by HU 1 E3.  `documented`
 
 ---
 

@@ -26,6 +26,14 @@ Lets a lead see how changes in the UF or in interest rates affect their purchase
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 and E2 recompute purchase capacity and dividend under shifted rates. This story's note: *"reuses the scoring engine's dividend and financial-burden logic rather than introducing a new model."*  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Interest-rate scenario

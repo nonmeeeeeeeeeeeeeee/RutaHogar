@@ -15,7 +15,7 @@ Lets a sales executive visualize a lead's financial evolution over time to detec
 | **Actor** | Sales Executive |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU3-HybridScoring\|HU 3]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 | **Required by** | — |
 
 ---
@@ -23,6 +23,18 @@ Lets a sales executive visualize a lead's financial evolution over time to detec
 ## User Story
 
 > **As** a sales executive, **I want** to visualize a lead's financial evolution, **in order to** detect contact and commercial follow-up opportunities.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — This story's note: *"Complements the executive dashboard HU 2 with a temporal view of each lead."* E1 surfaces the history when "the executive accesses their profile" — that profile view belongs to HU 2.  `inferred · S2`
+
+- **[[HU3-HybridScoring\|HU 3]]** — E2 shows changes in "score, purchase capacity, or main blocker", all of which are HU 3 outputs.  `documented`
+
+- **[[HU33-ImmutableEvaluationHistory\|HU 33]]** — This story's note: *"Depends on the versioned history from HU 33 to reconstruct the evolution."* E1 needs more than one retained evaluation, which HU 33 E2's immutability guarantees.  `documented`
 
 ---
 

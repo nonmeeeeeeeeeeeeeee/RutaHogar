@@ -13,7 +13,7 @@
 | **Actor** | Sales Executive |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU17-ProjectCatalog\|HU 17]] |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU3-HybridScoring\|HU 3]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU17-ProjectCatalog\|HU 17]] |
 | **Required by** | — |
 
 ---
@@ -21,6 +21,20 @@
 ## User Story
 
 > **As** a sales executive, **I want** the system to suggest leads compatible with the projects I sell, **in order to** prioritize prospects with a higher probability of conversion.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — E1 is written against "their leads panel", which is HU 2's dashboard. Team confirmed 2026-08-08 that HU 13 extends that panel rather than shipping a separate view.  `inferred · B12`
+
+- **[[HU3-HybridScoring\|HU 3]]** — E2 allows a lead to surface as recommended "even if their general classification is not High" — the classification it overrides is HU 3 E2's.  `documented`
+
+- **[[HU9-CompatibilitySimulation\|HU 9]]** — E1 orders leads by "purchase capacity" and E3 displays "estimated capacity". That value is defined only by HU 9 E4 and is computed nowhere in `backend/app/scoring_engine` — all 20 indicators are relative to a *declared* property value.  `inferred · B7`
+
+- **[[HU17-ProjectCatalog\|HU 17]]** — HU 17's note: *"This catalog is the data source for the matching engine in HU 13."* E1 needs projects to select from; E4 needs their sold-out status.  `documented`
 
 ---
 

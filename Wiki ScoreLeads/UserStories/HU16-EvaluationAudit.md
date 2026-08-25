@@ -16,13 +16,21 @@ Provides a record of actions performed on evaluations, ensuring traceability and
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
 | **Depends on** | [[HU3-HybridScoring\|HU 3]] |
-| **Required by** | [[HU33-ImmutableEvaluationHistory\|HU 33]] |
+| **Required by** | [[HU24-FraudulentLeadReporting\|HU 24]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 
 ---
 
 ## User Story
 
 > **As** a real estate admin/dev, **I want** to have a record of actions performed on evaluations, **in order to** ensure traceability and ease the review of changes within the system.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 records events on evaluations being created, updated, or reviewed; evaluations themselves are produced by HU 3 E5.  `documented`
 
 ---
 

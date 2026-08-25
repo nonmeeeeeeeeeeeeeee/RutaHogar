@@ -16,13 +16,21 @@ Lets a lead simulate different objectives, values, comunas, terms, and configura
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
 | **Depends on** | [[HU3-HybridScoring\|HU 3]] |
-| **Required by** | — |
+| **Required by** | [[HU10-AccessibilityMap\|HU 10]], [[HU13-LeadProjectMatching\|HU 13]], [[HU30-MobileExecutiveDashboard\|HU 30]] |
 
 ---
 
 ## User Story
 
 > **As** a user interested in buying a home, **I want** to simulate different objectives, values, comunas, terms, and configurations, **in order to** discover which alternatives are compatible with my current profile.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 tests scenarios against the lead's purchase capacity and E2 proposes minimum adjustments for someone who "does not qualify" — both need the completed assessment from HU 3.  `documented`
 
 ---
 

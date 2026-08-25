@@ -26,6 +26,14 @@ Lets pre-qualified leads upload financial supporting documents so the executive 
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — E3 lets an executive reviewing "a pre-qualified lead" open their documents; that pre-qualified lead list is HU 2's dashboard.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Upload of allowed files

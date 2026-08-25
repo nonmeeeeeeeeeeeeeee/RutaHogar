@@ -26,6 +26,14 @@ Lets a sales executive download reports on evaluated leads, classifications, and
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E2 reports "obtained classifications and pre-qualification rates", which exist only once HU 3 has scored leads.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Lead-volume report

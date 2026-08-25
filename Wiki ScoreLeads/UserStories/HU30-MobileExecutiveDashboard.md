@@ -13,7 +13,7 @@
 | **Actor** | Sales Executive |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU2-LeadPrioritization\|HU 2]] |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU5-BasicSecurity\|HU 5]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU14-RolesAndPermissions\|HU 14]], [[HU24-FraudulentLeadReporting\|HU 24]] |
 | **Required by** | — |
 
 ---
@@ -21,6 +21,22 @@
 ## User Story
 
 > **As** a sales executive, **I want** to review and manage leads from my phone, **in order to** prioritize viable prospects and do commercial follow-up without depending on a computer.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — This story's note: *"Mobile counterpart of HU 2."* E1–E3 re-render HU 2's prioritized lead list as mobile cards.  `documented`
+
+- **[[HU5-BasicSecurity\|HU 5]]** — E6 requires the mobile dashboard to "maintain the same access restrictions and permissions as the desktop version". This story's note: *"E6 role enforcement aligns with HU 5 and HU 14."*  `documented · B9`
+
+- **[[HU9-CompatibilitySimulation\|HU 9]]** — E3 requires "estimated capacity" on every lead card. Same missing computation as HU 13 — the value is defined only in HU 9 E4 and does not exist in the scoring engine.  `inferred · B8`
+
+- **[[HU14-RolesAndPermissions\|HU 14]]** — The second half of E6's role enforcement. Soft: E6 only requires parity with whatever the desktop enforces, so HU 5 alone satisfies a minimum and HU 14 raises the ceiling.  `inferred · S4`
+
+- **[[HU24-FraudulentLeadReporting\|HU 24]]** — E4's quick actions include "report inconsistency", which is HU 24 E3. HU 24's note: *"Quick 'report inconsistency' action is exposed on mobile — see HU 30 E4."*  `documented · B6`
 
 ---
 

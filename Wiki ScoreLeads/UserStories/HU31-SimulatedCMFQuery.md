@@ -15,7 +15,7 @@ Lets an executive verify delinquency/debt background from the user-provided info
 | **Actor** | Sales Executive |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 | **Required by** | — |
 
 ---
@@ -23,6 +23,16 @@ Lets an executive verify delinquency/debt background from the user-provided info
 ## User Story
 
 > **As** a sales executive, **I want** to verify delinquency (debt) background based on the information provided by the user, **in order to** determine whether the lead has healthy payment behavior.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 builds the simulation from "income, declared debts, financial burden, reported delinquency", and E6 adjusts the financial scoring itself.  `documented`
+
+- **[[HU33-ImmutableEvaluationHistory\|HU 33]]** — This story's note: *"A scoring adjustment (E6) is a recalculation trigger for HU 33."*  `documented · B3`
 
 ---
 

@@ -13,14 +13,24 @@ For leads that don't yet qualify, the system generates a personalized, step-by-s
 | **Actor** | Lead |
 | **Status** | ✅ Implemented (PMV) |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
-| **Required by** | [[HU8-MonthlyPlanTracking\|HU 8]] |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU3-HybridScoring\|HU 3]] |
+| **Required by** | [[HU8-MonthlyPlanTracking\|HU 8]], [[HU12-FinancialAcademy\|HU 12]], [[HU29-MobileLeadExperience\|HU 29]] |
 
 ---
 
 ## User Story
 
 > **As** a lead in the preparation stage, **I want** to receive a personalized improvement plan with recommendations and debt/savings goals, **in order to** know what actions I must take to get closer to my real estate objective.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU2-LeadPrioritization\|HU 2]]** — This story's high-score branch routes the lead away from the plan and into the executive dashboard — *"Users with a High score bypass this flow and are routed to the executive dashboard"* — so HU 2 must exist as the destination.  `inferred · S6`
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 generates the plan "when they finish their financial assessment", and E2 keys recommendations off the `risk_codes` HU 3's engine produces.  `documented`
 
 ---
 

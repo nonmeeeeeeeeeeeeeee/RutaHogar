@@ -13,14 +13,24 @@ The core engine of ScoreLeads. Processes the financial data submitted in HU 1, c
 | **Actor** | Lead |
 | **Status** | ✅ Implemented (PMV) |
 | **Sprint** | PMV (completed) |
-| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]] |
-| **Required by** | [[HU2-LeadPrioritization\|HU 2]], [[HU7-ImprovementPlan\|HU 7]] |
+| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]], [[HU5-BasicSecurity\|HU 5]] |
+| **Required by** | [[HU2-LeadPrioritization\|HU 2]], [[HU4-CommercialDerivation\|HU 4]], [[HU7-ImprovementPlan\|HU 7]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU10-AccessibilityMap\|HU 10]], [[HU12-FinancialAcademy\|HU 12]], [[HU13-LeadProjectMatching\|HU 13]], [[HU15-ScoringParameters\|HU 15]], [[HU16-EvaluationAudit\|HU 16]], [[HU18-LeadFinancialEvolution\|HU 18]], [[HU20-EconomicSimulation\|HU 20]], [[HU22-CommercialReport\|HU 22]], [[HU23-EventLogAnalytics\|HU 23]], [[HU25-SubsidySimulation\|HU 25]], [[HU26-CreditTermSimulation\|HU 26]], [[HU29-MobileLeadExperience\|HU 29]], [[HU31-SimulatedCMFQuery\|HU 31]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 
 ---
 
 ## User Story
 
 > **As** a person interested in buying a home, **I want** to receive an immediate financial assessment through a hybrid scoring with intelligent explanation, **in order to** understand my level of readiness, the main factors influencing my result, and the recommended next steps before starting a formal assessment.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU1-FinancialDataEntry\|HU 1]]** — E1 processes the financial data submitted through HU 1's form; without it there is no input snapshot for E5's immutable record.  `documented`
+
+- **[[HU5-BasicSecurity\|HU 5]]** — Declared by HU 5's `Required by`. HU 3 E5 persists a snapshot of the lead's financial data — exactly the storage path HU 5 E3 requires parameterized queries for.  `inferred`
 
 ---
 

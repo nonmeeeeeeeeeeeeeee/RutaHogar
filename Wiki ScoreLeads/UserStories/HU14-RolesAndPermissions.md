@@ -16,13 +16,21 @@ Lets an admin dev manage roles and permissions across the platform, controlling 
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
 | **Depends on** | [[HU5-BasicSecurity\|HU 5]] |
-| **Required by** | — |
+| **Required by** | [[HU30-MobileExecutiveDashboard\|HU 30]] |
 
 ---
 
 ## User Story
 
 > **As** an admin dev, **I want** to manage roles and permissions within the platform, **in order to** control access to features according to each user's profile.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU5-BasicSecurity\|HU 5]]** — HU 5's note: *"Auth/role enforcement is expanded in HU 14."* E2 blocks disallowed access, which is the endpoint-protection surface HU 5 establishes.  `documented`
 
 ---
 

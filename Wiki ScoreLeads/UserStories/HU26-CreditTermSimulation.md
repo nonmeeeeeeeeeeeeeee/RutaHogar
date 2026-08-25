@@ -26,6 +26,14 @@ Lets a lead simulate their credit at 20-, 25-, and 30-year terms to find the bal
 
 ---
 
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 adjusts installment and interest from credit parameters the scoring engine already resolves. This story's note: *"reuses the dividend/interest logic"*.  `documented`
+
+---
+
 ## Acceptance Criteria
 
 ### E1 — Automatic adjustment of installments and interest

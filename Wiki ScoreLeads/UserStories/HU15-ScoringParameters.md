@@ -15,7 +15,7 @@ Lets a real estate admin modify the parameters used by the scoring engine, adapt
 | **Actor** | Real Estate Admin |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 3 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 | **Required by** | — |
 
 ---
@@ -23,6 +23,16 @@ Lets a real estate admin modify the parameters used by the scoring engine, adapt
 ## User Story
 
 > **As** a real estate admin, **I want** to modify the parameters used by the scoring engine, **in order to** adapt the leads shown to my sales executives to what we are looking for as an organization.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 and E2 expose and persist "the parameters used by the engine". This story's note: *"Externalizes the rule weights currently hard-coded in `backend/app/scoring.py`."*  `documented`
+
+- **[[HU33-ImmutableEvaluationHistory\|HU 33]]** — This story's note: *"A parameter change is a recalculation trigger for HU 33."* E3 applies new parameters to later evaluations, which must be versioned rather than overwritten.  `documented · B5`
 
 ---
 

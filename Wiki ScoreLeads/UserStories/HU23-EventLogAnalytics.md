@@ -13,14 +13,26 @@
 | **Actor** | Real Estate Admin |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]] |
-| **Required by** | [[HU28-DemographicVisualization\|HU 28]] |
+| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], [[HU6-PrivacyPanel\|HU 6]] |
+| **Required by** | [[HU27-ConversionDashboard\|HU 27]], [[HU28-DemographicVisualization\|HU 28]] |
 
 ---
 
 ## User Story
 
 > **As** a real estate admin, **I want** to visualize the application's event logs (sign-in clicks, account creation, pre-assessments, the age of users who fill in the forms, etc.), **in order to** obtain metrics about users and thus perform data analysis and improve decision-making.
+
+---
+
+## Dependencies
+
+Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
+
+- **[[HU1-FinancialDataEntry\|HU 1]]** — E3 excludes users who have not accepted consent. This story's note: consent-gating is *"consistent with HU 1 E3"*, where the consent flag originates.  `documented · B10`
+
+- **[[HU3-HybridScoring\|HU 3]]** — E1 and E2 log and chart pre-assessment events, which are produced by the scoring flow HU 3 defines.  `documented`
+
+- **[[HU6-PrivacyPanel\|HU 6]]** — HU 6's note: *"Consent state set here gates event logging in HU 23 E3."* HU 1 supplies the initial flag; HU 6 lets the user change it, and the logging layer must honour the change.  `inferred · S5`
 
 ---
 
