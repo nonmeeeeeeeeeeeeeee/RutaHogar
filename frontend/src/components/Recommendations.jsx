@@ -9,6 +9,7 @@ import {
   getUserResultFactors,
 } from "../utils/helpers";
 import GlossaryTerm, { splitTextWithGlossaryTerms } from "./GlossaryTerm";
+import { ACADEMY_BENEFIT_CAPSULES } from "../constants/academyContent";
 
 function hasObjectData(value) {
   return value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0;
@@ -188,9 +189,27 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
           <p style={{ margin: "0.4rem 0 0.8rem 0", color: "#526174", fontSize: "0.95rem" }}>
             Descubre qu&#233; beneficios como FOGAES, DS49, DS1 o Ley 21.748 podr&#237;an ser compatibles con tu perfil.
           </p>
-          <button type="button" className="secondary-button" onClick={() => onNavigate?.("simulacion")}>
-            Ver simulaci&#243;n completa
-          </button>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button type="button" className="secondary-button" onClick={() => onNavigate?.("simulacion")}>
+              Ver simulaci&#243;n completa
+            </button>
+            {data.housing_benefits.applicable_benefits
+              .filter((b) => b.eligible)
+              .slice(0, 1)
+              .map((b) => {
+                const capsuleId = ACADEMY_BENEFIT_CAPSULES[b.academy_module];
+                return capsuleId ? (
+                  <button
+                    key={b.type}
+                    type="button"
+                    className="text-button"
+                    onClick={() => onNavigate?.("academia", { articleId: capsuleId })}
+                  >
+                    Explorar c&#225;psula: {b.name}
+                  </button>
+                ) : null;
+              })}
+          </div>
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   ACADEMY_ARTICLES,
   ACADEMY_TOPICS,
@@ -339,9 +339,13 @@ const TABS = [
   { id: "casos", label: "Casos prácticos", icon: "ti-list-details" },
 ];
 
-export default function AcademiaFinanciera({ evaluation, onStartEvaluation, onNavigate }) {
+export default function AcademiaFinanciera({ evaluation, onStartEvaluation, onNavigate, initialArticleId }) {
   const [activeTab, setActiveTab] = useState("conceptos");
-  const [openArticleId, setOpenArticleId] = useState(null);
+  const [openArticleId, setOpenArticleId] = useState(initialArticleId || null);
+
+  useEffect(() => {
+    if (initialArticleId) setOpenArticleId(initialArticleId);
+  }, [initialArticleId]);
 
   const openArticle = (id) => setOpenArticleId(id);
   const closeArticle = () => setOpenArticleId(null);

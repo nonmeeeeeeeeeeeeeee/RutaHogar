@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
+import { ACADEMY_BENEFIT_CAPSULES } from "../constants/academyContent";
 
 const BENEFIT_LABELS = {
   FOGAES: "FOGAES",
@@ -26,7 +27,11 @@ function ConditionList({ items, variant }) {
 
 export default function SimulacionBeneficios({ evaluation, onNavigate }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
-  const openAcademy = () => onNavigate?.("academia");
+  const openBenefitCapsule = (academyModule) => {
+    const articleId = ACADEMY_BENEFIT_CAPSULES[academyModule];
+    if (articleId) onNavigate?.("academia", { articleId });
+    else onNavigate?.("academia");
+  };
   const goToRecommendations = () => onNavigate?.("recommendations");
 
   const benefits = data?.housing_benefits?.applicable_benefits || [];
@@ -102,7 +107,7 @@ export default function SimulacionBeneficios({ evaluation, onNavigate }) {
                   <ConditionList items={benefit.conditions_not_met} variant="pending" />
                   {!benefit.eligible && (
                     <div className="benefit-card-academy-link">
-                      <button type="button" className="text-button" onClick={openAcademy}>
+                      <button type="button" className="text-button" onClick={() => openBenefitCapsule(benefit.academy_module)}>
                         Descubre cómo cumplir este requisito en nuestra Academia Financiera
                       </button>
                     </div>
@@ -113,7 +118,7 @@ export default function SimulacionBeneficios({ evaluation, onNavigate }) {
 
             {benefit.eligible && (
               <div className="benefit-card-actions">
-                <button type="button" className="primary-button" onClick={openAcademy}>
+                <button type="button" className="primary-button" onClick={() => openBenefitCapsule(benefit.academy_module)}>
                   Ver pasos en la Academia Financiera
                 </button>
               </div>

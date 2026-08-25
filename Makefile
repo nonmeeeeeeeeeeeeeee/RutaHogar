@@ -23,7 +23,7 @@ install-frontend:
 	cd $(FRONTEND_DIR) && npm install
 
 run-backend:
-	cd $(BACKEND_DIR) && .venv/bin/uvicorn app.main:app --reload --port 8000
+	cd $(BACKEND_DIR) && .venv/Scripts/uvicorn app.main:app --reload --port 8000
 
 run-frontend:
 	cd $(FRONTEND_DIR) && npm run dev -- --host 0.0.0.0
