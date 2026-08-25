@@ -6,7 +6,7 @@ a product-oriented system for explainable scoring, versioned rules,
 traceability, privacy, commercial prioritization, and financial improvement
 planning.
 
-ScoreLeads does not approve mortgage loans and does not replace a formal bank
+ScoreLeads does not approve mortgage loans and does not replace a formal bank 
 evaluation. The score is orientative and explainable. AI-generated text may help
 summarize explanations or commercial guidance, but the score itself must remain
 determined by auditable rules unless the team explicitly instructs otherwise.
