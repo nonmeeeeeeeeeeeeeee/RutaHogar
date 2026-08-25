@@ -2,7 +2,7 @@
 
 - **Story:** HU <N> — <title>
 - **Actor:** <role>
-- **Source story:** `Wiki ScoreLeads/UserStories/HU<N>-<Slug>.md`
+- **Source story:** `Wiki RutaHogar/UserStories/HU<N>-<Slug>.md`
 - **Status / Sprint:** <status> · <sprint> · <points> SP
 - **Depends on / Required by:** <stories, and whether they are implemented>
 - **Branch:** `feat/hu<n>-<slug>`

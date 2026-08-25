@@ -15,6 +15,7 @@ import ObjectiveReview from "./components/ObjectiveReview";
 import Onboarding from "./components/Onboarding";
 import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
+import SimulacionBeneficios from "./components/SimulacionBeneficios";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SignupOffer from "./components/SignupOffer";
@@ -37,10 +38,10 @@ import {
 import { formatScore } from "./utils/helpers";
 import { plazoLabels } from "./constants";
 
-const ONBOARDING_KEY = "scoreleads_onboarding";
-const ANON_ONBOARDING_KEY = "scoreleads_anon_onboarding";
-const ANON_RESULT_KEY = "scoreleads_anon_result";
-const ANON_INPUT_KEY = "scoreleads_anon_input";
+const ONBOARDING_KEY = "RutaHogar_onboarding";
+const ANON_ONBOARDING_KEY = "RutaHogar_anon_onboarding";
+const ANON_RESULT_KEY = "RutaHogar_anon_result";
+const ANON_INPUT_KEY = "RutaHogar_anon_input";
 
 function readSessionJson(key) {
   try {
@@ -228,6 +229,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "home") return "/inicio";
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
   if (page === "recommendations") return "/recomendaciones";
+  if (page === "simulacion") return "/simulacion";
   if (page === "academia") return "/academia";
   if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
   if (page === "profile") return "/perfil";
@@ -246,6 +248,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/precalificacion",
     "/pre-evaluacion",
     "/recomendaciones",
+    "/simulacion",
     "/academia",
     "/plan-mejora",
     "/perfil",
@@ -261,7 +264,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "landing", path: path === "/inicio" ? "/" : undefined };
@@ -278,6 +281,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
       };
     }
     if (path === "/recomendaciones") return { page: "recommendations" };
+    if (path === "/simulacion") return { page: "simulacion" };
     if (path === "/academia") return { page: "academia" };
     if (path === "/plan-mejora") return { page: "tracking" };
     if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
@@ -1294,7 +1298,7 @@ export default function App() {
           <section className="hero">
             <div className="hero-copy">
               <span className="eyebrow">Solución inmobiliaria</span>
-              <h1>ScoreLeads</h1>
+              <h1>RutaHogar</h1>
               {result && (
                 <div
                   className={
@@ -1318,7 +1322,7 @@ export default function App() {
               </p>
             </div>
 
-            <aside className="score-preview" aria-label="Resumen de ScoreLeads">
+            <aside className="score-preview" aria-label="Resumen de RutaHogar">
               <span className="preview-label">Flujo activo</span>
               <strong>Formulario - Score - Recomendaciones</strong>
               <p>Resultado orientativo: Alto, Medio o Bajo.</p>
@@ -1332,7 +1336,7 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la visión completa de ScoreLeads.
+                Estas tarjetas muestran la visión completa de RutaHogar.
                 Actualmente están habilitados el objetivo inmobiliario y la
                 pre-evaluación financiera.
               </p>
@@ -1448,6 +1452,11 @@ export default function App() {
         <Recommendations
           evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onStartEvaluation={startEvaluation}
+          onNavigate={navigateToPage}
+        />
+      ) : page === "simulacion" && profile.role === roles.user ? (
+        <SimulacionBeneficios
+          evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onNavigate={navigateToPage}
         />
       ) : page === "academia" && profile.role === roles.user ? (

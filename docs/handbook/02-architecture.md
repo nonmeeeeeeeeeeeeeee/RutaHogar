@@ -83,7 +83,7 @@ literal inside a function is a defect, even when it is correct — it is the mec
   are not optional features to be mirrored elsewhere. New services target Supabase directly and
   are not expected to ship a parallel local implementation.
   - The existing `isSupabaseDataConfigured` localStorage branches are **legacy**, kept because
-    removing them is its own story with a data-migration question attached (the `scoreleads_*`
+    removing them is its own story with a data-migration question attached (the `RutaHogar_*`
     keys hold real local state). Do not extend them; do not delete them casually.
 
 ## Decisions on record

@@ -20,6 +20,38 @@ from .constants import (
     LEY_21748_TASA_REDUCCION_PB,
 )
 
+CONDITION_LABELS = {
+    "vivienda_nueva": "El objetivo debe ser una vivienda nueva",
+    "precio_dentro_limite": "El valor de la propiedad debe estar dentro del límite permitido",
+    "pie_suficiente": "Contar con un pie mínimo del 10%",
+    "edad_minima": "Tener la edad mínima requerida (18 años)",
+    "vulnerabilidad_rsh": "Estar dentro del tramo de vulnerabilidad del RSH",
+    "sin_propiedad_previa": "No ser propietario de una vivienda",
+    "ahorro_minimo": "Contar con el ahorro mínimo requerido en UF",
+    "grupo_familiar": "Postular con un grupo familiar acreditado",
+    "deuda_hipotecaria_vigente": "Contar con deuda hipotecaria vigente",
+    "beneficio_previo": "Haber sido beneficiario previo de un subsidio habitacional",
+    "antiguedad_ahorro": "Tener la antigüedad mínima en la cuenta de ahorro",
+    "tramo_I_ahorro": "Ahorro mínimo de 30 UF (Tramo I)",
+    "tramo_I_tope": "Valor de propiedad hasta 1.100 UF (Tramo I)",
+    "tramo_I_rsh": "RSH hasta el 60% (Tramo I)",
+    "tramo_II_ahorro": "Ahorro mínimo de 40 UF (Tramo II)",
+    "tramo_II_tope": "Valor de propiedad hasta 1.600 UF (Tramo II)",
+    "tramo_II_rsh": "RSH hasta el 80% (Tramo II)",
+    "tramo_III_ahorro": "Ahorro mínimo de 80 UF (Tramo III)",
+    "tramo_III_tope": "Valor de propiedad hasta 2.200 UF (Tramo III)",
+    "tramo_III_rsh": "RSH inscrito con límite de renta (Tramo III)",
+    "tramo_compatible": "Cumplir con los requisitos de al menos un tramo",
+    "inscrito_rui": "Estar inscrito en el Registro Único de Inscritos (RUI)",
+    "sin_beneficio_previo": "No haber sido beneficiario previo de vivienda o subsidio estatal",
+    "persona_natural": "Ser persona natural (no empresa)",
+    "valor_dentro_limite": "El valor de la propiedad debe estar dentro del tope permitido",
+}
+
+
+def _label(key: str) -> str:
+    return CONDITION_LABELS.get(key, key)
+
 
 def _positive_float(value) -> float:
     try:
@@ -49,19 +81,19 @@ def _detect_fogaes(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if vivienda_nueva:
-        conditions_met.append("vivienda_nueva")
+        conditions_met.append(_label("vivienda_nueva"))
     else:
-        conditions_not_met.append("vivienda_nueva")
+        conditions_not_met.append(_label("vivienda_nueva"))
 
     if property_value_uf > 0 and property_value_uf <= FOGAES_MAX_PROPERTY_UF:
-        conditions_met.append("precio_dentro_limite")
+        conditions_met.append(_label("precio_dentro_limite"))
     else:
-        conditions_not_met.append("precio_dentro_limite")
+        conditions_not_met.append(_label("precio_dentro_limite"))
 
     if pie_ratio >= FOGAES_MIN_PIE_RATIO:
-        conditions_met.append("pie_suficiente")
+        conditions_met.append(_label("pie_suficiente"))
     else:
-        conditions_not_met.append("pie_suficiente")
+        conditions_not_met.append(_label("pie_suficiente"))
 
     eligible = len(conditions_not_met) == 0
 
@@ -106,30 +138,30 @@ def _detect_ds49(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if edad >= DS49_MIN_EDAD:
-        conditions_met.append("edad_minima")
+        conditions_met.append(_label("edad_minima"))
     else:
-        conditions_not_met.append("edad_minima")
+        conditions_not_met.append(_label("edad_minima"))
 
     rsh_max = 100 if es_adulto_mayor else DS49_RSH_VULNERABLE_MAX
     if rsh_tramo > 0 and rsh_tramo <= rsh_max:
-        conditions_met.append("vulnerabilidad_rsh")
+        conditions_met.append(_label("vulnerabilidad_rsh"))
     else:
-        conditions_not_met.append("vulnerabilidad_rsh")
+        conditions_not_met.append(_label("vulnerabilidad_rsh"))
 
     if not propiedad_previa:
-        conditions_met.append("sin_propiedad_previa")
+        conditions_met.append(_label("sin_propiedad_previa"))
     else:
-        conditions_not_met.append("sin_propiedad_previa")
+        conditions_not_met.append(_label("sin_propiedad_previa"))
 
     if ahorro_uf >= DS49_MIN_AHORRO_UF:
-        conditions_met.append("ahorro_minimo")
+        conditions_met.append(_label("ahorro_minimo"))
     else:
-        conditions_not_met.append("ahorro_minimo")
+        conditions_not_met.append(_label("ahorro_minimo"))
 
     if grupo_familiar_rsh:
-        conditions_met.append("grupo_familiar")
+        conditions_met.append(_label("grupo_familiar"))
     else:
-        conditions_not_met.append("grupo_familiar")
+        conditions_not_met.append(_label("grupo_familiar"))
 
     eligible = len(conditions_not_met) == 0
 
@@ -164,14 +196,14 @@ def _detect_padhi(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if deuda_hipotecaria_vigente:
-        conditions_met.append("deuda_hipotecaria_vigente")
+        conditions_met.append(_label("deuda_hipotecaria_vigente"))
     else:
-        conditions_not_met.append("deuda_hipotecaria_vigente")
+        conditions_not_met.append(_label("deuda_hipotecaria_vigente"))
 
     if beneficio_previo:
-        conditions_met.append("beneficio_previo")
+        conditions_met.append(_label("beneficio_previo"))
     else:
-        conditions_not_met.append("beneficio_previo")
+        conditions_not_met.append(_label("beneficio_previo"))
 
     eligible = deuda_hipotecaria_vigente and beneficio_previo
 
@@ -214,14 +246,14 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if not propiedad_previa:
-        conditions_met.append("sin_propiedad_previa")
+        conditions_met.append(_label("sin_propiedad_previa"))
     else:
-        conditions_not_met.append("sin_propiedad_previa")
+        conditions_not_met.append(_label("sin_propiedad_previa"))
 
     if ahorro_antiguedad_meses >= DS1_MIN_AHORRO_MESES:
-        conditions_met.append("antiguedad_ahorro")
+        conditions_met.append(_label("antiguedad_ahorro"))
     else:
-        conditions_not_met.append("antiguedad_ahorro")
+        conditions_not_met.append(_label("antiguedad_ahorro"))
 
     tramo = None
     tramo_nombre = None
@@ -236,9 +268,9 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
         ):
             tramo = "I"
             tramo_nombre = "Tramo I"
-            conditions_met.append(f"tramo_{tramo}_ahorro")
-            conditions_met.append(f"tramo_{tramo}_tope")
-            conditions_met.append(f"tramo_{tramo}_rsh")
+            conditions_met.append(_label("tramo_I_ahorro"))
+            conditions_met.append(_label("tramo_I_tope"))
+            conditions_met.append(_label("tramo_I_rsh"))
         elif (
             ahorro_uf >= DS1_TRAMO_II_AHORRO_UF
             and valor_propiedad_uf <= DS1_TRAMO_II_TOPE_UF
@@ -246,9 +278,9 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
         ):
             tramo = "II"
             tramo_nombre = "Tramo II"
-            conditions_met.append(f"tramo_{tramo}_ahorro")
-            conditions_met.append(f"tramo_{tramo}_tope")
-            conditions_met.append(f"tramo_{tramo}_rsh")
+            conditions_met.append(_label("tramo_II_ahorro"))
+            conditions_met.append(_label("tramo_II_tope"))
+            conditions_met.append(_label("tramo_II_rsh"))
         elif (
             ahorro_uf >= DS1_TRAMO_III_AHORRO_UF
             and valor_propiedad_uf <= DS1_TRAMO_III_TOPE_UF
@@ -256,14 +288,14 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
         ):
             tramo = "III"
             tramo_nombre = "Tramo III"
-            conditions_met.append(f"tramo_{tramo}_ahorro")
-            conditions_met.append(f"tramo_{tramo}_tope")
-            conditions_met.append(f"tramo_{tramo}_rsh")
+            conditions_met.append(_label("tramo_III_ahorro"))
+            conditions_met.append(_label("tramo_III_tope"))
+            conditions_met.append(_label("tramo_III_rsh"))
 
     if tramo:
-        conditions_met.append("tramo_compatible")
+        conditions_met.append(_label("tramo_compatible"))
     else:
-        conditions_not_met.append("tramo_compatible")
+        conditions_not_met.append(_label("tramo_compatible"))
 
     eligible = len(conditions_not_met) == 0
 
@@ -300,24 +332,24 @@ def _detect_leasing(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if edad >= LEASING_MIN_EDAD:
-        conditions_met.append("edad_minima")
+        conditions_met.append(_label("edad_minima"))
     else:
-        conditions_not_met.append("edad_minima")
+        conditions_not_met.append(_label("edad_minima"))
 
     if registro_rui:
-        conditions_met.append("inscrito_rui")
+        conditions_met.append(_label("inscrito_rui"))
     else:
-        conditions_not_met.append("inscrito_rui")
+        conditions_not_met.append(_label("inscrito_rui"))
 
     if not propiedad_previa:
-        conditions_met.append("sin_propiedad_previa")
+        conditions_met.append(_label("sin_propiedad_previa"))
     else:
-        conditions_not_met.append("sin_propiedad_previa")
+        conditions_not_met.append(_label("sin_propiedad_previa"))
 
     if not beneficio_previo:
-        conditions_met.append("sin_beneficio_previo")
+        conditions_met.append(_label("sin_beneficio_previo"))
     else:
-        conditions_not_met.append("sin_beneficio_previo")
+        conditions_not_met.append(_label("sin_beneficio_previo"))
 
     eligible = len(conditions_not_met) == 0
 
@@ -353,19 +385,19 @@ def _detect_ley_21748(data: dict, indicators: dict) -> dict:
     conditions_not_met = []
 
     if vivienda_nueva:
-        conditions_met.append("vivienda_nueva")
+        conditions_met.append(_label("vivienda_nueva"))
     else:
-        conditions_not_met.append("vivienda_nueva")
+        conditions_not_met.append(_label("vivienda_nueva"))
 
     if persona_natural:
-        conditions_met.append("persona_natural")
+        conditions_met.append(_label("persona_natural"))
     else:
-        conditions_not_met.append("persona_natural")
+        conditions_not_met.append(_label("persona_natural"))
 
     if valor_propiedad_uf > 0 and valor_propiedad_uf <= LEY_21748_TOPE_UF:
-        conditions_met.append("valor_dentro_limite")
+        conditions_met.append(_label("valor_dentro_limite"))
     else:
-        conditions_not_met.append("valor_dentro_limite")
+        conditions_not_met.append(_label("valor_dentro_limite"))
 
     eligible = len(conditions_not_met) == 0
 

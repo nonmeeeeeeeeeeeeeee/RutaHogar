@@ -132,7 +132,7 @@ export const ACADEMY_ARTICLES = [
     minutes: 4,
     tags: ["subsidio"],
     body:
-      "Aunque cada programa tiene reglas específicas, en general se solicita contar con un ahorro mínimo acreditado en una cuenta de ahorro para la vivienda, pertenecer a un tramo de ingresos determinado según el Registro Social de Hogares, y no ser propietario de otra vivienda.\n\nLa simulación de subsidios dentro de ScoreLeads es referencial: no reemplaza la evaluación oficial de la entidad correspondiente.",
+      "Aunque cada programa tiene reglas específicas, en general se solicita contar con un ahorro mínimo acreditado en una cuenta de ahorro para la vivienda, pertenecer a un tramo de ingresos determinado según el Registro Social de Hogares, y no ser propietario de otra vivienda.\n\nLa simulación de subsidios dentro de RutaHogar es referencial: no reemplaza la evaluación oficial de la entidad correspondiente.",
   },
   {
     id: "subsidios-3",

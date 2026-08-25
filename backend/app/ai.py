@@ -169,7 +169,7 @@ El resumen debe:
 NO debes:
 1. Hablar en primera persona por ningún motivo.
 2. Calcular, modificar o cuestionar el score o la clasificación.
-3. Decir que ScoreLeads aprueba créditos.
+3. Decir que RutaHogar aprueba créditos.
 4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
 5. Reemplazar la evaluación bancaria formal.
 Responde solo el resumen, sin títulos ni encabezados."""
@@ -237,7 +237,7 @@ Motivo: [explicación en máximo 30 palabras]
 NO debes:
 1. Hablar en primera persona por ningún motivo.
 2. Calcular, modificar o cuestionar el score o la clasificación.
-3. Decir que ScoreLeads aprueba créditos.
+3. Decir que RutaHogar aprueba créditos.
 4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
 """
 
@@ -295,7 +295,7 @@ El párrafo debe:
 NO debes:
 1. Calcular, modificar o cuestionar el score o la clasificación.
 2. Decir que la persona está aprobada.
-3. Decir que ScoreLeads aprueba créditos.
+3. Decir que RutaHogar aprueba créditos.
 4. Prometer aprobación bancaria, subsidios ni condiciones comerciales.
 5. Reemplazar una evaluación bancaria formal.
 

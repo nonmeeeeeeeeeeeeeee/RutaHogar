@@ -3,8 +3,8 @@
 **Status: draft, pending ratification.** Reviewed as a PR, then walked through in one team
 meeting. Until then, nothing here is enforced.
 
-> **The product is RutaHogar.** The repository, the Vercel project and the `Wiki ScoreLeads/`
-> vault still carry the old *ScoreLeads* name; those are paths and identifiers, not the product,
+> **The product is RutaHogar.** The repository, the Vercel project and the `Wiki RutaHogar/`
+> vault still carry the old *RutaHogar* name; those are paths and identifiers, not the product,
 > and they are renamed only by a deliberate story. In new prose, write **RutaHogar**.
 
 This is the **single source of truth** for how we build RutaHogar. If `CLAUDE.md`, `AGENTS.md`,

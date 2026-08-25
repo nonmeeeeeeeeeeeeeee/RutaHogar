@@ -26,7 +26,7 @@ VALID_RELATION_TYPES = {
     "hijo_hija", "hermano_hermana", "otro_familiar", "amigo", "otro",
 }
 
-app = FastAPI(title="ScoreLeads")
+app = FastAPI(title="RutaHogar")
 
 LOCAL_FRONTEND_ORIGINS = [
     "http://localhost:5173",
@@ -40,14 +40,14 @@ LOCAL_FRONTEND_ORIGINS = [
 ]
 EXTRA_FRONTEND_ORIGINS = [
     origin.strip()
-    for origin in os.environ.get("SCORELEADS_ALLOWED_ORIGINS", "").split(",")
+    for origin in os.environ.get("RUTAHOGAR_ALLOWED_ORIGINS", "").split(",")
     if origin.strip()
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=LOCAL_FRONTEND_ORIGINS + EXTRA_FRONTEND_ORIGINS,
-    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_origin_regex=r"https://.*\.vercel\.app|http://\d+\.\d+\.\d+\.\d+:517[3-6]",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

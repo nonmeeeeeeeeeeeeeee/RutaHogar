@@ -172,8 +172,8 @@ one deliberate pass.
 | `docs/algorithms/` | `ALG-N.md` + `ALG-N-cases.json` |
 | `docs/stories/<HU>/PLAN.md` | one plan per story, git-tracked |
 | `docs/stories/<HU>/KICKOFF.md` | ephemeral, **gitignored** |
-| `Wiki ScoreLeads/` | product and requirements: user stories, actors, risks, entregas |
+| `Wiki RutaHogar/` | product and requirements: user stories, actors, risks, entregas |
 | `AGENTS.md`, `.claude/CLAUDE.md`, `.github/copilot-instructions.md` | pointers here; **no rules of their own** |
 
-`Wiki ScoreLeads/` is the product domain and `docs/` is the engineering domain. Engineering
+`Wiki RutaHogar/` is the product domain and `docs/` is the engineering domain. Engineering
 artifacts do not go in the wiki, and requirements do not go in `docs/`.

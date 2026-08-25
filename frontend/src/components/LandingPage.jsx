@@ -478,7 +478,7 @@ function FeedbackSection({ profile }) {
       <div className="sl-feedback-inner">
         <div className="sl-feedback-copy">
           <div className="sl-section-eyebrow">Feedback de testers</div>
-          <h2 className="sl-section-title">Ayúdanos a afinar ScoreLeads</h2>
+          <h2 className="sl-section-title">Ayúdanos a afinar RutaHogar</h2>
           <p>
             Tus comentarios nos ayudan a detectar si la propuesta se entiende,
             qué parte del flujo genera dudas y qué deberíamos mejorar antes de
@@ -549,7 +549,7 @@ function FeedbackSection({ profile }) {
           </label>
 
           <label>
-            Primera impresión: ¿qué entendiste que hace ScoreLeads?
+            Primera impresión: ¿qué entendiste que hace RutaHogar?
             <textarea
               name="first_impression"
               value={form.first_impression}
@@ -614,7 +614,7 @@ export default function LandingPage({
 
         {/* Nav */}
         <nav className="sl-nav">
-          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" className="sl-logo-img" />
+          <img src="/Logo RutaHogar.png" alt="RutaHogar" className="sl-logo-img" />
           <div className="sl-nav-actions">
             {isLoggedIn ? (
               <>
@@ -692,7 +692,7 @@ export default function LandingPage({
               <div className="sl-section-eyebrow">Para quién es</div>
               <h2>Diseñado para el comprador de primera vivienda</h2>
               <p>
-                Si estás dando los primeros pasos hacia tu hogar, ScoreLeads te ayuda a
+                Si estás dando los primeros pasos hacia tu hogar, RutaHogar te ayuda a
                 entender tu posición financiera antes de hablar con el banco.
               </p>
               <ul className="sl-score-list">
@@ -778,11 +778,11 @@ export default function LandingPage({
           </div>
         </section>
 
-        {/* 4. Por qué ScoreLeads */}
+        {/* 4. Por qué RutaHogar */}
         <section className="sl-benefits-section">
           <div className="sl-benefits-inner">
             <div className="sl-section-eyebrow">Ventajas</div>
-            <h2 className="sl-benefits-title">¿Por qué usar ScoreLeads?</h2>
+            <h2 className="sl-benefits-title">¿Por qué usar RutaHogar?</h2>
             <p className="sl-benefits-sub">Una forma simple y transparente de conocer tu posición financiera.</p>
             <div className="sl-benefits-grid">
               <div className="sl-benefit">
@@ -884,7 +884,7 @@ export default function LandingPage({
         {/* 7. Footer */}
         <footer className="sl-footer">
           <p className="sl-footer-note">
-            © 2025 ScoreLeads · Herramienta orientativa, no constituye evaluación crediticia formal.
+            © 2025 RutaHogar · Herramienta orientativa, no constituye evaluación crediticia formal.
           </p>
           <button type="button" className="sl-footer-link" onClick={isLoggedIn ? onDashboard : onLogin}>
             {isLoggedIn ? "Ir al dashboard" : "Iniciar sesión"}

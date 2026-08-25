@@ -6,6 +6,7 @@ const navByRole = {
     { id: "evaluate", label: "Precalificación" },
     { id: "recommendations", label: "Recomendaciones" },
     { id: "tracking", label: "Plan de Mejora" },
+    { id: "simulacion", label: "Simulación" },
     { id: "academia", label: "Academia" },
   ],
   [roles.sales]: [
@@ -38,7 +39,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
           onClick={() => handleNavigate("landing")}
           aria-label="Ir al inicio"
         >
-          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
+          <img src="/Logo RutaHogar.png" alt="RutaHogar" />
         </button>
 
         <div className="navbar-right">

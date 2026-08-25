@@ -183,72 +183,14 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
       )}
 
       {data.housing_benefits?.applicable_benefits?.length > 0 && (
-        <div className="simulation-section" style={{ marginTop: "2rem", marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "1.4rem", color: "var(--color-neutral-900)" }}>Simulación</h2>
-          <p style={{ marginBottom: "1rem", color: "var(--color-neutral-700)" }}>
-            Rutas de financiamiento alternativas que podrían ser compatibles con tu perfil.
+        <div className="simulation-teaser" style={{ marginTop: "1.5rem", marginBottom: "1.5rem", padding: "1.2rem", borderRadius: "8px", border: "1px solid #d7e0ea", background: "#f9fafb" }}>
+          <strong>Simulaci&#243;n de beneficios habitacionales</strong>
+          <p style={{ margin: "0.4rem 0 0.8rem 0", color: "#526174", fontSize: "0.95rem" }}>
+            Descubre qu&#233; beneficios como FOGAES, DS49, DS1 o Ley 21.748 podr&#237;an ser compatibles con tu perfil.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {data.housing_benefits.applicable_benefits.map((benefit) => (
-              <div
-                key={benefit.type}
-                className="benefit-card"
-                style={{
-                  padding: "1.2rem",
-                  borderRadius: "8px",
-                  border: `1px solid ${benefit.eligible ? '#bbf7d0' : '#e5e7eb'}`,
-                  backgroundColor: benefit.eligible ? '#f0fdf4' : '#f9fafb',
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                  <strong style={{ fontSize: "1.1rem", color: "var(--color-neutral-900)" }}>{benefit.name}</strong>
-                  <span style={{
-                    fontWeight: "600",
-                    padding: "4px 10px",
-                    borderRadius: "12px",
-                    backgroundColor: benefit.eligible ? '#22c55e' : '#d1d5db',
-                    color: '#fff',
-                    fontSize: "0.85rem"
-                  }}>
-                    {benefit.eligible ? 'Compatible' : 'No compatible'}
-                  </span>
-                </div>
-                <p style={{ margin: "0 0 0.75rem 0", lineHeight: "1.5", color: "var(--color-neutral-800)" }}>{benefit.notes}</p>
-                {benefit.conditions_met.length > 0 && (
-                  <p style={{ fontSize: "0.9rem", color: "var(--color-neutral-600)", margin: "0 0 0.25rem 0" }}>
-                    <strong>Requisitos cumplidos:</strong> {benefit.conditions_met.join(", ")}
-                  </p>
-                )}
-                {benefit.conditions_not_met.length > 0 && (
-                  <p style={{ fontSize: "0.9rem", color: "var(--color-neutral-600)", margin: "0 0 0.25rem 0" }}>
-                    <strong>Requisitos pendientes:</strong> {benefit.conditions_not_met.join(", ")}
-                  </p>
-                )}
-                {benefit.eligible && (
-                  <button
-                    type="button"
-                    onClick={openInAcademy}
-                    style={{
-                      marginTop: "0.75rem",
-                      padding: "0.4rem 0.8rem",
-                      fontSize: "0.85rem",
-                      borderRadius: "6px",
-                      border: "1px solid var(--color-primary, #3b82f6)",
-                      backgroundColor: "transparent",
-                      color: "var(--color-primary, #3b82f6)",
-                      cursor: "pointer"
-                    }}
-                  >
-                    Ver pasos en la Academia Financiera
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-          <p style={{ fontSize: "0.85rem", fontStyle: "italic", color: "var(--color-neutral-500)", marginTop: "1rem" }}>
-            {data.housing_benefits.disclaimer}
-          </p>
+          <button type="button" className="secondary-button" onClick={() => onNavigate?.("simulacion")}>
+            Ver simulaci&#243;n completa
+          </button>
         </div>
       )}
 
