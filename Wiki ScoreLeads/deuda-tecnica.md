@@ -1,4 +1,4 @@
-# Deuda Técnica — ScoreLeads
+# Deuda Técnica — RutaHogar
 
 Registro de decisiones tomadas conscientemente que implican un riesgo técnico o de seguridad a resolver en el futuro.
 

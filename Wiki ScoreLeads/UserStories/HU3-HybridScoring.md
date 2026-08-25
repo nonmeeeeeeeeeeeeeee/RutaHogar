@@ -1,6 +1,10 @@
 # HU 3 — Hybrid Scoring with Intelligent Explanation
 
+<<<<<<< Updated upstream:Wiki ScoreLeads/UserStories/HU3-HybridScoring.md
 The core engine of ScoreLeads. Processes the financial data submitted in HU 1, computes a 0–100 score using parametric rules, classifies the lead, and generates an AI-assisted explanation of the key factors behind the result. Every evaluation is stored as an immutable record.
+=======
+The core engine of RutaHogar. Processes the financial data submitted in HdU 1, computes a 0–100 score using parametric rules, classifies the lead, and generates an AI-assisted explanation of the key factors behind the result. Every evaluation is stored as an immutable record.
+>>>>>>> Stashed changes:Wiki ScoreLeads/UserStories/HdU3-HybridScoring.md
 
 ---
 
@@ -36,7 +40,7 @@ The core engine of ScoreLeads. Processes the financial data submitted in HU 1, c
 
 ### E2 — Lead classification by score
 
-**Given** the ScoreLeads system has received the user's data,  
+**Given** the RutaHogar system has received the user's data,  
 **When** the scoring is performed,  
 **Then** the result must classify the user into clear priority levels (Alto, Medio, Bajo).
 

@@ -2,7 +2,7 @@
 
 > 🗓 **Sprint 2 — not yet implemented.** Documented for planning. Do not implement without explicit team instruction.
 
-Allows qualified leads to be pushed from ScoreLeads directly into the real estate company's CRM, giving the sales team a prioritized pipeline with no manual data entry.
+Allows qualified leads to be pushed from RutaHogar directly into the real estate company's CRM, giving the sales team a prioritized pipeline with no manual data entry.
 
 ---
 
