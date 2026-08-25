@@ -38,7 +38,7 @@ export default function SimulacionBeneficios({ evaluation, onNavigate }) {
     return (
       <section className="section-block simulation-panel">
         <div className="section-heading">
-          <span className="eyebrow">Simulación</span>
+          <span className="eyebrow">Subsidios</span>
           <h1>Beneficios habitacionales</h1>
         </div>
         <div className="empty-state">

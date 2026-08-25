@@ -7,7 +7,7 @@ const navByRole = {
     { id: "recommendations", label: "Recomendaciones" },
     { id: "simulation", label: "Comparar Proyectos" },
     { id: "tracking", label: "Plan de Mejora" },
-    { id: "simulacion", label: "Simulación" },
+    { id: "simulacion", label: "Subsidios" },
     { id: "academia", label: "Academia" },
   ],
   [roles.sales]: [

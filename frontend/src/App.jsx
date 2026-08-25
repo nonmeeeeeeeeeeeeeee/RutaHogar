@@ -251,6 +251,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/pre-evaluacion",
     "/recomendaciones",
     "/simulacion",
+    "/comparar-proyectos",
     "/academia",
     "/plan-mejora",
     "/perfil",
@@ -266,7 +267,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/simulacion", "/comparar-proyectos", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "landing", path: path === "/inicio" ? "/" : undefined };
