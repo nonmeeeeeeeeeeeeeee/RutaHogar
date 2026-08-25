@@ -18,6 +18,7 @@ import Recommendations from "./components/Recommendations";
 import SimulacionBeneficios from "./components/SimulacionBeneficios";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import SimulationPage from "./components/SimulationPage";
 import SignupOffer from "./components/SignupOffer";
 import RegisterMilestone from "./components/RegisterMilestone";
 import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, saveHousingPlanProgress } from "./services/evaluationService";
@@ -230,6 +231,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
   if (page === "recommendations") return "/recomendaciones";
   if (page === "simulacion") return "/simulacion";
+  if (page === "simulation") return "/comparar-proyectos";
   if (page === "academia") return "/academia";
   if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
   if (page === "profile") return "/perfil";
@@ -282,6 +284,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     }
     if (path === "/recomendaciones") return { page: "recommendations" };
     if (path === "/simulacion") return { page: "simulacion" };
+    if (path === "/comparar-proyectos") return { page: "simulation" };
     if (path === "/academia") return { page: "academia" };
     if (path === "/plan-mejora") return { page: "tracking" };
     if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
@@ -436,6 +439,11 @@ export default function App() {
           classification: currentEvaluation.result.classification,
         }
       : null;
+
+  useEffect(() => {
+    document.body.classList.toggle("simulation-layout-mode", page === "simulation");
+    return () => document.body.classList.remove("simulation-layout-mode");
+  }, [page]);
 
   const updateBrowserPath = (nextPath, options = {}) => {
     const currentPath = window.location.href.includes("#")
@@ -1251,7 +1259,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${page === "simulation" ? "simulation-shell" : ""}`}>
       <Navbar
         profile={profile}
         page={page}
@@ -1457,6 +1465,13 @@ export default function App() {
       ) : page === "simulacion" && profile.role === roles.user ? (
         <SimulacionBeneficios
           evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
+          onNavigate={navigateToPage}
+        />
+      ) : page === "simulation" && profile.role === roles.user ? (
+        <SimulationPage
+          evaluation={currentEvaluation}
+          onboarding={userOnboarding}
+          onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
         />
       ) : page === "academia" && profile.role === roles.user ? (

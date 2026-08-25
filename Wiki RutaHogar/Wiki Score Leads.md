@@ -6,7 +6,7 @@
 
 ## Contenido
 
-1. [¿Qué es RutaHogar?](#1-qué-es-RutaHogar)
+1. [¿Qué es RutaHogar?](#1-qué-es-rutahogar)
 2. [Problema que resuelve](#2-problema-que-resuelve)
 3. [Propuesta de valor](#3-propuesta-de-valor)
 4. [Flujo general del sistema](#4-flujo-general-del-sistema)
