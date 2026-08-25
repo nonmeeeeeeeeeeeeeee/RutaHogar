@@ -518,9 +518,9 @@ def calculate_score(data: Dict) -> Dict:
     comp_relacion = data.get("relacion_complementario", data.get("complemento_relacion", ""))
     edad = int(data.get("edad", 0) or 0)
     plazo_credito = int(data.get("plazo_credito_hipotecario", 0) or 0)
-    uf_value_clp = float(data.get("uf_value_clp", VALOR_UF_CLP))
+    uf_value_clp = float(data.get("uf_value_clp") or VALOR_UF_CLP)
     declara_patrimonio = bool(data.get("declara_patrimonio", False))
-    patrimonio_unit = data.get("patrimonio_unit", "clp")
+    patrimonio_unit = data.get("patrimonio_unit") or "clp"
     valor_vehiculos = _money_to_clp(float(data.get("valor_vehiculos", 0) or 0), patrimonio_unit, uf_value_clp)
     valor_inmuebles = _money_to_clp(float(data.get("valor_inmuebles", 0) or 0), patrimonio_unit, uf_value_clp)
 
@@ -915,6 +915,5 @@ def calculate_score(data: Dict) -> Dict:
         structured_improvement_plan=structured_improvement_plan,
     )
 
-    result.pop("risk_codes", None)
-
     return result
+
