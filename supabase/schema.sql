@@ -146,18 +146,8 @@ create policy "ARCO select own"
   for select
   using (auth.uid() = user_id);
 
-drop policy if exists "ARCO select admin" on public.arco_requests;
-create policy "ARCO select admin"
-  on public.arco_requests
-  for select
-  using (public.get_my_role() = 'admin');
-
-drop policy if exists "ARCO update admin" on public.arco_requests;
-create policy "ARCO update admin"
-  on public.arco_requests
-  for update
-  using (public.get_my_role() = 'admin')
-  with check (public.get_my_role() = 'admin');
+-- Las políticas de admin sobre ARCO viven al final de este archivo: dependen de
+-- is_global_admin(), que a su vez necesita profiles.inmobiliaria_id.
 
 drop trigger if exists arco_requests_set_updated_at on public.arco_requests;
 create trigger arco_requests_set_updated_at
@@ -768,3 +758,35 @@ as $$
 $$;
 
 grant execute on function public.list_inmobiliaria_executives(uuid) to authenticated;
+
+-- =============================================================
+-- Solicitudes ARCO: solo el admin global
+-- =============================================================
+-- Una solicitud ARCO es un derecho de datos personales de un lead y no
+-- pertenece a ninguna inmobiliaria. Un admin con inmobiliaria asignada no debe
+-- leer correos ni solicitudes de leads de otros tenants.
+create or replace function public.is_global_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select public.get_my_role() = 'admin'
+     and public.get_my_inmobiliaria() is null;
+$$;
+
+grant execute on function public.is_global_admin() to authenticated;
+
+drop policy if exists "ARCO select admin" on public.arco_requests;
+create policy "ARCO select admin"
+  on public.arco_requests
+  for select
+  using (public.is_global_admin());
+
+drop policy if exists "ARCO update admin" on public.arco_requests;
+create policy "ARCO update admin"
+  on public.arco_requests
+  for update
+  using (public.is_global_admin())
+  with check (public.is_global_admin());
