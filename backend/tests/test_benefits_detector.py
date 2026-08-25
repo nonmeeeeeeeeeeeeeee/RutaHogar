@@ -5,7 +5,7 @@ from pathlib import Path
 os.environ["GROQ_API_KEY"] = ""
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.scoring_engine.housing_benefits import detect_housing_benefits
+from app.scoring_engine.housing_benefits import detect_housing_benefits, CONDITION_LABELS
 
 
 def _benefit_by_type(result, btype):
@@ -57,9 +57,9 @@ def test_fogaes_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "FOGAES")
     assert b["eligible"] is True
-    assert "vivienda_nueva" in b["conditions_met"]
-    assert "precio_dentro_limite" in b["conditions_met"]
-    assert "pie_suficiente" in b["conditions_met"]
+    assert CONDITION_LABELS["vivienda_nueva"] in b["conditions_met"]
+    assert CONDITION_LABELS["precio_dentro_limite"] in b["conditions_met"]
+    assert CONDITION_LABELS["pie_suficiente"] in b["conditions_met"]
 
 
 def test_fogaes_not_eligible_no_new_home():
@@ -68,7 +68,7 @@ def test_fogaes_not_eligible_no_new_home():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "FOGAES")
     assert b["eligible"] is False
-    assert "vivienda_nueva" in b["conditions_not_met"]
+    assert CONDITION_LABELS["vivienda_nueva"] in b["conditions_not_met"]
 
 
 def test_fogaes_not_eligible_price_too_high():
@@ -77,7 +77,7 @@ def test_fogaes_not_eligible_price_too_high():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "FOGAES")
     assert b["eligible"] is False
-    assert "precio_dentro_limite" in b["conditions_not_met"]
+    assert CONDITION_LABELS["precio_dentro_limite"] in b["conditions_not_met"]
 
 
 def test_fogaes_not_eligible_pie_too_low():
@@ -86,7 +86,7 @@ def test_fogaes_not_eligible_pie_too_low():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "FOGAES")
     assert b["eligible"] is False
-    assert "pie_suficiente" in b["conditions_not_met"]
+    assert CONDITION_LABELS["pie_suficiente"] in b["conditions_not_met"]
 
 
 def test_ds49_eligible():
@@ -101,11 +101,11 @@ def test_ds49_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS49")
     assert b["eligible"] is True
-    assert "edad_minima" in b["conditions_met"]
-    assert "vulnerabilidad_rsh" in b["conditions_met"]
-    assert "sin_propiedad_previa" in b["conditions_met"]
-    assert "ahorro_minimo" in b["conditions_met"]
-    assert "grupo_familiar" in b["conditions_met"]
+    assert CONDITION_LABELS["edad_minima"] in b["conditions_met"]
+    assert CONDITION_LABELS["vulnerabilidad_rsh"] in b["conditions_met"]
+    assert CONDITION_LABELS["sin_propiedad_previa"] in b["conditions_met"]
+    assert CONDITION_LABELS["ahorro_minimo"] in b["conditions_met"]
+    assert CONDITION_LABELS["grupo_familiar"] in b["conditions_met"]
 
 
 def test_ds49_not_eligible_no_grupo_familiar():
@@ -120,7 +120,7 @@ def test_ds49_not_eligible_no_grupo_familiar():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS49")
     assert b["eligible"] is False
-    assert "grupo_familiar" in b["conditions_not_met"]
+    assert CONDITION_LABELS["grupo_familiar"] in b["conditions_not_met"]
 
 
 def test_ds49_not_eligible_propiedad_previa():
@@ -135,7 +135,7 @@ def test_ds49_not_eligible_propiedad_previa():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS49")
     assert b["eligible"] is False
-    assert "sin_propiedad_previa" in b["conditions_not_met"]
+    assert CONDITION_LABELS["sin_propiedad_previa"] in b["conditions_not_met"]
 
 
 def test_ds49_adulto_mayor_rsh_relaxed():
@@ -150,7 +150,7 @@ def test_ds49_adulto_mayor_rsh_relaxed():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS49")
     assert b["eligible"] is True
-    assert "vulnerabilidad_rsh" in b["conditions_met"]
+    assert CONDITION_LABELS["vulnerabilidad_rsh"] in b["conditions_met"]
 
 
 def test_padhi_eligible():
@@ -173,7 +173,7 @@ def test_padhi_not_eligible_no_beneficio_previo():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "PADHI")
     assert b["eligible"] is False
-    assert "beneficio_previo" in b["conditions_not_met"]
+    assert CONDITION_LABELS["beneficio_previo"] in b["conditions_not_met"]
 
 
 def test_padhi_not_eligible_no_deuda():
@@ -185,7 +185,7 @@ def test_padhi_not_eligible_no_deuda():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "PADHI")
     assert b["eligible"] is False
-    assert "deuda_hipotecaria_vigente" in b["conditions_not_met"]
+    assert CONDITION_LABELS["deuda_hipotecaria_vigente"] in b["conditions_not_met"]
 
 
 def test_ds1_tramo_i_eligible():
@@ -200,9 +200,9 @@ def test_ds1_tramo_i_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is True
-    assert "tramo_I_ahorro" in b["conditions_met"]
-    assert "tramo_I_tope" in b["conditions_met"]
-    assert "tramo_I_rsh" in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_I_ahorro"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_I_tope"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_I_rsh"] in b["conditions_met"]
 
 
 def test_ds1_tramo_ii_eligible():
@@ -217,9 +217,9 @@ def test_ds1_tramo_ii_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is True
-    assert "tramo_II_ahorro" in b["conditions_met"]
-    assert "tramo_II_tope" in b["conditions_met"]
-    assert "tramo_II_rsh" in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_II_ahorro"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_II_tope"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_II_rsh"] in b["conditions_met"]
 
 
 def test_ds1_tramo_iii_eligible():
@@ -234,9 +234,9 @@ def test_ds1_tramo_iii_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is True
-    assert "tramo_III_ahorro" in b["conditions_met"]
-    assert "tramo_III_tope" in b["conditions_met"]
-    assert "tramo_III_rsh" in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_III_ahorro"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_III_tope"] in b["conditions_met"]
+    assert CONDITION_LABELS["tramo_III_rsh"] in b["conditions_met"]
 
 
 def test_ds1_not_eligible_propiedad_previa():
@@ -251,7 +251,7 @@ def test_ds1_not_eligible_propiedad_previa():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is False
-    assert "sin_propiedad_previa" in b["conditions_not_met"]
+    assert CONDITION_LABELS["sin_propiedad_previa"] in b["conditions_not_met"]
 
 
 def test_ds1_not_eligible_insufficient_savings():
@@ -266,7 +266,7 @@ def test_ds1_not_eligible_insufficient_savings():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is False
-    assert "tramo_compatible" in b["conditions_not_met"]
+    assert CONDITION_LABELS["tramo_compatible"] in b["conditions_not_met"]
 
 
 def test_ds1_not_eligible_insufficient_antiguedad():
@@ -281,7 +281,7 @@ def test_ds1_not_eligible_insufficient_antiguedad():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "DS1")
     assert b["eligible"] is False
-    assert "antiguedad_ahorro" in b["conditions_not_met"]
+    assert CONDITION_LABELS["antiguedad_ahorro"] in b["conditions_not_met"]
 
 
 def test_leasing_eligible():
@@ -295,10 +295,10 @@ def test_leasing_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEASING")
     assert b["eligible"] is True
-    assert "edad_minima" in b["conditions_met"]
-    assert "inscrito_rui" in b["conditions_met"]
-    assert "sin_propiedad_previa" in b["conditions_met"]
-    assert "sin_beneficio_previo" in b["conditions_met"]
+    assert CONDITION_LABELS["edad_minima"] in b["conditions_met"]
+    assert CONDITION_LABELS["inscrito_rui"] in b["conditions_met"]
+    assert CONDITION_LABELS["sin_propiedad_previa"] in b["conditions_met"]
+    assert CONDITION_LABELS["sin_beneficio_previo"] in b["conditions_met"]
 
 
 def test_leasing_not_eligible_no_rui():
@@ -312,7 +312,7 @@ def test_leasing_not_eligible_no_rui():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEASING")
     assert b["eligible"] is False
-    assert "inscrito_rui" in b["conditions_not_met"]
+    assert CONDITION_LABELS["inscrito_rui"] in b["conditions_not_met"]
 
 
 def test_leasing_not_eligible_propiedad_previa():
@@ -326,7 +326,7 @@ def test_leasing_not_eligible_propiedad_previa():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEASING")
     assert b["eligible"] is False
-    assert "sin_propiedad_previa" in b["conditions_not_met"]
+    assert CONDITION_LABELS["sin_propiedad_previa"] in b["conditions_not_met"]
 
 
 def test_ley_21748_eligible():
@@ -335,9 +335,9 @@ def test_ley_21748_eligible():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEY_21748")
     assert b["eligible"] is True
-    assert "vivienda_nueva" in b["conditions_met"]
-    assert "persona_natural" in b["conditions_met"]
-    assert "valor_dentro_limite" in b["conditions_met"]
+    assert CONDITION_LABELS["vivienda_nueva"] in b["conditions_met"]
+    assert CONDITION_LABELS["persona_natural"] in b["conditions_met"]
+    assert CONDITION_LABELS["valor_dentro_limite"] in b["conditions_met"]
 
 
 def test_ley_21748_not_eligible_no_new_home():
@@ -346,7 +346,7 @@ def test_ley_21748_not_eligible_no_new_home():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEY_21748")
     assert b["eligible"] is False
-    assert "vivienda_nueva" in b["conditions_not_met"]
+    assert CONDITION_LABELS["vivienda_nueva"] in b["conditions_not_met"]
 
 
 def test_ley_21748_not_eligible_price_too_high():
@@ -355,7 +355,7 @@ def test_ley_21748_not_eligible_price_too_high():
     result = detect_housing_benefits(data, indicators)
     b = _benefit_by_type(result, "LEY_21748")
     assert b["eligible"] is False
-    assert "valor_dentro_limite" in b["conditions_not_met"]
+    assert CONDITION_LABELS["valor_dentro_limite"] in b["conditions_not_met"]
 
 
 def test_empty_data_returns_all_benefits_not_eligible():
@@ -395,3 +395,9 @@ def test_summary_reflects_eligibility():
 
     result_empty = detect_housing_benefits({}, {})
     assert "no se detectaron" in result_empty["summary"].lower()
+
+
+def test_condition_labels_are_all_strings():
+    for key, label in CONDITION_LABELS.items():
+        assert isinstance(label, str), f"{key} label is not a string"
+        assert len(label) > 5, f"{key} label is too short: {label}"
