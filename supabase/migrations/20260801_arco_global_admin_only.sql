@@ -2,7 +2,7 @@
 -- ScoreLeads — Solicitudes ARCO: solo para el admin global
 -- =============================================================
 -- Las políticas originales (20260608_arco_requests.sql) abrían select/update
--- a cualquier `admin`. Desde HU 17 existen dos clases de admin:
+-- a cualquier `admin`. Desde HU 7 existen dos clases de admin:
 --
 --   admin con inmobiliaria_id = NULL  -> admin global (equipo ScoreLeads)
 --   admin con inmobiliaria_id = X     -> admin de la inmobiliaria X

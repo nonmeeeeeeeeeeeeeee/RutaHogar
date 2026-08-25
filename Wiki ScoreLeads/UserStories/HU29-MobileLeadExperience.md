@@ -13,7 +13,7 @@
 | **Actor** | Lead |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], [[HU7-ImprovementPlan\|HU 7]] |
+| **Depends on** | [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], [[HU7x-ImprovementPlan\|HU 7x]] |
 | **Required by** | — |
 
 ---
@@ -32,7 +32,7 @@ Why this story cannot be completed before each of the following. Tags: `document
 
 - **[[HU3-HybridScoring\|HU 3]]** — E3 renders "score, classification, purchase capacity, and recommendations" — HU 3's result payload.  `documented`
 
-- **[[HU7-ImprovementPlan\|HU 7]]** — E4 requires the lead to "review their milestones, record progress" from mobile without losing desktop functionality; that plan is HU 7's.  `documented`
+- **[[HU7x-ImprovementPlan\|HU 7x]]** — E4 requires the lead to "review their milestones, record progress" from mobile without losing desktop functionality; that plan is HU 7's.  `documented`
 
 ---
 
@@ -80,6 +80,6 @@ Why this story cannot be completed before each of the following. Tags: `document
 
 ## Notes
 
-- This is the mobile counterpart of the lead-facing stories [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], and [[HU7-ImprovementPlan\|HU 7]]; it adds no new business logic, only responsive delivery.
+- This is the mobile counterpart of the lead-facing stories [[HU1-FinancialDataEntry\|HU 1]], [[HU3-HybridScoring\|HU 3]], and [[HU7x-ImprovementPlan\|HU 7x]]; it adds no new business logic, only responsive delivery.
 - The executive-side mobile counterpart is [[HU30-MobileExecutiveDashboard\|HU 30]].
 - Supports the RNF **Ease of use** attribute — see [[AtributosDeCalidad\|Atributos de calidad]].

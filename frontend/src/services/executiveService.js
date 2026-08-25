@@ -2,7 +2,7 @@ import { supabase } from "../utils/supabase";
 import { isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 import { derivedTestPassword, validateExecutive } from "./projectValidation";
 
-// Alta y listado de ejecutivos comerciales de una inmobiliaria (HU 17).
+// Alta y listado de ejecutivos comerciales de una inmobiliaria (HU 7).
 // La creación real de la cuenta ocurre en la Edge Function `create-executive`,
 // porque exige la service_role key. Aquí solo se invoca y se normaliza.
 

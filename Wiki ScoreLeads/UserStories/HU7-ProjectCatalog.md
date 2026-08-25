@@ -1,4 +1,4 @@
-# HU 17 — Real Estate Project Catalog Management
+# HU 7 — Real Estate Project Catalog Management
 
 > 🔜 **Sprint 1.** Lets a real estate admin register and maintain a catalog of projects and link them to executives, so the system can recommend leads against projects that are actually available.
 

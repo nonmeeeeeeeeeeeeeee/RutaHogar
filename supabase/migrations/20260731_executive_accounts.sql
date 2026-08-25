@@ -1,5 +1,5 @@
 -- =============================================================
--- ScoreLeads — HU 17: alta de ejecutivos comerciales por el admin
+-- ScoreLeads — HU 7: alta de ejecutivos comerciales por el admin
 -- =============================================================
 -- El alta de la cuenta ocurre en la Edge Function `create-executive`
 -- (necesita service_role para tocar auth.users). Aquí solo va la lectura

@@ -1,5 +1,5 @@
 -- =============================================================
--- ScoreLeads — HU 17: catálogo multi-tenant de proyectos inmobiliarios
+-- ScoreLeads — HU 7: catálogo multi-tenant de proyectos inmobiliarios
 -- =============================================================
 -- Tablas: inmobiliarias, proyectos, proyecto_ejecutivos
 -- Columna nueva: profiles.inmobiliaria_id (NULL = admin global / dev)

@@ -1,4 +1,9 @@
-# HU 7 — Personalized Improvement Plan Generator
+# HU 7x — Personalized Improvement Plan Generator
+
+> ⚠️ **Temporary number.** The backlog renumbering moved Real Estate Project Catalog
+> Management into `HU 7`. This story kept its content but is flagged `HU 7x` until the
+> full renumber lands and gives it its real new number. Prose in other stories may still
+> say "HU 7" meaning this one.
 
 For leads that don't yet qualify, the system generates a personalized, step-by-step action plan based on their specific financial profile — including targeted debt-payment and down-payment savings goals. The plan turns a "not ready" result into a structured path toward purchase readiness.
 

@@ -1,6 +1,6 @@
 # Integración CRM — contrato propuesto para el catálogo de proyectos
 
-> **Estado: documentación únicamente.** HU 17 dejó el esquema y el servicio listos para
+> **Estado: documentación únicamente.** HU 7 dejó el esquema y el servicio listos para
 > recibir proyectos y asignaciones desde un CRM, pero **no implementó ningún adaptador**.
 > La conexión real es propiedad de **HU 4 / Spike 2 (Sprint 2)**, y ese spike puede
 > revisar o reemplazar el contrato descrito aquí. Este documento es una propuesta.
@@ -74,7 +74,7 @@ syncAssignmentsFromCrm(payload) -> { vinculados, pendientes, rechazados, errores
 
 | Campo CRM | Columna ScoreLeads | Notas |
 | :-------- | :----------------- | :---- |
-| `crm_id` | — (clave de correlación) | No se persiste en HU 17. Si Spike 2 necesita idempotencia por id externo, agregar `proyectos.crm_id text` + índice único `(inmobiliaria_id, crm_id)`. |
+| `crm_id` | — (clave de correlación) | No se persiste en HU 7. Si Spike 2 necesita idempotencia por id externo, agregar `proyectos.crm_id text` + índice único `(inmobiliaria_id, crm_id)`. |
 | `nombre` | `nombre` | Único por inmobiliaria e insensible a mayúsculas (`proyectos_nombre_por_inmobiliaria_idx`). Es la clave natural de correlación mientras no exista `crm_id`. |
 | `comuna` | `comuna` | Debe pertenecer a `comunasMvp` (`frontend/src/constants/comunas.js`). No se requiere que tenga entrada en `PRECIOS_REFERENCIA_UF`: el matching es *preference-independent* y nunca lee esa tabla (Spike 1 E4 §1, §2). La comuna solo se compara con la `comuna_objetivo` del lead (−15 de afinidad, nunca un gate). |
 | `tipo` | `tipo` | `departamento` \| `casa`. Cualquier otro valor debe normalizarse en el adaptador; la CHECK de la tabla lo rechaza. |
@@ -118,7 +118,7 @@ adaptador y pasa a derivarse en la base — el payload del CRM no cambia.
 | Campo CRM | Columna ScoreLeads | Notas |
 | :-------- | :----------------- | :---- |
 | `ejecutivo_email` | `ejecutivo_email` | Se normaliza a minúsculas. Es la mitad de la PK `(proyecto_id, ejecutivo_email)`. |
-| `crm_executive_id` | — | No se persiste en HU 17. El correo es el identificador de correlación. |
+| `crm_executive_id` | — | No se persiste en HU 7. El correo es el identificador de correlación. |
 | — | `ejecutivo_id` | `NULL` mientras el ejecutivo no tenga cuenta en ScoreLeads. |
 | — | `source` | **`'crm'`** para todo lo que entre por esta vía (`'manual'` para la UI de admin). Permite distinguir qué gestiona el CRM. |
 | — | `estado` | `'pendiente'` si el correo no tiene cuenta de ejecutivo; `'vinculado'` si sí. |
@@ -146,7 +146,7 @@ comercial se registre en ScoreLeads, sin perder información.
 
 ## Endpoint de ingesta propuesto
 
-HU 17 no expone ningún endpoint (guardrail: no se agregan endpoints al backend FastAPI
+HU 7 no expone ningún endpoint (guardrail: no se agregan endpoints al backend FastAPI
 y no se toca el contrato de `POST /score`). Lo que se propone para Spike 2:
 
 ```

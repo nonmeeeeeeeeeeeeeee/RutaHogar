@@ -15,7 +15,7 @@ Lets a lead with an active improvement plan record monthly financial progress, s
 | **Actor** | Lead |
 | **Status** | 🗓 Planned |
 | **Sprint** | Sprint 2 |
-| **Depends on** | [[HU7-ImprovementPlan\|HU 7]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
+| **Depends on** | [[HU7x-ImprovementPlan\|HU 7x]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 | **Required by** | — |
 
 ---
@@ -30,7 +30,7 @@ Lets a lead with an active improvement plan record monthly financial progress, s
 
 Why this story cannot be completed before each of the following. Tags: `documented` = stated in the wiki; `inferred` = derived from the acceptance criteria or the code, see [[../dependency-analysis|dependency analysis]].
 
-- **[[HU7-ImprovementPlan\|HU 7]]** — E1 records progress against "an active plan"; the plan and its debt/savings goals are HU 7 E5–E7. HU 7's note: *"Debt/savings goals (E5–E7) are tracked over time in HU 8."*  `documented`
+- **[[HU7x-ImprovementPlan\|HU 7x]]** — E1 records progress against "an active plan"; the plan and its debt/savings goals are HU 7 E5–E7. HU 7's note: *"Debt/savings goals (E5–E7) are tracked over time in HU 8."*  `documented`
 
 - **[[HU33-ImmutableEvaluationHistory\|HU 33]]** — E4 recalculates the score on milestone completion, and this story's note requires that recalculation to "produce a new versioned evaluation rather than mutate the prior one". HU 33 E1 names "debt payment HU 8" as a trigger from its side.  `documented · B2`
 

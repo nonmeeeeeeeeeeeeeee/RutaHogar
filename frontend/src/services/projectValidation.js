@@ -3,7 +3,7 @@ import { estadosProyecto, tiposProyecto } from "../constants/proyectos";
 
 // Lógica pura del catálogo de proyectos: sin Supabase, sin localStorage.
 // El motor de reglas del backend no participa aquí — este módulo solo valida
-// y filtra datos del catálogo (HU 17). El matching es de HU 13.
+// y filtra datos del catálogo (HU 7). El matching es de HU 13.
 
 function toNumber(value) {
   if (value === "" || value === null || value === undefined) return NaN;

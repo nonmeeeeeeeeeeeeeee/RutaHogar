@@ -13,7 +13,7 @@
 | **Actor** | Lead |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU7-ImprovementPlan\|HU 7]] |
+| **Depends on** | [[HU3-HybridScoring\|HU 3]], [[HU7x-ImprovementPlan\|HU 7x]] |
 | **Required by** | — |
 
 ---
@@ -30,7 +30,7 @@ Why this story cannot be completed before each of the following. Tags: `document
 
 - **[[HU3-HybridScoring\|HU 3]]** — E2 triggers on "an identified financial blocker"; this story's note says blocker detection *"reuses the `risk_codes` produced by the scoring engine (HU 3)"*.  `documented`
 
-- **[[HU7-ImprovementPlan\|HU 7]]** — E2 fires when the user reviews "their result **or improvement plan**" — the plan is HU 7's artifact, and this story's note names it alongside HU 3 as the source of blocker detection.  `documented · B1`
+- **[[HU7x-ImprovementPlan\|HU 7x]]** — E2 fires when the user reviews "their result **or improvement plan**" — the plan is HU 7's artifact, and this story's note names it alongside HU 3 as the source of blocker detection.  `documented · B1`
 
 ---
 
@@ -62,6 +62,6 @@ Why this story cannot be completed before each of the following. Tags: `document
 
 ## Notes
 
-- The blocker detection that drives E2 reuses the `risk_codes` produced by the scoring engine ([[HU3-HybridScoring\|HU 3]]) and the improvement plan ([[HU7-ImprovementPlan\|HU 7]]).
+- The blocker detection that drives E2 reuses the `risk_codes` produced by the scoring engine ([[HU3-HybridScoring\|HU 3]]) and the improvement plan ([[HU7x-ImprovementPlan\|HU 7x]]).
 - Content selection and organization is an output of **Spike 1** (financial education research).
 - Concepts surfaced here (subsidies, terms) connect to the simulation stories [[HU25-SubsidySimulation\|HU 25]] and [[HU26-CreditTermSimulation\|HU 26]].

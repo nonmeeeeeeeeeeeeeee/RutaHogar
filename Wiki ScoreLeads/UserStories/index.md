@@ -2,7 +2,13 @@
 
 All user stories for the ScoreLeads platform, following the **E4 Plan de Proyecto 2026** numbering (`HU 1–33`).
 
-> **Numbering note:** the E4 plan renumbered the backlog. The E1/E2 informes used `HdU 1–6`; this folder now uses `HU`. Mapping of the previously documented stories: `HdU1→HU1`, `HdU2→HU2`, `HdU3→HU3`, `HdU4→HU7` (Improvement Plan), `HdU5→HU4` (CRM), `HdU6→HU20` (UF/rate simulation).
+> **In-flight renumber (2026-08-14):** the backlog was renumbered again. Only the story this
+> branch delivers has been moved so far: Real Estate Project Catalog Management is now
+> **HU 7**. The story that previously held that number, Personalized Improvement Plan
+> Generator, is parked at **HU 7x** until the full renumber assigns it a real one. Every other
+> row below still uses the older E4 numbering.
+
+> **Numbering note:** the E4 plan renumbered the backlog. The E1/E2 informes used `HdU 1–6`; this folder now uses `HU`. Mapping of the previously documented stories: `HdU1→HU1`, `HdU2→HU2`, `HdU3→HU3`, `HdU4→HU7x` (Improvement Plan), `HdU5→HU4` (CRM), `HdU6→HU20` (UF/rate simulation).
 
 **Status legend:** ✅ Implemented (PMV) · 🔜 Sprint 1 · 🗓 Sprint 2 · 🗓 Sprint 3
 Every story below has its own page. ✅/🔜 stories carry the full implemented/near-term detail; 🗓 stories are documented for planning.
@@ -19,7 +25,7 @@ Every story below has its own page. ✅/🔜 stories carry the full implemented/
 | [[HU4-CommercialDerivation\|HU 4]] | Commercial Derivation & CRM Integration | Desirable | 8 | Real Estate Staff | Sprint 2 | 🗓 |
 | [[HU5-BasicSecurity\|HU 5]] | Basic System Security | Important | 8 | Admin Dev | Sprint 1 | 🔜 |
 | [[HU6-PrivacyPanel\|HU 6]] | Privacy & Personal Data Management Panel | Desirable | 3 | Lead (registered) | Sprint 2 | 🗓 |
-| [[HU7-ImprovementPlan\|HU 7]] | Personalized Improvement Plan Generator | Important | 8 | Lead | Sprint 1 | ✅ |
+| [[HU7x-ImprovementPlan\|HU 7x]] | Personalized Improvement Plan Generator | Important | 8 | Lead | Sprint 1 | ✅ |
 | [[HU8-MonthlyPlanTracking\|HU 8]] | Monthly Improvement-Plan Tracking | Important | 5 | Lead | Sprint 2 | 🗓 |
 | [[HU9-CompatibilitySimulation\|HU 9]] | Compatibility Simulation & Accessible Alternatives | Essential | 5 | Lead | Sprint 2 | 🗓 |
 | [[HU10-AccessibilityMap\|HU 10]] | Real Estate Accessibility Map Visualization | Optional | 8 | Lead | Sprint 3 | 🗓 |
@@ -29,7 +35,7 @@ Every story below has its own page. ✅/🔜 stories carry the full implemented/
 | [[HU14-RolesAndPermissions\|HU 14]] | Roles & Permissions Management | Desirable | 3 | Admin Dev | Sprint 2 | 🗓 |
 | [[HU15-ScoringParameters\|HU 15]] | Scoring Parameter Configuration | Optional | 5 | Real Estate Admin | Sprint 3 | 🗓 |
 | [[HU16-EvaluationAudit\|HU 16]] | Evaluation Auditing | Desirable | 3 | Real Estate Admin / Dev | Sprint 2 | 🗓 |
-| [[HU17-ProjectCatalog\|HU 17]] | Real Estate Project Catalog Management | Essential | 5 | Real Estate Admin | Sprint 1 | 🔜 |
+| [[HU7-ProjectCatalog\|HU 7]] | Real Estate Project Catalog Management | Essential | 5 | Real Estate Admin | Sprint 1 | 🔜 |
 | [[HU18-LeadFinancialEvolution\|HU 18]] | Lead Financial Evolution | Desirable | 5 | Sales Executive | Sprint 2 | 🗓 |
 | [[HU19-SupportingDocuments\|HU 19]] | Supporting Document Upload | Desirable | 5 | Sales Executive | Sprint 2 | 🗓 |
 | [[HU20-EconomicSimulation\|HU 20]] | Economic Simulation with UF & Rates | Optional | 3 | Lead | Sprint 3 | 🗓 |
@@ -80,9 +86,9 @@ Full actor detail (proficiency levels and justifications) is in [[Actores\|Actor
 
 1. **Guided financial pre-assessment flow** ([[HU1-FinancialDataEntry\|HU 1]]) — step-by-step web form, no document upload at this stage.
 2. **Real-time predictive scoring engine** ([[HU3-HybridScoring\|HU 3]]) — returns a viability score within 60 seconds with an AI-assisted explanation.
-3. **Personalized improvement plan generator** ([[HU7-ImprovementPlan\|HU 7]]) — step-by-step action guide with debt/savings goals for leads that don't qualify yet.
+3. **Personalized improvement plan generator** ([[HU7x-ImprovementPlan\|HU 7x]]) — step-by-step action guide with debt/savings goals for leads that don't qualify yet.
 4. **Prioritized executive dashboard** ([[HU2-LeadPrioritization\|HU 2]]) — AI-assisted, self-contained lead prioritization without CRM integration.
-5. **Lead–project matching & catalog** ([[HU13-LeadProjectMatching\|HU 13]], [[HU17-ProjectCatalog\|HU 17]]) — recommends leads against actually-available projects.
+5. **Lead–project matching & catalog** ([[HU13-LeadProjectMatching\|HU 13]], [[HU7-ProjectCatalog\|HU 7]]) — recommends leads against actually-available projects.
 6. **Mobile-first delivery** ([[HU29-MobileLeadExperience\|HU 29]], [[HU30-MobileExecutiveDashboard\|HU 30]]) — full lead and executive flows on a phone.
 
 ---

@@ -1,12 +1,12 @@
 # Dependency Analysis — Stage 1
 
-> Generated 2026-08-08 against branch `HU17` (commit `1ae2089`).
+> Generated 2026-08-08 against branch `feature/sprint1/HU7` (commit `1ae2089`).
 > Scope: the 33 stories in `UserStories/`. HU 34–43 (from [[ScoreLeads Shared/hu_gaps|hu_gaps]]) are covered in §5 only.
 
 > [!done] Accepted and applied — 2026-08-08
 > All 17 proposed edges were accepted and written into the story files. `Depends on` and `Required by` now carry the full 53-edge set, mirrored in both directions, and every story has a `## Dependencies` section explaining each upstream dependency.
 > This document is now the **audit trail** — it records where each edge came from, not what is pending.
-> Two corrections were made during promotion: **S6's direction was reversed** (it asserted HU 2 depended on HU 7; the reverse is true) and **S1 was promoted to B12** as a hard dependency per the team's call.
+> Two corrections were made during promotion: **S6's direction was reversed** (it asserted HU 2 depended on HU 7x; the reverse is true) and **S1 was promoted to B12** as a hard dependency per the team's call.
 >
 > Consequences: unconfirmed edges dropped from 3 to **0**; backward-in-sprint edges rose from 2 to **7**; lane widths were unaffected.
 
@@ -57,13 +57,13 @@ The three most consequential items, stated plainly:
 
 ### 1.1 Hard — `blocks`
 
-#### B1 · HU 7 → HU 12 &nbsp;·&nbsp; `proposed · textual + semantic` &nbsp;·&nbsp; Sprint 1 → Sprint 1
+#### B1 · HU 7x → HU 12 &nbsp;·&nbsp; `proposed · textual + semantic` &nbsp;·&nbsp; Sprint 1 → Sprint 1
 
 HU 12 E2 requires the improvement plan to exist:
 
 > **Given** the user has an identified financial blocker, **When** they review their result **or improvement plan**, **Then** the system must suggest related educational content.
 
-Confirmed by HU 12's own note: *"The blocker detection that drives E2 reuses the `risk_codes` produced by the scoring engine (HU 3) and the improvement plan (HU 7)."* Only HU 3 is declared.
+Confirmed by HU 12's own note: *"The blocker detection that drives E2 reuses the `risk_codes` produced by the scoring engine (HU 3) and the improvement plan (HU 7x)."* Only HU 3 is declared.
 
 #### B2 · HU 33 → HU 8 &nbsp;·&nbsp; `proposed · textual` &nbsp;·&nbsp; Sprint 2 → Sprint 2 · **intra-sprint**
 
@@ -143,7 +143,7 @@ HU 13 E1:
 | S3 | HU 16 → HU 24 | textual | HU 24 E7 stores *"date, responsible, reason, and previous/subsequent status"* — that is HU 16's audit record. Note: *"E7 aligns with the auditing story HU 16."* |
 | S4 | HU 14 → HU 30 | textual | *"E6 role enforcement aligns with HU 5 and HU 14."* Sprint 2 → Sprint 1, **backward**, but soft: E6 only requires parity with whatever desktop enforces. |
 | S5 | HU 6 → HU 23 | textual | *"Consent state set here gates event logging in HU 23 E3."* Sprint 2 → Sprint 1, **backward**, soft: the baseline consent flag comes from HU 1 (B10); HU 6 only adds management of it. |
-| S6 | HU 2 → HU 7 | textual | *"Users with a High score bypass this flow and are routed to the executive dashboard."* HU 7's high-score branch needs HU 2's dashboard as its destination. Both already delivered. **Direction corrected 2026-08-08** — first recorded as HU 7 → HU 2, which asserted that the PMV dashboard depended on a later story. |
+| S6 | HU 2 → HU 7x | textual | *"Users with a High score bypass this flow and are routed to the executive dashboard."* HU 7x's high-score branch needs HU 2's dashboard as its destination. Both already delivered. **Direction corrected 2026-08-08** — first recorded as HU 7x → HU 2, which asserted that the PMV dashboard depended on a later story. |
 
 ---
 
@@ -153,7 +153,7 @@ Of the 42 HU→HU references found in prose but absent from the dependency table
 
 | Kind | Instances |
 | :--- | :-------- |
-| **Sibling** — same feature, different actor or surface | HU 29 ↔ HU 30 (*"the lead-side counterpart is HU 29"*); HU 29 → HU 1/HU 3/HU 7 already declared as its real deps |
+| **Sibling** — same feature, different actor or surface | HU 29 ↔ HU 30 (*"the lead-side counterpart is HU 29"*); HU 29 → HU 1/HU 3/HU 7x already declared as its real deps |
 | **Related simulation** — shares logic, no ordering | HU 9 ↔ HU 20 ↔ HU 25 ↔ HU 26, mutually cross-referenced as *"related simulations"* |
 | **Contrast** — cited to say "deliberately not this" | HU 1 ↔ HU 19 (*"earlier stages deliberately avoid document upload"*); HU 2 ↔ HU 4 (*"This story deliberately avoids CRM integration"*) |
 | **Principle alignment** — shares a rule, needs no code from the other | HU 24 E8 ↔ HU 33 (*"aligns with the immutability principle"*) |
@@ -203,7 +203,7 @@ Implementation found in the repository that contradicts the wiki's `Status`. **N
 | **HU 6** Privacy Panel | 🗓 Planned · S2 | `AdminArcoRequests.jsx`, `arcoService.js`, `DataConsent.jsx`, `SetPassword.jsx`, `public.arco_requests` + RLS policies | E1, E2 appear covered; E4 plausible via `SetPassword`. **E3 (unrecoverable deletion) not located.** Not "Planned". |
 | **HU 8** Monthly Tracking | 🗓 Planned · S2 | `FinancialTracking.jsx`, `MonthlyPlan.jsx`, `RegisterMilestone.jsx`, `goalsService.js`, `monthlyPlanService.js`, `public.improvement_goals` | E1, E3, E5 appear covered. **E4 (recalculate score on milestone) not located** — which is exactly the criterion that needs B2. |
 | **HU 12** Financial Academy | 🔜 Sprint 1 | `AcademiaFinanciera.jsx`, `academyContent.js`, `GlossaryTerm.jsx`, `FieldTooltip.jsx` | E1, E3 appear covered. **E2 (blocker-driven suggestion) not located** — the criterion that needs B1. |
-| **HU 17** Project Catalog | 🔜 Sprint 1 | `AdminProjectCatalog.jsx`, `projectService.js`, `projectValidation.js`, `public.proyectos`, `public.proyecto_ejecutivos` | E1–E3 appear covered. **E4 (sold-out excluded from matching) not located.** In flight on this branch. |
+| **HU 7** Project Catalog | 🔜 Sprint 1 | `AdminProjectCatalog.jsx`, `projectService.js`, `projectValidation.js`, `public.proyectos`, `public.proyecto_ejecutivos` | E1–E3 appear covered. **E4 (sold-out excluded from matching) not located.** In flight on this branch. |
 | **HU 14** Roles & Permissions | 🗓 Planned · S2 | `executiveService.js`, `20260731_executive_accounts.sql`, `supabase/functions/create-executive`, `roles` in `auth.js` | E1 partially (executive account creation); E2/E3 via existing role routing. Substantially underway. |
 | **HU 13** Lead–Project Matching | 🔜 Sprint 1 | `backend/app/scoring_engine/project_fit.py`, wired into `/score`, returns `project_fit` | Backend matching exists. **No executive-facing UI located.** Blocked on B7 regardless. |
 | **HU 4** CRM Derivation | 🗓 Planned · S2 | `commercial_priority.py` emits `send_to_crm`; `docs/crm-integration.md` (new, uncommitted) | Scaffolding only — no CRM client, no field mapping. Consistent with its note that Spike 2 must define the API. |
@@ -272,7 +272,7 @@ HU 35 E2 notifies *"vía HU34"*; HU 34 E2 references HU 38 for re-engagement tim
 | 3 | Add `HU 16` to HU 33's `Depends on` (resolves an unconfirmed edge) | minutes |
 | 4 | Decide HU 30 E4: drop "report inconsistency", or pull HU 24 forward | discussion |
 | 5 | Decide where "estimated purchase capacity" is built — it blocks HU 13 and HU 30 | discussion |
-| 6 | Re-status HU 6, HU 8, HU 12, HU 14, HU 17 against actual code | ~1 hour |
+| 6 | Re-status HU 6, HU 8, HU 12, HU 14, HU 7 against actual code | ~1 hour |
 | 7 | Start HU 23 or accept that HU 27/HU 28 slip | planning |
 | 8 | ~~Review the reporting cluster for merge~~ — resolved 2026-08-08: HU 28 stays a story, no merge | — |
 | 9 | Review the simulation cluster (HU 9/20/25/26) for a shared engine | discussion |
@@ -310,7 +310,7 @@ Consumed by `scripts/build-story-graph.js` in Stage 2. Not authoritative — `Us
     {"id":"HU6","wiki":"planned","evidence":["frontend/src/components/AdminArcoRequests.jsx","frontend/src/services/arcoService.js","frontend/src/components/DataConsent.jsx","supabase/migrations/20260608_arco_requests.sql"],"covered":["E1","E2"],"not_located":["E3"]},
     {"id":"HU8","wiki":"planned","evidence":["frontend/src/components/FinancialTracking.jsx","frontend/src/components/MonthlyPlan.jsx","frontend/src/services/goalsService.js","frontend/src/services/monthlyPlanService.js"],"covered":["E1","E3","E5"],"not_located":["E4"]},
     {"id":"HU12","wiki":"next","evidence":["frontend/src/components/AcademiaFinanciera.jsx","frontend/src/constants/academyContent.js","frontend/src/components/GlossaryTerm.jsx"],"covered":["E1","E3"],"not_located":["E2"]},
-    {"id":"HU17","wiki":"next","evidence":["frontend/src/components/AdminProjectCatalog.jsx","frontend/src/services/projectService.js","frontend/src/services/projectValidation.js","supabase/migrations/20260729_project_catalog.sql"],"covered":["E1","E2","E3"],"not_located":["E4"]},
+    {"id":"HU7","wiki":"next","evidence":["frontend/src/components/AdminProjectCatalog.jsx","frontend/src/services/projectService.js","frontend/src/services/projectValidation.js","supabase/migrations/20260729_project_catalog.sql"],"covered":["E1","E2","E3"],"not_located":["E4"]},
     {"id":"HU14","wiki":"planned","evidence":["frontend/src/services/executiveService.js","supabase/migrations/20260731_executive_accounts.sql","supabase/functions/create-executive/index.ts"],"covered":["E1"],"not_located":["E2","E3"]},
     {"id":"HU13","wiki":"next","evidence":["backend/app/scoring_engine/project_fit.py"],"covered":["E2"],"not_located":["E1","E3","E4"]},
     {"id":"HU4","wiki":"planned","evidence":["backend/app/scoring_engine/commercial_priority.py","docs/crm-integration.md"],"covered":[],"not_located":["E1","E2","E3"]},

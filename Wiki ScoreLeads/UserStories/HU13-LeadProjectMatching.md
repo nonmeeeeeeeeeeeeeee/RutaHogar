@@ -13,7 +13,7 @@
 | **Actor** | Sales Executive |
 | **Status** | 🔜 Sprint 1 |
 | **Sprint** | Sprint 1 |
-| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU3-HybridScoring\|HU 3]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU17-ProjectCatalog\|HU 17]] |
+| **Depends on** | [[HU2-LeadPrioritization\|HU 2]], [[HU3-HybridScoring\|HU 3]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU7-ProjectCatalog\|HU 7]] |
 | **Required by** | — |
 
 ---
@@ -34,7 +34,7 @@ Why this story cannot be completed before each of the following. Tags: `document
 
 - **[[HU9-CompatibilitySimulation\|HU 9]]** — E1 orders leads by "purchase capacity" and E3 displays "estimated capacity". That value is defined only by HU 9 E4 and is computed nowhere in `backend/app/scoring_engine` — all 20 indicators are relative to a *declared* property value.  `inferred · B7`
 
-- **[[HU17-ProjectCatalog\|HU 17]]** — HU 17's note: *"This catalog is the data source for the matching engine in HU 13."* E1 needs projects to select from; E4 needs their sold-out status.  `documented`
+- **[[HU7-ProjectCatalog\|HU 7]]** — HU 7's note: *"This catalog is the data source for the matching engine in HU 13."* E1 needs projects to select from; E4 needs their sold-out status.  `documented`
 
 ---
 
@@ -75,5 +75,5 @@ Why this story cannot be completed before each of the following. Tags: `document
 ## Notes
 
 - Matching criteria (estimated capacity, comuna, price range, down payment, classification, main blocker) are defined in **Spike 1 · E4** — see [[research/spike1-e4-lead-project-matching-criteria\|Lead–Project Matching Criteria]], which carries the frozen contract this story must code against.
-- Requires the project catalog from [[HU17-ProjectCatalog\|HU 17]] to know which projects are actually available.
+- Requires the project catalog from [[HU7-ProjectCatalog\|HU 7]] to know which projects are actually available.
 - Complements the priority dashboard [[HU2-LeadPrioritization\|HU 2]] by adding a project-centric view.

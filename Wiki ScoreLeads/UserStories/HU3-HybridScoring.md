@@ -14,7 +14,7 @@ The core engine of ScoreLeads. Processes the financial data submitted in HU 1, c
 | **Status** | ✅ Implemented (PMV) |
 | **Sprint** | PMV (completed) |
 | **Depends on** | [[HU1-FinancialDataEntry\|HU 1]], [[HU5-BasicSecurity\|HU 5]] |
-| **Required by** | [[HU2-LeadPrioritization\|HU 2]], [[HU4-CommercialDerivation\|HU 4]], [[HU7-ImprovementPlan\|HU 7]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU10-AccessibilityMap\|HU 10]], [[HU12-FinancialAcademy\|HU 12]], [[HU13-LeadProjectMatching\|HU 13]], [[HU15-ScoringParameters\|HU 15]], [[HU16-EvaluationAudit\|HU 16]], [[HU18-LeadFinancialEvolution\|HU 18]], [[HU20-EconomicSimulation\|HU 20]], [[HU22-CommercialReport\|HU 22]], [[HU23-EventLogAnalytics\|HU 23]], [[HU25-SubsidySimulation\|HU 25]], [[HU26-CreditTermSimulation\|HU 26]], [[HU29-MobileLeadExperience\|HU 29]], [[HU31-SimulatedCMFQuery\|HU 31]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
+| **Required by** | [[HU2-LeadPrioritization\|HU 2]], [[HU4-CommercialDerivation\|HU 4]], [[HU7x-ImprovementPlan\|HU 7x]], [[HU9-CompatibilitySimulation\|HU 9]], [[HU10-AccessibilityMap\|HU 10]], [[HU12-FinancialAcademy\|HU 12]], [[HU13-LeadProjectMatching\|HU 13]], [[HU15-ScoringParameters\|HU 15]], [[HU16-EvaluationAudit\|HU 16]], [[HU18-LeadFinancialEvolution\|HU 18]], [[HU20-EconomicSimulation\|HU 20]], [[HU22-CommercialReport\|HU 22]], [[HU23-EventLogAnalytics\|HU 23]], [[HU25-SubsidySimulation\|HU 25]], [[HU26-CreditTermSimulation\|HU 26]], [[HU29-MobileLeadExperience\|HU 29]], [[HU31-SimulatedCMFQuery\|HU 31]], [[HU33-ImmutableEvaluationHistory\|HU 33]] |
 
 ---
 

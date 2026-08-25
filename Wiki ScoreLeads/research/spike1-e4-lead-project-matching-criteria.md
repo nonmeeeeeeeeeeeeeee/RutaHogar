@@ -362,13 +362,13 @@ Two separate arrays rather than one array with an `excluido` flag — a single a
 | Layer | Owns | Why |
 | :---- | :--- | :-- |
 | **Backend** `scoring_engine/purchase_capacity.py` | Capacity math | Pure financial computation belonging beside `indicators.py`; versioned under `ALGORITHM_VERSION`; persisted per evaluation → auditable (HU 16 / HU 33) |
-| **Frontend** `services/leadProjectMatching.js` | Affinity join | The catalog lives in the frontend + Supabase ([[UserStories/HU17-ProjectCatalog|HU 17]]); guardrail #5 forbids new FastAPI endpoints, so the backend cannot see `proyectos` |
+| **Frontend** `services/leadProjectMatching.js` | Affinity join | The catalog lives in the frontend + Supabase ([[UserStories/HU7-ProjectCatalog|HU 7]]); guardrail #5 forbids new FastAPI endpoints, so the backend cannot see `proyectos` |
 
 **Known cost — two sources of truth.** Constants would be defined in Python and could drift if re-declared in JS. Mitigation: this document is **normative**; both constant blocks must carry a comment naming it; and the frontend re-declares **only the affinity weights** (§5.2), never the capacity constants — capacity arrives pre-computed from the backend. Duplication is therefore confined to a table the backend never uses.
 
 ### 8.4 Dependency status
 
-HU 17 is **implemented but not merged** (branch `HU17`). `matchLeadToProjects` consumes its frozen contract (`precio_min_uf`, `precio_max_uf`, `comuna`, `tipo`, `estado`, `ejecutivos`), documented in `docs/project-catalog-contract.md` and mirrored in the header of `frontend/src/services/projectService.js`. HU 13 cannot ship before HU 17.
+HU 7 is **implemented but not merged** (branch `feature/sprint1/HU7`). `matchLeadToProjects` consumes its frozen contract (`precio_min_uf`, `precio_max_uf`, `comuna`, `tipo`, `estado`, `ejecutivos`), documented in `docs/project-catalog-contract.md` and mirrored in the header of `frontend/src/services/projectService.js`. HU 13 cannot ship before HU 7.
 
 Two consumer notes from that contract are load-bearing here:
 
@@ -508,7 +508,7 @@ FOGAES eligibility cannot be verified from current intake, which is why §4.4 em
 | 1 | UF price range of the client's real projects (Echeverría Izquierdo) — decides whether FOGAES is edge case or norm (§10.5) | Commercial | No — changes a default, not the model |
 | 2 | Complementary-debt defect (§10.1) | HU 3 / HU 15 | No — capacity spec already accounts for it |
 | 3 | Affinity weights are uncalibrated (§5.2) | HU 27 | No — v1 ships, revisit with data |
-| 4 | HU 17 implemented on branch `HU17`, not merged (§8.4) | HU 17 | **Yes for HU 13** |
+| 4 | HU 7 implemented on branch `feature/sprint1/HU7`, not merged (§8.4) | HU 7 | **Yes for HU 13** |
 | 5 | Spike 1 E5 consolidation must reference this document rather than restate it | Spike 1 | No |
 
 ---
@@ -531,4 +531,4 @@ FOGAES eligibility cannot be verified from current intake, which is why §4.4 em
 **Internal**
 - `backend/app/scoring_engine/` — `indicators.py`, `project_fit.py`, `blockers.py`, `commercial_priority.py`, `constants.py`
 - [[research/scoring_improvement_recommendations|Scoring Improvement Recommendations]] · [[research/competitor_prequalification_audit|Competitor Prequalification Audit]]
-- `docs/project-catalog-contract.md` — project catalog frozen contract (HU 17)
+- `docs/project-catalog-contract.md` — project catalog frozen contract (HU 7)

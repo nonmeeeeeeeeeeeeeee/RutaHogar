@@ -12,10 +12,10 @@ Tentative distribution of user stories and research spikes across the three spri
 | :- | :--- | :------- | :-: | :--- |
 | Spike 1 | Financial research: scoring, CMF, subsidies, financial education | Spike / Research | 10 | [[research/spike1-e4-lead-project-matching-criteria\|E4 — Matching criteria]] |
 | HU 5 | Basic system security | Important | 8 | [[UserStories/HU5-BasicSecurity\|HU 5]] |
-| HU 7 | Personalized improvement plan generator | Important | 8 | [[UserStories/HU7-ImprovementPlan\|HU 7]] ✅ |
+| HU 7 | Personalized improvement plan generator | Important | 8 | [[UserStories/HU7x-ImprovementPlan\|HU 7x]] ✅ |
 | HU 12 | Contextual financial academy | Essential | 8 | [[UserStories/HU12-FinancialAcademy\|HU 12]] |
 | HU 13 | Lead–project matching for executives | Important | 5 | [[UserStories/HU13-LeadProjectMatching\|HU 13]] |
-| HU 17 | Real estate project catalog management | Essential | 5 | [[UserStories/HU17-ProjectCatalog\|HU 17]] |
+| HU 7 | Real estate project catalog management | Essential | 5 | [[UserStories/HU7-ProjectCatalog\|HU 7]] |
 | HU 23 | Event-log metrics visualization & analysis | Important | 8 | [[UserStories/HU23-EventLogAnalytics\|HU 23]] |
 | HU 29 | Mobile experience for the lead | Essential | 5 | [[UserStories/HU29-MobileLeadExperience\|HU 29]] |
 | HU 30 | Mobile-adaptable executive dashboard | Essential | 5 | [[UserStories/HU30-MobileExecutiveDashboard\|HU 30]] |

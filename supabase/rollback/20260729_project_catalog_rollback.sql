@@ -1,5 +1,5 @@
 -- =============================================================
--- ScoreLeads — ROLLBACK de HU 17 (catálogo de proyectos)
+-- ScoreLeads — ROLLBACK de HU 7 (catálogo de proyectos)
 -- Revierte por completo supabase/migrations/20260729_project_catalog.sql
 -- =============================================================
 --
@@ -26,14 +26,14 @@
 -- Todo usa `if exists`: es idempotente y seguro incluso si la migración quedó
 -- aplicada a medias. Se ejecuta completo en una transacción.
 --
--- NOTA: `public.get_my_role()` NO se elimina — es anterior a HU 17
+-- NOTA: `public.get_my_role()` NO se elimina — es anterior a HU 7
 -- (20260604_fix_rls_infinite_recursion.sql) y lo usan las policies de
 -- arco_requests y evaluations.
 
 begin;
 
 -- -------------------------------------------------------------
--- 1. Policies creadas por HU 17
+-- 1. Policies creadas por HU 7
 -- -------------------------------------------------------------
 -- Deben caer antes que las funciones y antes que la columna a la que apuntan.
 
@@ -66,7 +66,7 @@ end;
 $$;
 
 -- -------------------------------------------------------------
--- 2. Funciones y RPC de HU 17
+-- 2. Funciones y RPC de HU 7
 -- -------------------------------------------------------------
 drop function if exists public.resolve_pending_executives();
 drop function if exists public.assign_admin(uuid, text);
@@ -94,7 +94,7 @@ drop table if exists public.proyectos;
 drop table if exists public.inmobiliarias;
 
 -- -------------------------------------------------------------
--- 5. Policies de profiles previas a HU 17 — NO se restauran
+-- 5. Policies de profiles previas a HU 7 — NO se restauran
 -- -------------------------------------------------------------
 -- ⚠️  HALLAZGO VERIFICADO EN EL PUSH DEL 2026-07-31.
 --     `schema.sql` declara "Profiles select admin" y "Permitir a los admins
@@ -106,11 +106,11 @@ drop table if exists public.inmobiliarias;
 --       NOTICE: policy "Permitir a los admins actualizar cualquier perfil"
 --               for relation "public.profiles" does not exist, skipping
 --
---     Es decir: antes de HU 17 los admins **no** tenían ninguna policy sobre
---     `profiles` más allá de "Profiles select/insert/update own". HU 17 no
+--     Es decir: antes de HU 7 los admins **no** tenían ninguna policy sobre
+--     `profiles` más allá de "Profiles select/insert/update own". HU 7 no
 --     acotó un acceso amplio preexistente: lo creó (acotado por inmobiliaria).
 --
---     Por eso el rollback SOLO elimina las policies de HU 17 (paso 1) y no crea
+--     Por eso el rollback SOLO elimina las policies de HU 7 (paso 1) y no crea
 --     nada: ese es el estado real anterior a la migración. Recrear las de
 --     schema.sql daría a los admins un acceso que esta base nunca tuvo.
 --

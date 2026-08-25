@@ -302,7 +302,7 @@ alter table public.scoring_history
     foreign key (evaluation_id) references public.evaluations(id) on delete restrict;
 
 -- =============================================================
--- HU 17 — Catálogo multi-tenant de proyectos inmobiliarios
+-- HU 7 — Catálogo multi-tenant de proyectos inmobiliarios
 -- Espejo de supabase/migrations/20260729_project_catalog.sql
 -- =============================================================
 
@@ -708,7 +708,7 @@ from (
 join public.inmobiliarias i on i.nombre = v.inmobiliaria
 on conflict do nothing;
 -- =============================================================
--- ScoreLeads — HU 17: alta de ejecutivos comerciales por el admin
+-- ScoreLeads — HU 7: alta de ejecutivos comerciales por el admin
 -- =============================================================
 -- El alta de la cuenta ocurre en la Edge Function `create-executive`
 -- (necesita service_role para tocar auth.users). Aquí solo va la lectura

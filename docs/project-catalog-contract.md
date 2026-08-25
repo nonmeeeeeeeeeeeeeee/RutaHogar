@@ -1,6 +1,6 @@
-# Contrato del catálogo de proyectos (HU 17)
+# Contrato del catálogo de proyectos (HU 7)
 
-Contrato congelado que expone [[HU17-ProjectCatalog|HU 17]] y consume
+Contrato congelado que expone [[HU7-ProjectCatalog|HU 7]] y consume
 [[HU13-LeadProjectMatching|HU 13]] (matching lead–proyecto).
 
 - **Implementación:** `frontend/src/services/projectService.js` (copia del contrato en el encabezado del archivo).
@@ -8,7 +8,7 @@ Contrato congelado que expone [[HU17-ProjectCatalog|HU 17]] y consume
 - **Criterios de matching:** `Wiki ScoreLeads/research/spike1-e4-lead-project-matching-criteria.md` (Spike 1 · E4). Ese documento es normativo para el matching; este lo es para el catálogo.
 
 > Este archivo es la fuente de verdad del contrato. El plan de la historia vive en
-> `docs/stories/HU17/PLAN.md` y lo referencia sin repetirlo, para que ambos no puedan
+> `docs/stories/HU 7/PLAN.md` y lo referencia sin repetirlo, para que ambos no puedan
 > contradecirse.
 
 ---
@@ -43,7 +43,7 @@ el admin global puede pedir una inmobiliaria concreta o todas.
 ### 1. Estado: solo `agotado` queda fuera del feed
 
 `getAvailableProjects()` excluye únicamente `agotado` — que es literalmente lo que
-pide HU 17 E4 — y recorta `ejecutivos` a los `vinculado`.
+pide HU 7 E4 — y recorta `ejecutivos` a los `vinculado`.
 
 `en_construccion` **sí se recomienda**: la venta en verde es una parte real del
 mercado chileno y excluirla escondería inventario que se está vendiendo hoy.
@@ -121,7 +121,7 @@ precio único.
 **Pendiente, no implementado.** Un proyecto real no tiene un precio continuo: un
 edificio se vende por tipologías (1D, 2D, 3D…) con precios, superficies y
 disponibilidad distintos. Hoy eso se resume en `precio_min_uf` / `precio_max_uf`,
-que es lo que pide HU 17 E1 (*"price range"*) y lo que el spike congeló.
+que es lo que pide HU 7 E1 (*"price range"*) y lo que el spike congeló.
 
 Cuando haga falta más granularidad, la vía es **aditiva y no rompe este contrato**:
 

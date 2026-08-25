@@ -2,7 +2,7 @@ import { supabase } from "../utils/supabase";
 import { isSupabaseDataConfigured, logSupabaseError } from "./profileService";
 import { filterAvailable, validateProject } from "./projectValidation";
 
-// Catálogo de proyectos inmobiliarios (HU 17).
+// Catálogo de proyectos inmobiliarios (HU 7).
 // Proveedores activos: 'local' (sin Supabase) y 'supabase'.
 // El proveedor 'crm' está documentado pero NO implementado: la conexión real
 // es de HU 4 / Spike 2. Ver docs/crm-integration.md — el punto de enganche es
@@ -26,7 +26,7 @@ import { filterAvailable, validateProject } from "./projectValidation";
 //   }
 //
 // Notas para quien consuma esto:
-//  1. getAvailableProjects() excluye solo 'agotado' (HU 17 E4) y recorta
+//  1. getAvailableProjects() excluye solo 'agotado' (HU 7 E4) y recorta
 //     ejecutivos a los 'vinculado'. 'en_construccion' SÍ se recomienda: la
 //     venta en verde es mercado real. El estado viaja para que HU 13 lo muestre.
 //  2. precio_min_uf == precio_max_uf es válido (proyecto de precio único).
