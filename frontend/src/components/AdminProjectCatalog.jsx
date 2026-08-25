@@ -37,7 +37,6 @@ const overlayStyle = {
 const cardStyle = {
   background: "var(--color-surface, #fff)",
   borderRadius: "14px",
-  padding: "2rem",
   maxWidth: "640px",
   width: "90%",
   maxHeight: "90vh",
@@ -464,7 +463,7 @@ export default function AdminProjectCatalog() {
   const columnCount = isGlobalAdmin ? 8 : 7;
 
   return (
-    <section className="section-block">
+    <section className="section-block admin-catalog">
       <div className="section-heading">
         <span className="eyebrow">Administración</span>
         <h1>Catálogo de proyectos</h1>
@@ -735,7 +734,7 @@ export default function AdminProjectCatalog() {
             if (!creatingExecutive) setExecutiveModal(false);
           }}
         >
-          <div style={{ ...cardStyle, maxWidth: "520px" }} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-card" style={{ ...cardStyle, maxWidth: "520px" }} onClick={(event) => event.stopPropagation()}>
             <div style={modalHeaderStyle}>
               <h2 style={{ margin: 0 }}>Nuevo ejecutivo</h2>
               <button
@@ -881,7 +880,7 @@ export default function AdminProjectCatalog() {
 
       {modal && (
         <div style={overlayStyle} onClick={closeModal}>
-          <div style={cardStyle} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-card" style={cardStyle} onClick={(event) => event.stopPropagation()}>
             <div style={modalHeaderStyle}>
               <h2 style={{ margin: 0 }}>
                 {modal.mode === "create" ? "Nuevo proyecto" : "Editar proyecto"}
@@ -1040,7 +1039,7 @@ export default function AdminProjectCatalog() {
               <section>
                 <h3 style={{ margin: "0 0 0.75rem" }}>Ejecutivos asignados</h3>
 
-                <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+                <div className="exec-assign-row" style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
                   <input
                     type="email"
                     value={assignEmail}
@@ -1103,7 +1102,7 @@ export default function AdminProjectCatalog() {
             if (!deleting) setConfirmDelete(null);
           }}
         >
-          <div style={{ ...cardStyle, maxWidth: "520px" }} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-card" style={{ ...cardStyle, maxWidth: "520px" }} onClick={(event) => event.stopPropagation()}>
             <h2 style={{ margin: "0 0 1rem" }}>Eliminar proyecto</h2>
             <p style={{ margin: "0 0 1.5rem" }}>
               ¿Eliminar el proyecto «{confirmDelete.nombre}»? Esta acción no se puede deshacer.
@@ -1132,7 +1131,7 @@ export default function AdminProjectCatalog() {
             if (!creatingInmobiliaria) setInmobiliariaModal(false);
           }}
         >
-          <div style={{ ...cardStyle, maxWidth: "440px" }} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-card" style={{ ...cardStyle, maxWidth: "440px" }} onClick={(event) => event.stopPropagation()}>
             <h2 style={{ margin: "0 0 1rem" }}>Nueva inmobiliaria</h2>
             <div className="field-wrap" style={{ marginBottom: "1.5rem" }}>
               <div className="field-label-row">
@@ -1173,7 +1172,7 @@ export default function AdminProjectCatalog() {
             if (!assigningAdmin) setAdminModal(false);
           }}
         >
-          <div style={{ ...cardStyle, maxWidth: "440px" }} onClick={(event) => event.stopPropagation()}>
+          <div className="modal-card" style={{ ...cardStyle, maxWidth: "440px" }} onClick={(event) => event.stopPropagation()}>
             <h2 style={{ margin: "0 0 1rem" }}>Asignar administrador</h2>
             <div className="field-wrap" style={{ marginBottom: "1rem" }}>
               <div className="field-label-row">

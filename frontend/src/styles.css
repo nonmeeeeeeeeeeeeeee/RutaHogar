@@ -3624,3 +3624,35 @@ th {
     white-space: nowrap;
   }
 }
+
+/* ------------------------------------------------------------------- */
+/* HU 7 — Catálogo de proyectos.                                        */
+/* Todo lo de abajo cuelga de .admin-catalog: ninguna otra pantalla     */
+/* comparte ese contenedor, así que estas reglas no pueden filtrarse.   */
+/* ------------------------------------------------------------------- */
+
+.admin-catalog .modal-card {
+  padding: 2rem;
+}
+
+.admin-catalog .exec-assign-row {
+  flex-wrap: wrap;
+}
+
+/* El input de correo se comprimía a 139px dentro del modal en pantallas
+   angostas; con base flexible deja de encogerse por debajo de lo legible. */
+.admin-catalog .exec-assign-row input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .admin-catalog .modal-card {
+    padding: 1.25rem;
+  }
+
+  .admin-catalog .exec-assign-row input,
+  .admin-catalog .exec-assign-row button {
+    flex: 1 1 100%;
+  }
+}
