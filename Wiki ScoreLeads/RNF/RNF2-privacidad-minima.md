@@ -45,3 +45,19 @@
 
 - Corresponde a la salvaguarda S5 del handbook: los datos financieros se tratan bajo consentimiento explícito y las solicitudes ARCO deben seguir siendo atendibles.
 - El consentimiento de entrada se captura en [[../UserStories/HU1-ingreso-datos-financieros|HU 1]] E3.
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `frontend/src/components/DataConsent.jsx` gestiona el consentimiento y su modificación desde el perfil. |
+| `E2` | ✅ | `frontend/src/services/arcoService.js:18` registra la solicitud ARCO y devuelve confirmación; `:76` y `:108` permiten consultarla y resolverla desde `AdminArcoRequests.jsx`. |
+| `E3` | ⚠️ | La solicitud de eliminación se registra como petición ARCO, pero no se encontró el proceso de eliminación total e irrecuperable que exige el criterio. |
+| `E4` | ✅ | El flujo de recuperación de contraseña está disponible en `AuthPanel.jsx`. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

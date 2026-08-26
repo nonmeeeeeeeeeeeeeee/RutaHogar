@@ -48,3 +48,19 @@
 - El complemento de renta (`complemento_renta`) activa campos obligatorios adicionales: `complemento_nombre`, `complemento_monto`, `complemento_relacion`.
 - La validación de consentimiento (E3) se aplica en el backend, no solo en la UI.
 - La versión móvil de este flujo se documenta como [[../RNF/RNF6-experiencia-movil-lead|RNF 6]].
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `frontend/src/components/ScoreForm.jsx:914` envía `consentimiento` junto al resto del payload; la redirección posterior la resuelve `App.jsx:1210`. |
+| `E2` | ✅ | `ScoreForm.jsx:383` calcula `debtExceedsIncome` y `ScoreForm.jsx:1120` renderiza la advertencia visual en el campo `deuda_mensual`. |
+| `E3` | ✅ | `backend/app/main.py:217` valida `consentimiento` con un `field_validator` que rechaza la solicitud si es `false`. La validación está en el borde, no solo en la UI. |
+| `E4` | ✅ | `ScoreForm.jsx:407` marca `complementFieldsIncomplete` y `ScoreForm.jsx:709` bloquea el avance mientras falten los campos del codeudor. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

@@ -47,3 +47,19 @@
 - Depende del catalogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos existen.
 - La lógica de compatibilidad vive en `backend/app/scoring_engine/project_fit.py`; la brecha principal de E2 se apoya en `blockers.py`.
 - El ranking de alternativas ordenadas por brecha es [[HU19-ranking-proyectos-brecha|HU 19]].
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ⚠️ | `backend/app/scoring_engine/project_fit.py` calcula la compatibilidad financiera, pero contra el catálogo mock; no hay selección de proyecto real por parte del usuario. |
+| `E2` | ⚠️ | La brecha principal se apoya en `scoring_engine/blockers.py`; falta la superficie de UI que la presente por proyecto. |
+| `E3` | ❌ | No se encontró cálculo ni despliegue del ajuste mínimo sugerido por proyecto. |
+| `E4` | ❌ | No existe guardar interés ni solicitar contacto. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

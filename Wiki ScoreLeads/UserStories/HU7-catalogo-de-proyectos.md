@@ -1,6 +1,6 @@
 # HU 7 - Gestión del catalogo de proyectos inmobiliarios
 
-> **⚠️ Parcial - Sprint 1.** Permite al administrador inmobiliario registrar y mantener un catalogo de proyectos y vincularlos con ejecutivos, para que el sistema recomiende leads según los proyectos realmente disponibles.
+> **🗓 Planificada - Sprint 1.** Permite al administrador inmobiliario registrar y mantener un catalogo de proyectos y vincularlos con ejecutivos, para que el sistema recomiende leads según los proyectos realmente disponibles.
 
 ---
 
@@ -12,7 +12,7 @@
 | **Puntos de Historia** | 5 |
 | **Actor** | Administrador inmobiliario |
 | **Sprint** | Sprint 1 |
-| **Estado** | ⚠️ Parcial |
+| **Estado** | 🗓 Planificada |
 
 ---
 
@@ -47,3 +47,19 @@
 - Plan de implementación: `docs/stories/HU7-catalogo-de-proyectos/PLAN.md`.
 - Este catalogo es la fuente de datos del motor de matching ([[HU10-matching-lead-proyecto|HU 10]]) y de la cotización por proyecto ([[HU9-cotizacion-orientativa|HU 9]]).
 - Los atributos de proyecto (comuna, rango de precio, tipo) se alinean con `PRECIOS_REFERENCIA_UF` del motor de scoring.
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ❌ | No existe panel de proyectos ni persistencia. El catálogo es `frontend/src/data/mockProjects.js`, 8 proyectos fijos en código. |
+| `E2` | ❌ | Sin formulario de creación o edición, no hay validación que impedir. |
+| `E3` | ❌ | No existe vinculación de ejecutivos a proyectos en el modelo de datos. |
+| `E4` | ❌ | `mockProjects.js` tiene un campo `estado`, pero ningún flujo de matching lo consume para excluir proyectos agotados. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

@@ -1,6 +1,6 @@
 # HU 2 - Priorización de leads calificados
 
-> **✅ Implementada - PMV.** Entrega al ejecutivo comercial una vista priorizada y asistida por IA de los leads precalificados. En vez de una lista cruda de contactos, el ejecutivo ve a quien llamar primero, por que, y que acción tomar.
+> **⚠️ Parcial - PMV.** Entrega al ejecutivo comercial una vista priorizada y asistida por IA de los leads precalificados. En vez de una lista cruda de contactos, el ejecutivo ve a quien llamar primero, por que, y que acción tomar.
 
 ---
 
@@ -12,7 +12,7 @@
 | **Puntos de Historia** | 5 |
 | **Actor** | Ejecutivo comercial |
 | **Sprint** | PMV |
-| **Estado** | ✅ Implementada |
+| **Estado** | ⚠️ Parcial |
 
 ---
 
@@ -48,6 +48,22 @@
 - El resumen asistido por IA de E2 lo genera la misma capa de explicación que [[HU3-scoring-hibrido|HU 3]]; no se requiere un modelo aparte.
 - El rol de ejecutivo se aplica a nivel de routing: solo usuarios con rol `sales` acceden al dashboard de leads.
 - La versión móvil de este dashboard se documenta como [[../RNF/RNF7-dashboard-movil-ejecutivo|RNF 7]].
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `frontend/src/components/DashboardLeads.jsx:91` fija `Alto` como filtro por defecto del panel, de modo que el ejecutivo entra viendo los leads Alto. |
+| `E2` | ✅ | El resumen de indicadores y la explicación se renderizan desde la misma capa que HU 3; ver `AiExplanationBlock.jsx`. |
+| `E3` | ✅ | `DashboardLeads.jsx:216` filtra por clasificación, comuna, edad y fecha; los conteos por categoría se calculan en `DashboardLeads.jsx:208`. |
+| `E4` | ⚠️ | No se encontró una etiqueta de acción comercial sugerida ("Contactar de inmediato", "Mantener en seguimiento") en `DashboardLeads.jsx`. La priorización existe; la recomendación de acción explícita, no. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.
 
 ---
 

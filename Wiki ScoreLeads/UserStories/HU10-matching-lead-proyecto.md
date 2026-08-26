@@ -47,3 +47,19 @@
 - Los criterios de matching (capacidad estimada, comuna, rango de precio, pie, clasificación, bloqueador principal) están definidos en [Spike 1 - E4](../../docs/research/spike1-e4-lead-project-matching-criteria.md), que lleva el contrato congelado contra el que se debe programar.
 - Requiere el catalogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos están disponibles.
 - Complementa el dashboard priorizado [[HU2-priorizacion-leads|HU 2]] agregando una vista centrada en proyecto.
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ❌ | No hay selector de proyecto en el panel del ejecutivo ni lista de leads por proyecto. |
+| `E2` | ⚠️ | `backend/app/scoring_engine/commercial_priority.py` calcula prioridad comercial a partir del ajuste por proyecto, que es la pieza que este criterio necesita, pero no se expone como recomendación por proyecto. |
+| `E3` | ⚠️ | La tarjeta del lead en `DashboardLeads.jsx` muestra clasificación y score; no muestra capacidad estimada, pie ni bloqueador principal juntos. |
+| `E4` | ❌ | No existe la noción de oportunidad reorientable en la UI. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

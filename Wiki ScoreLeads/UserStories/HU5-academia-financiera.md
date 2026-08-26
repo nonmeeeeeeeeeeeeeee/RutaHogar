@@ -43,3 +43,18 @@
 - La detección de bloqueadores que alimenta E2 reutiliza los `risk_codes` del motor de scoring ([[HU3-scoring-hibrido|HU 3]]) y del plan de mejora ([[HU4-plan-de-mejora|HU 4]]).
 - La selección y organización del contenido es un producto del **Spike 1**.
 - Varias historias enlazan de vuelta a Academia: [[HU8-beneficios-habitacionales|HU 8]], [[HU11-checklist-preparacion-bancaria|HU 11]], [[HU26-simulacion-subsidios|HU 26]].
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `frontend/src/constants/academyContent.js:15` define `ACADEMY_TOPICS` y `:93` `ACADEMY_ARTICLES`; `AcademiaFinanciera.jsx` los agrupa por tema. |
+| `E2` | ✅ | `academyContent.js:1281` expone `classifyRiskText`, que mapea el texto de riesgo del resultado al contenido educativo correspondiente. |
+| `E3` | ✅ | `GlossaryTerm.jsx` enlaza los conceptos en línea contra `ACADEMY_GLOSSARY` (`academyContent.js:922`), y se usa desde `Recommendations.jsx`. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

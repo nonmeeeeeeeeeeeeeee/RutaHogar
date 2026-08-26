@@ -1,6 +1,6 @@
 # HU 4 - Generación de plan de mejora personalizado
 
-> **✅ Implementada - Sprint 1.** Genera un plan de mejora paso a paso para los leads que aún no califican, con recomendaciones priorizadas, un plan de pago de deudas y una meta de ahorro para el pie.
+> **⚠️ Parcial - Sprint 1.** Genera un plan de mejora paso a paso para los leads que aún no califican, con recomendaciones priorizadas, un plan de pago de deudas y una meta de ahorro para el pie.
 
 ---
 
@@ -12,7 +12,7 @@
 | **Puntos de Historia** | 8 |
 | **Actor** | Lead |
 | **Sprint** | Sprint 1 |
-| **Estado** | ✅ Implementada |
+| **Estado** | ⚠️ Parcial |
 
 ---
 
@@ -48,3 +48,19 @@
 - `risk_codes` disponibles: `ingreso_dividendo`, `deuda_alta`, `ahorro_bajo`, `precio_objetivo`, `contrato_independiente`, `continuidad_baja`, `continuidad_media`, `morosidad_alta`, `morosidad_media`.
 - Se devuelve como el arreglo `improvement_plan` en la respuesta de `POST /score`.
 - El seguimiento en el tiempo de las metas de deuda y ahorro es [[HU13-seguimiento-mensual|HU 13]] y usa la tabla `improvement_goals`. Ver [[../Database/improvement_goals|improvement_goals]].
+
+---
+
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `backend/app/scoring_engine/improvement_plan.py` genera el plan a partir de los `risk_codes` de la evaluación. |
+| `E2` | ✅ | Las recomendaciones se renderizan en `frontend/src/components/Recommendations.jsx`, ordenadas por impacto. |
+| `E3` | ⚠️ | Existe generación de recomendaciones de deuda, pero no se encontró una propuesta de pago con monto objetivo, prioridad y plazo por deuda individual, ni el ordenamiento entre varias deudas que pide el criterio. |
+| `E4` | ✅ | `frontend/src/components/HousingSavingsPlan.jsx` y `services/housingSavingsPlanService.js` construyen la meta de ahorro mensual y su plazo estimado. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.

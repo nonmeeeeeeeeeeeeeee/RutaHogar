@@ -58,6 +58,24 @@
 
 ---
 
+## Estado frente al código
+
+Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+
+| Criterio | Estado | Evidencia |
+| :------- | :----- | :-------- |
+| `E1` | ✅ | `frontend/src/components/ScoreForm.jsx:976` fija `timeout: 60000` en la llamada y `ScoreForm.jsx:994` captura `ECONNABORTED` para mostrar un mensaje controlado. |
+| `E2` | ✅ | `backend/app/scoring.py:205` clampea el score y la clasificación se resuelve en `scoring.py:210`; `_apply_final_classification` (`scoring.py:289`) ajusta por bloqueadores. |
+| `E3` | ✅ | `backend/app/ai.py:27` consulta Groq mediante `_ask_groq`. La IA solo redacta: el score ya viene calculado (salvaguarda S1). |
+| `E4` | ✅ | El aviso de alcance se muestra junto al resultado en `Result.jsx`. |
+| `E5` | ✅ | `backend/app/scoring_engine/constants.py:6` define `ALGORITHM_VERSION`, persistido junto a la evaluación. Ver [[../Database/evaluations|evaluations]]. |
+| `E6` | ✅ | `frontend/src/App.jsx` redirige a `recommendations` cuando la clasificación no es Alto, y `App.jsx:598` marca los leads como vistos al entrar a `/leads`. Detalle en las notas de implementación de esta página. |
+
+> Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
+> es un criterio no verificado, no un criterio cumplido.
+
+---
+
 ## Notas de implementación
 
 Registro técnico de lo ya construido para esta historia.
