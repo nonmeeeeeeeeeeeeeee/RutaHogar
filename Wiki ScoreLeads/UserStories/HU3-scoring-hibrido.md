@@ -129,13 +129,25 @@ El módulo `backend/app/ai.py` genera tres textos con lenguaje natural a partir 
 
 ### Proveedor LLM
 
-Las tres funciones llaman a `_ask_groq`, un wrapper interno que usa **llama-3.1-8b-instant** vía la API de Groq.
+Las tres funciones llaman a `_ask_groq` (`backend/app/ai.py:27`), un wrapper interno que consulta el
+modelo configurado vía la API de Groq.
 
-- Requiere `GROQ_API_KEY` en `backend/.env`.
-- Si la clave no existe o Groq no está instalado, devuelve un string de fallback sin lanzar excepción — el resto del resultado del score sigue siendo válido.
-- Temperatura: `0.4` (respuestas consistentes, con algo de variación natural).
-- El texto generado pasa por `_clean_generated_text`, que normaliza espacios, puntuación doble y tildes faltantes en palabras clave.
+- **Modelo por defecto:** `openai/gpt-oss-20b` (`ai.py:24`). Groq retiró los modelos Llama 3.x el
+  16/08/2026; este es el reemplazo oficial recomendado para `llama-3.1-8b-instant`.
+- Se puede cambiar sin tocar código con la variable `GROQ_MODEL` en `backend/.env`.
+- Requiere `GROQ_API_KEY` en `backend/.env`. Si la clave no existe o la librería de Groq no está
+  instalada, `_ask_groq` devuelve `None` y lo registra en los logs del servidor.
+- **Ante cualquier fallo devuelve `None`, nunca un texto de reemplazo.** Los tres generadores
+  propagan ese `None` (`ai.py:210`, `ai.py:277`, `ai.py:337`): un texto de IA fallido jamás se
+  muestra al usuario como contenido, y el detalle del error del proveedor no se filtra al producto.
+  El resto del resultado del score sigue siendo válido.
+- Temperatura: `0.4`. Para los modelos `openai/gpt-oss` se envía además `reasoning_effort: "low"`,
+  suficiente para textos cortos, con reintento automático si el SDK instalado no lo soporta.
+- El texto generado pasa por `_clean_generated_text` (`ai.py:76`), que normaliza espacios,
+  puntuación doble y tildes faltantes en palabras clave.
 
+> La IA solo redacta sobre un resultado ya calculado. No decide, ajusta ni recalcula el score
+> (salvaguarda **S1** del handbook).
 
 ### `generate_user_explanation` — explicación para el cliente
 
@@ -174,7 +186,7 @@ El prompt instruye al modelo a:
 4. No mencionar el puntaje exacto ni los umbrales del sistema.
 5. Incorporar los datos del `extra_context` cuando estén disponibles.
 
-Al final del texto generado se agrega siempre el disclaimer:
+Al final del texto generado se agrega el disclaimer, salvo que el modelo ya lo haya incluido (`ai.py:341`):
 
 > Esta preevaluación es orientativa y no reemplaza una evaluación bancaria formal.
 
