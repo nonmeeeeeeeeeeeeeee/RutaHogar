@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AcademiaFinanciera from "./components/AcademiaFinanciera";
@@ -383,6 +383,9 @@ export default function App() {
   );
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
+  // Permite saber, al resolverse un guardado lento, si el resultado visible
+  // sigue siendo el que originó ese guardado.
+  const resultRef = useRef(null);
   const [dataError, setDataError] = useState("");
   const [dismissedError, setDismissedError] = useState("");
   const [milestoneSuccess, setMilestoneSuccess] = useState("");
@@ -914,6 +917,10 @@ export default function App() {
     navigateToPage("evaluate");
   };
 
+  useEffect(() => {
+    resultRef.current = result;
+  }, [result]);
+
   const handleResult = async (scoreResult, input) => {
     const resultSnapshot = buildResultSnapshot(scoreResult);
     const financialInput = buildFinancialInput(input);
@@ -941,10 +948,17 @@ export default function App() {
         channel: getChannel(),
       });
 
-      setResultSaved(true);
-      // El snapshot visible queda ligado a la evaluación guardada: sin esto no
-      // hay forma de saber si `result` y `currentEvaluation` son lo mismo.
-      setResult((prev) => (prev ? { ...prev, evaluation_id: savedEvaluation.id } : prev));
+      // Si el usuario ya evaluó de nuevo, este guardado quedó obsoleto y no
+      // debe tocar el resultado visible, que pertenece a otra evaluación.
+      if (resultRef.current === resultSnapshot) {
+        setResultSaved(true);
+        // El snapshot visible queda ligado a la evaluación guardada: sin esto
+        // no hay forma de saber si `result` y `currentEvaluation` son lo mismo.
+        setResult((prev) =>
+          prev === resultSnapshot ? { ...prev, evaluation_id: savedEvaluation.id } : prev,
+        );
+      }
+
       setEvaluations((prev) => {
         const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
         return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
@@ -952,6 +966,7 @@ export default function App() {
       prependEvaluation(savedEvaluation);
     } catch (err) {
       console.error(err);
+      if (resultRef.current !== resultSnapshot) return;
       setResultSaved(false);
       setDataError(
         "El score se calculó, pero no pudimos guardar la preevaluación. Revisa que tu sesión siga activa y que Supabase permita insertar evaluaciones.",
