@@ -1,86 +1,217 @@
-# QA — ScoreLeads MVP
+# QA — RutaHogar Plataforma Profesional
 
-Validación 100% manual (sin test suite).
+Validación manual de RutaHogar como plataforma profesional de precalificación
+financiera inmobiliaria. No tratar como MVP.
 
-## Smoke test
+El score es orientativo, explicable y basado en reglas. RutaHogar no aprueba
+créditos ni reemplaza una evaluación bancaria formal. La IA no decide el score:
+solo redacta explicaciones y guías desde datos calculados por el sistema.
 
-1. `cd backend && .venv\Scripts\uvicorn app.main:app --reload --port 8000`
-2. `cd frontend && npm run dev`
-3. Abrir `http://localhost:5173`, verificar carga sin errores en consola.
+## Smoke Test General
 
-## Flujo completo offline (sin Supabase)
+1. Levantar backend:
+   `cd backend && .venv\Scripts\uvicorn app.main:app --reload --port 8000`
+2. Levantar frontend:
+   `cd frontend && npm run dev`
+3. Abrir `http://localhost:8000/docs` y verificar que FastAPI carga sin error.
+4. Abrir `http://localhost:5173` y revisar que no haya errores críticos en consola.
+5. Ejecutar flujo completo desde login/registro hasta resultado.
+6. Confirmar que `POST /score` responde con `score`, `classification`,
+   `component_scores`, `financial_indicators`, `blockers`, `project_fit` y
+   campos de explicación cuando correspondan.
 
-1. Registrarse en AuthPanel (modo localStorage)
-2. Completar Onboarding (comuna + plazo + tipo propiedad)
-3. Aceptar DataConsent
-4. Llenar ScoreForm con datos válidos → enviar
-5. Verificar Result + Recommendations
-6. Verificar ProfilePage: historial de evaluaciones + scoring_history
+## Flujo Offline LocalStorage
 
-## Casos de clasificación
+Probar sin variables Supabase configuradas.
 
-| Perfil | Score esperado |
-|--------|---------------|
-| Ingreso alto (≥4× dividendo), sin deuda, ahorro alto, indefinido, sin morosidad | **Alto** (≥70) |
-| Ingreso medio, deuda moderada, plazo fijo | **Medio** (40-69) |
-| Ingreso bajo, deuda alta, sin ahorro, morosidad sí reciente (<12m) | **Bajo** (<40) |
+1. Registrar usuario en modo localStorage.
+2. Completar onboarding: objetivo, tipo de propiedad, comuna y plazo.
+3. Aceptar consentimiento de tratamiento de datos.
+4. Completar evaluación financiera con datos válidos.
+5. Ver resultado en `Result`.
+6. Ver historial en `ProfilePage`.
+7. Crear una segunda evaluación con datos distintos.
+8. Confirmar que ambas evaluaciones quedan disponibles y que el historial no se
+   sobrescribe.
+9. Confirmar que los snapshots guardan datos profesionales si existen:
+   `algorithm_version`, `component_scores`, `financial_indicators`, `blockers`,
+   `project_fit`, `commercial_priority_detail` y `structured_improvement_plan`.
 
-## Contrato y continuidad
+## Flujo Con Supabase
 
-| Contrato | Impacto |
-|----------|---------|
-| indefinido | +10 |
-| plazo_fijo | **−18** |
-| honorarios_variable | **−10** |
-| independiente sin continuidad | −5 |
-| independiente con continuidad >1a | sin penalización |
+1. Configurar `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
+2. Crear una evaluación desde el frontend.
+3. Verificar registro nuevo en `public.evaluations`.
+4. Verificar registro nuevo en `public.scoring_history`.
+5. Crear una segunda evaluación con datos distintos.
+6. Confirmar que `scoring_history` tiene un registro adicional, no una
+   actualización del anterior.
+7. Verificar que se guarda `algorithm_version` si existe.
+8. Verificar que `snapshot` contiene input/result profesional o equivalente.
+9. Confirmar que evaluaciones antiguas siguen mostrándose sin error.
 
-## Morosidad con antigüedad
+## Casos De Scoring Profesional
 
-| Morosidad | Antigüedad | Impacto |
-|-----------|-----------|---------|
-| sí | <12 meses | **−35** |
-| sí | ≥12 meses | **−25** |
-| no_lo_se | — | −12 |
+### Alto Preparado
 
-## Complemento de renta con co-deudor
+Datos: alto ingreso, buen pie, baja deuda, contrato indefinido, continuidad alta
+y sin morosidad.
 
-| Situación | Impacto |
-|-----------|---------|
-| Perfil limpio (sin morosidad, deuda ≤ 40%, indefinido, continuidad >1a, relación no débil) | **+10** |
-| Morosidad "sí" | −20 |
-| Deuda > 40% ingreso | −15 |
-| Plazo fijo | −10 |
-| Continuidad < 6m | −10 |
-| Honorarios/independiente sin continuidad | −5 |
-| Relación débil (`amigo` / `otro`) | **−5**, no suma a capacidad |
-| Sin datos (todos vacíos) | −5 |
+Esperado:
+- `classification`: `Alto`
+- `project_fit`: `Compatible`
+- `commercial_priority_detail.action`: `Contactar ahora`
+- Sin texto de crédito aprobado.
 
-## ARCO requests
+### Buen Ingreso + Bajo Pie
 
-- Probar crear solicitudes de acceso, rectificación, cancelación.
-- Verificar que usuario ve solo sus propias solicitudes.
-- Admin puede ver y actualizar estado de todas.
+Datos: ingreso suficiente, deuda baja o moderada, ahorro bajo frente al objetivo.
 
-## Scoring history
+Esperado:
+- `classification`: puede quedar `Medio`
+- `main_blocker.code`: `pie_insuficiente`
+- `project_fit`: `Cercano` o `Fuera de alcance`
+- `structured_improvement_plan` incluye `increase_savings`
 
-- Cada `createEvaluation()` debe crear un registro inmutable en `scoring_history`.
-- Verificar que aparecen en ProfilePage → "Historial inmutable (auditoría)".
-- Datos mostrados: score, clasificación, comuna, canal, versión algoritmo, desglose componentes.
-- La evaluación **no puede eliminarse** si tiene scoring_history asociado (FK con `on delete restrict`).
+### Buen Ingreso + Morosidad Vigente
 
-## Validaciones backend (POST /score directo)
+Datos: buen ingreso, buen pie, pero `morosidad_actual: "si"`.
 
-- `consentimiento: false` → 422
-- `ingreso_mensual: -1` → 422
-- `tipo_contrato: "otro"` → 422
-- `tipo_contrato: "honorarios_variable"` → 200 (válido)
-- `morosidad_actual: "si"` sin `antiguedad_morosidad` → 422
-- `complemento_renta: true` sin campos → 422 (desde validator Pydantic)
-- Payload completo y válido → 200 con score + classification + ai_explanation
+Esperado:
+- El score puede ser alto por componentes, pero `classification` máxima: `Medio`
+- `main_blocker.code`: `morosidad_vigente`
+- `commercial_priority_detail.action`: `No derivar todavía`
+- No debe aparecer ninguna promesa de aprobación bancaria.
 
-## Supabase
+### Buen Pie + Deuda Alta
 
-- Sin env vars: todo localStorage, sin errores en consola.
-- Con Supabase: evaluaciones y scoring_history se guardan y aparecen en ProfilePage.
-- RLS: usuario A no ve datos del usuario B. Ejecutivo ve todas.
+Datos: ahorro suficiente, pero deuda mensual o carga total alta.
+
+Esperado:
+- Bloqueador `deuda_actual_alta` o `carga_total_alta`
+- `structured_improvement_plan` incluye `reduce_debt`
+- Explicación orienta reducir carga antes de avanzar.
+
+### Complemento De Renta Incompleto
+
+Datos: `complemento_renta: true` con campos relevantes del complementario
+incompletos.
+
+Esperado:
+- `classification`: `Requiere antecedentes`
+- Bloqueador `complemento_incompleto`
+- Prioridad comercial: `Solicitar antecedentes`
+
+### Complemento Débil
+
+Datos: complementario con `relacion_complementario` en `amigo` u `otro`.
+
+Esperado:
+- Bloqueador `complemento_debil`
+- El complemento no debe fortalecer excesivamente capacidad de pago.
+- Explicación debe mantener cautela y pedir revisión.
+
+### Edad + Plazo Riesgoso
+
+Datos: edad y plazo hipotecario proyectan edad final superior al umbral de
+riesgo.
+
+Esperado:
+- Bloqueador `edad_plazo_riesgoso`
+- `structured_improvement_plan` incluye `adjust_credit_term`
+- `project_fit` refleja el riesgo si corresponde.
+
+### Objetivo Inmobiliario Fuera De Alcance
+
+Datos: ingreso y/o pie insuficientes para el valor objetivo.
+
+Esperado:
+- `project_fit.classification`: `Fuera de alcance`
+- Prioridad comercial: `Reorientar a otro proyecto` o `Nutrir con plan de mejora`
+- La comuna/valor objetivo no debe castigar por sí sola el score financiero.
+
+### Datos Incompletos
+
+Datos: faltan antecedentes clave o vienen valores opcionales vacíos.
+
+Esperado:
+- Backend no debe romper.
+- Debe pedir antecedentes si corresponde.
+- No debe inventar datos faltantes.
+- El resultado debe conservar lenguaje orientativo.
+
+## Validaciones De Privacidad
+
+- `consentimiento: false` debe rechazar el cálculo.
+- No solicitar credenciales bancarias.
+- No mostrar textos como "crédito aprobado" o "aprobado para crédito".
+- No consultar datos financieros externos sin consentimiento explícito.
+- Mantener flujo ARCO: solicitudes de acceso, rectificación, cancelación u
+  oposición deben seguir operando.
+- Usuario normal ve solo sus datos; ejecutivo/admin según permisos definidos.
+
+## Validaciones De IA
+
+- Sin `GROQ_API_KEY`, backend no debe fallar.
+- Con `GROQ_API_KEY`, la IA puede redactar explicaciones usando el contexto del
+  scoring profesional.
+- La IA no debe cambiar `score` ni `classification`.
+- La IA no debe prometer aprobación bancaria, subsidios ni financiamiento.
+- Las explicaciones determinísticas deben existir como base aunque Groq no esté
+  disponible.
+
+## Validaciones De Historial
+
+- Cada evaluación nueva crea un registro nuevo en `scoring_history`.
+- Cada recálculo o nueva evaluación debe conservar registros anteriores.
+- No hacer `UPDATE` ni `DELETE` sobre registros históricos.
+- Se guarda `created_at` o timestamp equivalente.
+- Se guarda `algorithm_version` si existe.
+- Se guarda `input_snapshot` si existe.
+- Se guarda `result_snapshot` o `snapshot` equivalente.
+- Se guarda `calculation_reason`; si no existe motivo explícito, usar
+  `new_evaluation`.
+- Evaluaciones antiguas sin campos profesionales siguen funcionando.
+- En localStorage, el historial no debe sobrescribir registros previos.
+- En Supabase, `scoring_history` debe tratarse como historial inmutable.
+
+## Validaciones Backend Directas
+
+Probar `POST /score` desde `/docs`, curl o cliente equivalente.
+
+- `consentimiento: false` → rechazo por validación.
+- `ingreso_mensual: -1` → rechazo por validación.
+- `tipo_contrato` inválido → rechazo por validación.
+- `tipo_contrato: "honorarios_variable"` → válido si el resto del payload es correcto.
+- `morosidad_actual: "si"` sin antecedentes requeridos → validar comportamiento esperado.
+- `complemento_renta: true` sin campos relevantes → debe bloquear o pedir antecedentes.
+- Payload completo y válido → 200 con score profesional y campos nuevos.
+
+## Checklist Final Antes De PR
+
+- [ ] Backend levanta y `/docs` carga.
+- [ ] Frontend levanta sin errores críticos.
+- [ ] Flujo localStorage completo funciona.
+- [ ] Flujo Supabase completo funciona si hay variables configuradas.
+- [ ] `POST /score` mantiene contrato compatible.
+- [ ] El score ponderado entrega valores entre 0 y 100.
+- [ ] `component_scores` contiene los componentes esperados.
+- [ ] `financial_indicators` no rompe con datos faltantes.
+- [ ] `blockers` y `main_blocker` aparecen cuando corresponde.
+- [ ] `project_fit` se mantiene separado del score financiero.
+- [ ] `commercial_priority_detail` orienta, no ejecuta derivaciones reales.
+- [ ] `structured_improvement_plan` es determinístico.
+- [ ] Explicaciones determinísticas aparecen sin depender de Groq.
+- [ ] IA no decide score, clasificación ni aprobación.
+- [ ] No aparece lenguaje de crédito aprobado.
+- [ ] Cada evaluación crea nuevo `scoring_history`.
+- [ ] Historial previo no se sobrescribe ni elimina.
+- [ ] Evaluaciones antiguas siguen visibles sin errores.
+- [ ] No se hardcodean API keys ni secretos.
+- [ ] No se consulta información financiera externa sin consentimiento.
+
+Validación sugerida para esta guía:
+
+```bash
+git diff agents/qa.md
+```

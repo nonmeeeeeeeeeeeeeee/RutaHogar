@@ -1,6 +1,16 @@
-# ScoreLeads MVP
+# RutaHogar — Plataforma Profesional
 
-Referencia detallada: `.claude/CLAUDE.md` (266 líneas, la fuente más completa del repo).
+Referencia detallada: `.claude/CLAUDE.md` (fuente más completa del repo).
+
+RutaHogar ya no debe tratarse como MVP. Documentar y construir como plataforma
+profesional de precalificación financiera inmobiliaria, con scoring explicable,
+reglas versionadas, trazabilidad, privacidad, priorización comercial y plan de
+mejora financiero.
+
+El sistema no aprueba créditos ni reemplaza evaluación bancaria formal. El score
+es orientativo, explicable y calculado por reglas auditables. La IA no decide el
+score: solo redacta explicaciones, resúmenes y guías comerciales a partir del
+resultado.
 
 ## Stack
 
@@ -71,3 +81,9 @@ GROQ_API_KEY=gsk_...
 - No reemplazar scoring de reglas por ML.
 - No agregar HdU 5+ sin instrucción explícita.
 - No hardcodear API keys.
+- No romper localStorage, Supabase condicional, Groq ni el endpoint `POST /score`.
+- No consultar datos financieros externos sin consentimiento explícito.
+- Evolucionar scoring con reglas versionadas, bloqueadores, componentes
+  ponderados, compatibilidad con proyecto, prioridad comercial y auditoría.
+- Si existe un nombre heredado como `comunasMvp`, no renombrarlo sin una tarea
+  técnica explícita porque podría romper imports.

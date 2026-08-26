@@ -1,6 +1,15 @@
-# Backend — ScoreLeads MVP
+# Backend — RutaHogar Plataforma Profesional
 
 FastAPI + Pydantic v2. Dependencias: `fastapi`, `uvicorn[standard]`, `pydantic`, `groq`.
+
+RutaHogar ya no es MVP. El backend sostiene una plataforma profesional de
+precalificación financiera inmobiliaria: scoring orientativo y explicable,
+reglas auditables/versionadas, trazabilidad, privacidad, priorización comercial
+y plan de mejora financiero.
+
+El backend no aprueba créditos ni reemplaza evaluación bancaria formal. La IA no
+decide el score; solo redacta explicaciones o guías a partir del score calculado
+por reglas. No reemplazar reglas por ML sin instrucción explícita.
 
 ## Endpoint único
 
@@ -84,7 +93,7 @@ Reglas principales:
 ```json
 {
   "score": 74.5, "classification": "Alto",
-  "risks": [], "recommendations": [],
+  "risks": [], "recommendations": [{"text": "...", "benefit": "..."}],
   "positive_indicators": [], "risk_codes": [],
   "component_scores": {"carga_financiera": 10, ...},
   "algorithm_version": "1.0.1",
@@ -97,16 +106,40 @@ Reglas principales:
 
 `risk_codes` se elimina del return final (usado internamente para generar texto).
 
+### Evolución profesional del scoring
+
+La evolución esperada del motor debe mantener compatibilidad con `POST /score` y
+sumar capacidades auditables sin romper el flujo actual:
+
+- Reglas versionadas con `algorithm_version` persistido en historial.
+- Bloqueadores explícitos para casos críticos: morosidad vigente, datos
+  incompletos, endeudamiento extremo, edad/plazo riesgoso u objetivo fuera de
+  alcance.
+- Componentes ponderados: carga financiera, ahorro/pie, estabilidad laboral,
+  historial crediticio declarado, complemento de renta, patrimonio declarado y
+  compatibilidad con proyecto.
+- `project_fit`: ajuste entre comuna, tipo de propiedad, plazo, valor declarado
+  y capacidad financiera.
+- `commercial_priority`: prioridad comercial separada del score financiero.
+- Auditoría: guardar inputs relevantes, componentes, bloqueador principal,
+  versión de reglas y textos generados.
+
+No consultar datos financieros externos, bancos, CMF, Dicom u otros servicios
+sin consentimiento explícito y alcance aprobado.
+
 ### AI (`backend/app/ai.py`)
 
 Usa **Groq** (`llama-3.1-8b-instant`). Requiere `GROQ_API_KEY` (env var o `backend/.env`). Sin fallback real — retorna "No disponible" sin API key.
 
 Tres generadores:
 - `generate_executive_summary(classification, score, positive_indicators, risks)` — para el ejecutivo comercial.
-- `generate_commercial_guidance(classification, score, positive_indicators, risks, recommendations)` — acción comercial sugerida.
+- `generate_commercial_guidance(classification, score, positive_indicators, risks, recommendations)` — acción comercial sugerida. `recommendations` puede ser lista de strings o de dicts `{"text", "benefit"}`.
 - `generate_user_explanation(classification, score, positive_indicators, risks)` — reemplazó a `generate_ai_explanation`. Texto en 2ª persona para el usuario.
 
 `generate_improvement_plan()` vive en `scoring.py` (no en ai.py), es determinística.
+
+La integración Groq debe mantenerse opcional por ambiente. Nunca hardcodear
+`GROQ_API_KEY`; usar variables de entorno/secrets.
 
 ### Serverless entrypoints
 

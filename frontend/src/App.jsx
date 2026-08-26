@@ -8,6 +8,7 @@ import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
 import DataConsent from "./components/DataConsent";
 import FinancialTracking from "./components/FinancialTracking";
+import HousingSavingsPlan from "./components/HousingSavingsPlan";
 import LandingPage from "./components/LandingPage";
 import MonthlyPlan from "./components/MonthlyPlan";
 import Navbar from "./components/Navbar";
@@ -18,16 +19,20 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import SimulationPage from "./components/SimulationPage";
 import SignupOffer from "./components/SignupOffer";
-import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, updateEvaluationAiContent } from "./services/evaluationService";
+import RegisterMilestone from "./components/RegisterMilestone";
+import { acceptEvaluationPlan, createEvaluation, deleteEvaluation as deleteStoredEvaluation, getEvaluations, saveHousingPlanProgress, updateEvaluationAiContent } from "./services/evaluationService";
 import { useLeads } from "./hooks/useLeads";
-import { normalizeDisplayList, normalizeDisplayText, sanitizeAiText } from "./utils/text";
+import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan, sanitizeAiText } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
-import { buildFinancialTracking } from "./services/financialTracking";
+import { buildHousingNotViableRecommendation, buildHousingPlanSnapshot, calculateHousingSavings, getHousingPropertyPrice } from "./services/housingSavingsPlanService";
+import { appendScoringEvent } from "./services/getScoringHistory";
 import {
   getConsent,
   saveConsent,
+  upsertProfile,
   updateProfileOnboarding,
   isSupabaseDataConfigured,
   isUUID,
@@ -119,17 +124,14 @@ const hasCompletedOnboarding = (data) => {
 };
 
 const buildResultSnapshot = (scoreResult = {}) => ({
-  score: scoreResult.score,
-  classification: scoreResult.classification,
+  ...scoreResult,
   risks: normalizeDisplayList(scoreResult.risks),
   recommendations: normalizeDisplayList(scoreResult.recommendations),
   ai_explanation: normalizeDisplayText(scoreResult.ai_explanation),
-  improvement_plan: normalizeDisplayList(scoreResult.improvement_plan),
+  improvement_plan: normalizeImprovementPlan(scoreResult.improvement_plan),
   positive_indicators: normalizeDisplayList(scoreResult.positive_indicators),
   executive_summary: normalizeDisplayText(scoreResult.executive_summary),
   commercial_guidance: normalizeDisplayText(scoreResult.commercial_guidance),
-  algorithm_version: scoreResult.algorithm_version,
-  component_scores: scoreResult.component_scores,
 });
 
 const buildFinancialInput = (input = {}) => ({
@@ -172,6 +174,10 @@ const buildFinancialInput = (input = {}) => ({
   valor_vehiculos: input.valor_vehiculos,
   valor_inmuebles: input.valor_inmuebles,
   patrimonio_unit: input.patrimonio_unit,
+  plazo_compra: input.plazo_compra,
+  tiene_propiedad_vista: input.tiene_propiedad_vista,
+  vivienda_nueva: input.vivienda_nueva,
+  pie_en_cuotas_interes: input.pie_en_cuotas_interes,
   consentimiento: input.consentimiento,
   uf_value_clp: input.uf_value_clp,
 });
@@ -216,65 +222,109 @@ const mergeOnboardingData = (currentData, pendingData) => {
 const getInitialPageForProfile = (profile) => {
   if (!profile) return "landing";
   if (profile.role === roles.sales) return "leads";
+  if (profile.role === roles.admin) return "admin";
   if (profile.role !== roles.user) return "home";
   return hasCompletedOnboarding(getOnboardingData(profile)) ? "home" : "onboarding";
 };
 
-const getPublicPageForPath = (pathname, profile, hasAnonOnboarding) => {
-  if (pathname === "/") return "landing";
-  if (pathname === "/login" || pathname === "/registro") {
-    return profile ? getInitialPageForProfile(profile) : "auth";
-  }
-  if (pathname === "/pre-evaluacion") {
-    if (!profile) return hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding";
-    if (profile.role !== roles.user) return getInitialPageForProfile(profile);
-    return hasCompletedOnboarding(getOnboardingData(profile)) ? "evaluate" : "onboarding";
-  }
-  return null;
+const normalizePathname = (pathname = "/") => {
+  const normalized = String(pathname || "/")
+    .replace(/\/$/, "")
+    .toLowerCase();
+  return normalized || "/";
 };
 
-const getPrivatePageForPath = (pathname, profile) => {
-  if (!profile) return null;
-
-  if (pathname === "/dashboard") {
-    if (profile.role === roles.sales) return "leads";
-    return profile.role === roles.user ? "home" : "admin";
-  }
-
-  if (pathname === "/perfil" || pathname === "/historial") {
-    return profile.role === roles.user ? "profile" : getInitialPageForProfile(profile);
-  }
-
-  if (pathname === "/recomendaciones") {
-    return profile.role === roles.user ? "recommendations" : getInitialPageForProfile(profile);
-  }
-
-  if (pathname === "/ejecutivo/leads") {
-    return profile.role === roles.sales || profile.role === roles.admin
-      ? "leads"
-      : getInitialPageForProfile(profile);
-  }
-
-  return null;
+const getPrivatePathForPage = (page) => {
+  if (page === "home") return "/inicio";
+  if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
+  if (page === "recommendations") return "/recomendaciones";
+  if (page === "simulation") return "/simulacion";
+  if (page === "academia") return "/academia";
+  if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
+  if (page === "profile") return "/perfil";
+  if (page === "leads") return "/dashboard";
+  if (page === "admin") return "/admin";
+  return "/inicio";
 };
 
-const isPrivatePath = (pathname) =>
-  ["/dashboard", "/perfil", "/historial", "/recomendaciones", "/ejecutivo/leads"].includes(pathname);
+const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
+  const path = normalizePathname(pathname);
+  const unknownRoute = ![
+    "/",
+    "/inicio",
+    "/login",
+    "/registro",
+    "/precalificacion",
+    "/pre-evaluacion",
+    "/recomendaciones",
+    "/simulacion",
+    "/academia",
+    "/plan-mejora",
+    "/perfil",
+    "/historial",
+    "/dashboard",
+    "/ejecutivo/leads",
+    "/admin",
+  ].includes(path);
 
-const getDefaultRouteForProfile = (profile) =>
-  profile?.role === roles.sales ? "/ejecutivo/leads" : "/dashboard";
+  if (!profile) {
+    if (unknownRoute) return { page: "landing", path: "/" };
+    if (path === "/login" || path === "/registro") return { page: "auth" };
+    if (path === "/precalificacion" || path === "/pre-evaluacion") {
+      return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
+    }
+    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+      return { page: "auth", path: "/login" };
+    }
+    return { page: "landing", path: path === "/inicio" ? "/" : undefined };
+  }
+
+  if (profile.role === roles.user) {
+    if (unknownRoute) return { page: "home", path: "/inicio" };
+    if (path === "/") return { page: "landing" };
+    if (path === "/inicio") return { page: "home" };
+    if (path === "/precalificacion" || path === "/pre-evaluacion") {
+      return {
+        page: hasCompletedOnboarding(getOnboardingData(profile)) ? "evaluate" : "onboarding",
+        path: path === "/pre-evaluacion" ? "/precalificacion" : undefined,
+      };
+    }
+    if (path === "/recomendaciones") return { page: "recommendations" };
+    if (path === "/simulacion") return { page: "simulation" };
+    if (path === "/academia") return { page: "academia" };
+    if (path === "/plan-mejora") return { page: "tracking" };
+    if (path === "/perfil" || path === "/historial") return { page: "profile", path: path === "/historial" ? "/perfil" : undefined };
+    if (path === "/dashboard" || path === "/admin" || path === "/ejecutivo/leads" || path === "/login" || path === "/registro") {
+      return { page: "home", path: "/inicio" };
+    }
+    return { page: "home", path: "/inicio" };
+  }
+
+  if (profile.role === roles.sales) {
+    if (path === "/") return { page: "landing" };
+    if (path === "/dashboard" || path === "/ejecutivo/leads" || path === "/inicio") {
+      return { page: "leads", path: path === "/dashboard" ? undefined : "/dashboard" };
+    }
+    return { page: "leads", path: "/dashboard" };
+  }
+
+  if (profile.role === roles.admin) {
+    if (path === "/") return { page: "landing" };
+    if (path === "/admin") return { page: "admin" };
+    if (path === "/dashboard" || path === "/ejecutivo/leads") return { page: "leads", path: "/dashboard" };
+    if (path === "/inicio") return { page: "admin", path: "/admin" };
+    return { page: "admin", path: "/admin" };
+  }
+
+  return { page: getInitialPageForProfile(profile), path: getPrivatePathForPage(getInitialPageForProfile(profile)) };
+};
 
 const getRouteForPage = (page, profile, options = {}) => {
   if (page === "landing") return "/";
   if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
-  if (page === "anon-onboarding" || page === "anon-evaluate") return "/pre-evaluacion";
-  if (page === "home" || page === "admin" || page === "tracking") return "/dashboard";
-  if (page === "recommendations") return "/recomendaciones";
-  if (page === "academia") return "/academia";
-  if (page === "profile") return "/perfil";
-  if (page === "leads") return "/ejecutivo/leads";
-  if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/pre-evaluacion";
-  return profile ? getDefaultRouteForProfile(profile) : "/";
+  if (page === "anon-onboarding" || page === "anon-evaluate") return "/precalificacion";
+  if (!profile) return "/";
+  return getPrivatePathForPage(page);
 };
 
 const futureModules = [
@@ -317,26 +367,28 @@ const futureModules = [
 ];
 
 export default function App() {
-  const location = useLocation();
-  const navigate = useNavigate();
   const storedAuth = useMemo(() => getStoredAuth(), []);
   const initialAnonOnboarding = useMemo(() => readSessionJson(ANON_ONBOARDING_KEY), []);
   const initialAnonResult = useMemo(() => readSessionJson(ANON_RESULT_KEY), []);
   const initialAnonInput = useMemo(() => readSessionJson(ANON_INPUT_KEY), []);
+  const [pathname, setPathname] = useState(() => window.location.pathname);
   const [auth, setAuth] = useState(storedAuth);
   const [page, setPage] = useState(
     () =>
-      getPublicPageForPath(
-        location.pathname,
+      resolveRouteForPath(
+        window.location.pathname,
         storedAuth.profile,
         Boolean(initialAnonOnboarding),
-      ) || getInitialPageForProfile(storedAuth.profile),
+      ).page,
   );
   const [result, setResult] = useState(null);
   const [resultSaved, setResultSaved] = useState(null);
   const [dataError, setDataError] = useState("");
+  const [dismissedError, setDismissedError] = useState("");
+  const [milestoneSuccess, setMilestoneSuccess] = useState("");
   const [trackingGoals, setTrackingGoals] = useState([]);
   const [activeGoal, setActiveGoal] = useState(null);
+  const [housingInitialPieType, setHousingInitialPieType] = useState("minimo");
   const [onboarding, setOnboarding] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(ONBOARDING_KEY)) || {};
@@ -368,7 +420,8 @@ export default function App() {
     removeEvaluation,
     prependEvaluation,
   } = useLeads({ userId, profile });
-  const visibleError = dataError || leadsError;
+  const currentError = dataError || leadsError;
+  const visibleError = currentError && currentError !== dismissedError ? currentError : "";
 
   const userEvaluations = profile ? evaluations : [];
   const currentEvaluation = userEvaluations[0] || null;
@@ -393,43 +446,47 @@ export default function App() {
         }
       : null;
 
-  const navigateToPage = (nextPage, options = {}) => {
+  useEffect(() => {
+    document.body.classList.toggle("simulation-layout-mode", page === "simulation");
+    return () => document.body.classList.remove("simulation-layout-mode");
+  }, [page]);
+
+  const updateBrowserPath = (nextPath, options = {}) => {
+    const currentPath = window.location.href.includes("#")
+      ? window.location.href.slice(window.location.origin.length)
+      : window.location.pathname;
+    if (!nextPath || (nextPath === currentPath && nextPath === pathname)) return;
+    const method = options.replace ? "replaceState" : "pushState";
+    window.history[method](null, "", nextPath);
+    setPathname(nextPath);
+  };
+
+  const navigateToPageForProfile = (nextPage, nextProfile = profile, options = {}) => {
     setPage(nextPage);
-    const nextPath = getRouteForPage(nextPage, profile, options);
-    if (nextPath && nextPath !== location.pathname) {
-      navigate(nextPath, { replace: Boolean(options.replace) });
-    }
+    updateBrowserPath(getRouteForPage(nextPage, nextProfile, options), options);
+  };
+
+  const navigateToPage = (nextPage, options = {}) => {
+    navigateToPageForProfile(nextPage, profile, options);
   };
 
   useEffect(() => {
-    if (isPrivatePath(location.pathname) && !profile) {
-      setPage("auth");
-      navigate("/login", { replace: true });
-      return;
-    }
+    const handlePopState = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
 
-    const routedPage = getPublicPageForPath(
-      location.pathname,
-      profile,
-      Boolean(anonOnboarding),
-    );
-    if (routedPage) {
-      setPage(routedPage);
-      return;
+  useEffect(() => {
+    const route = resolveRouteForPath(pathname, profile, Boolean(anonOnboarding));
+    setPage(route.page);
+    if ((route.path && route.path !== pathname) || window.location.href.includes("#")) {
+      updateBrowserPath(route.path || pathname, { replace: true });
     }
+  }, [pathname, profile?.role, anonOnboarding]);
 
-    const privatePage = getPrivatePageForPath(location.pathname, profile);
-    if (privatePage) {
-      setPage(privatePage);
-      if (
-        location.pathname === "/ejecutivo/leads" &&
-        profile?.role !== roles.sales &&
-        profile?.role !== roles.admin
-      ) {
-        navigate(getDefaultRouteForProfile(profile), { replace: true });
-      }
-    }
-  }, [location.pathname, profile?.role, anonOnboarding]);
+  useEffect(() => {
+    setDismissedError("");
+  }, [currentError]);
 
   useEffect(() => {
     let active = true;
@@ -511,28 +568,10 @@ export default function App() {
 
       try {
         const storedGoals = await getGoals(userId, currentEvaluation.id);
-        if (storedGoals.length > 0) {
-          if (active) setTrackingGoals(storedGoals);
-          return;
-        }
-
-        const tracking = buildFinancialTracking(currentEvaluation);
-        const createdGoals = await Promise.all(
-          (tracking?.goals || []).map((goal) =>
-            createGoal(userId, currentEvaluation.id, {
-              title: goal.title,
-              description: goal.description,
-              status: "pendiente",
-            }),
-          ),
-        );
-        if (active) setTrackingGoals(createdGoals);
+        if (active) setTrackingGoals(storedGoals);
       } catch (err) {
-        console.error(err);
-        if (active)
-          setDataError(
-            "No pudimos cargar tus metas de seguimiento. Revisa la configuración de Supabase.",
-          );
+        console.warn("No se pudieron cargar metas de seguimiento; se usará el plan sugerido local.", err);
+        if (active) setTrackingGoals([]);
       }
     }
 
@@ -719,8 +758,7 @@ export default function App() {
         prependEvaluation(migration.savedEvaluation);
       }
       setAuth(nextAuth);
-      setPage(migration.targetPage);
-      navigate(getRouteForPage(migration.targetPage, nextAuth.profile), { replace: true });
+      navigateToPageForProfile(migration.targetPage, nextAuth.profile, { replace: true });
     } catch (err) {
       console.error(err);
       if (nextAuth?.profile) {
@@ -757,8 +795,7 @@ export default function App() {
           prependEvaluation(migration.savedEvaluation);
         }
         setAuth(migration.auth);
-        setPage(migration.targetPage);
-        navigate(getRouteForPage(migration.targetPage, migration.auth.profile), { replace: true });
+        navigateToPageForProfile(migration.targetPage, migration.auth.profile, { replace: true });
       })
       .catch((err) => {
         console.error(err);
@@ -767,8 +804,7 @@ export default function App() {
           "Iniciaste sesion, pero no pudimos migrar la preevaluación previa. Tus datos temporales se conservaron para reintentar.",
         );
         const fallbackPage = getInitialPageForProfile(nextAuth.profile);
-        setPage(fallbackPage);
-        navigate(getRouteForPage(fallbackPage, nextAuth.profile), { replace: true });
+        navigateToPageForProfile(fallbackPage, nextAuth.profile, { replace: true });
       });
   };
 
@@ -819,6 +855,44 @@ export default function App() {
 
   const handleProfileUpdate = (updatedProfile) => {
     const nextProfile = updateStoredProfile(updatedProfile);
+    setAuth((prev) => ({ ...prev, profile: nextProfile }));
+  };
+
+  const handleBirthDateSave = async (birthDate) => {
+    if (!profile || !birthDate) return;
+
+    const currentBirthDate = profile.birth_date || profile.fecha_nacimiento || "";
+    if (currentBirthDate === birthDate) return;
+
+    const optimisticProfile = updateStoredProfile({
+      ...profile,
+      birth_date: birthDate,
+      fecha_nacimiento: birthDate,
+    });
+    setAuth((prev) => ({ ...prev, profile: optimisticProfile }));
+
+    if (!userId) return;
+
+    const savedProfile = await upsertProfile(
+      userId,
+      profile.full_name || profile.email || "",
+      profile.role || roles.user,
+      userOnboarding || profile.onboarding_data || null,
+      {
+        phone: profile.phone || "",
+        birth_date: birthDate,
+      },
+    );
+
+    const nextProfile = updateStoredProfile({
+      ...optimisticProfile,
+      ...savedProfile,
+      email: profile.email,
+      phone: savedProfile?.phone || profile.phone || "",
+      birth_date: savedProfile?.birth_date || birthDate,
+      fecha_nacimiento: savedProfile?.birth_date || birthDate,
+      onboarding_data: savedProfile?.onboarding_data || userOnboarding || profile.onboarding_data || null,
+    });
     setAuth((prev) => ({ ...prev, profile: nextProfile }));
   };
 
@@ -906,14 +980,84 @@ export default function App() {
     }
   };
 
-  const handleAcceptPlan = async () => {
+  const handleAcceptPlan = async (housingPieType) => {
     if (!currentEvaluation) return;
 
     try {
       setDataError("");
+      const input = currentEvaluation.input || {};
+      const price = getHousingPropertyPrice(currentEvaluation);
+      const housingInfo = price > 0 ? calculateHousingSavings(input, price) : null;
+
+      if (!housingInfo || housingInfo.error || !housingInfo.isViable) {
+        const recommendation =
+          housingInfo && !housingInfo.error
+            ? buildHousingNotViableRecommendation(housingInfo).message
+            : "";
+        setDataError(
+          recommendation ||
+            "El plan no es viable actualmente. Ajusta deuda, ingreso o escenario antes de aceptar.",
+        );
+        return;
+      }
+
+      const snapshot = buildHousingPlanSnapshot(housingInfo, housingPieType || "minimo");
       const updatedEvaluation = await acceptEvaluationPlan(
         currentEvaluation.id,
         userId || profile?.email || "local-user",
+        snapshot,
+      );
+      if (updatedEvaluation) {
+        setEvaluations((prev) =>
+          prev.map((item) =>
+            item.id === updatedEvaluation.id ? updatedEvaluation : item,
+          ),
+        );
+        handleLogScoringEvent({
+          type: "accept_plan",
+          details: {
+            pie_type: snapshot.pie_type,
+            monthly_target: snapshot.monthly_target,
+            months: snapshot.months,
+            pie_required: snapshot.pie_required,
+            gap: snapshot.gap,
+          },
+        });
+      }
+      setDataError(
+        "Plan de ahorro confirmado. Ya puedes registrar tu ahorro mes a mes.",
+      );
+    } catch (err) {
+      console.error(err);
+      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+    }
+  };
+
+  const handleLogScoringEvent = (event) => {
+    if (!currentEvaluation) return;
+    appendScoringEvent(
+      currentEvaluation.id,
+      userId || profile?.email || "local-user",
+      event,
+    ).catch((err) => {
+      console.error("No se pudo registrar el evento de seguimiento:", err);
+    });
+  };
+
+  const handleSaveHousingProgress = async (progressData) => {
+    if (!currentEvaluation) return;
+
+    try {
+      setDataError("");
+      const housingPlan = {
+        ...(currentEvaluation.housing_plan || {}),
+        status: "en_curso",
+        progress: progressData,
+      };
+      const updatedEvaluation = await saveHousingPlanProgress(
+        currentEvaluation.id,
+        userId || profile?.email || "local-user",
+        housingPlan,
       );
       if (updatedEvaluation) {
         setEvaluations((prev) =>
@@ -922,22 +1066,24 @@ export default function App() {
           ),
         );
       }
-      setDataError(
-        "Plan activado. Podrás volver a precalificar después de avanzar en tus metas.",
-      );
     } catch (err) {
       console.error(err);
-      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+      setDataError("No se pudo guardar el progreso del plan de ahorro.");
     }
   };
 
   const handleOpenGoalPlan = (goal) => {
     setActiveGoal(goal);
-    setPage(
+    navigateToPage(
       goal.title === "Revisar objetivo inmobiliario"
         ? "objective-review"
         : "monthly-plan",
     );
+  };
+
+  const handleOpenHousingPlan = (pieType) => {
+    setHousingInitialPieType(pieType || "minimo");
+    setPage("housing-plan");
   };
 
   const handleSaveGoalProgress = async (goalId, progressData) => {
@@ -964,6 +1110,58 @@ export default function App() {
     }
   };
 
+  const handleRegisterMilestone = async (milestoneData) => {
+    if (!currentEvaluation) return;
+    try {
+      setDataError("");
+      setMilestoneSuccess("");
+      
+      const apiBase = import.meta.env.VITE_API_URL || import.meta.env.VITE_BACKEND_URL || (import.meta.env.DEV ? "http://127.0.0.1:8000" : "");
+      const scoreUrl = `${apiBase.replace(/\/$/, "")}/score`;
+
+      const newFinancialInput = buildFinancialInput({
+        ...currentEvaluation.input,
+        ...milestoneData,
+      });
+
+      const res = await fetch(scoreUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newFinancialInput),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Error en el scoring: ${res.status}`);
+      }
+
+      const scoreResult = await res.json();
+      const resultSnapshot = buildResultSnapshot(scoreResult);
+
+      const savedEvaluation = await createEvaluation(isUUID(userId) ? userId : null, {
+        email: profile?.email || "sin-email",
+        onboarding: userOnboarding ? { ...userOnboarding } : null,
+        input: newFinancialInput,
+        result: resultSnapshot,
+        channel: getChannel(),
+      });
+
+      setEvaluations((prev) => {
+        const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
+        return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
+      });
+      prependEvaluation(savedEvaluation);
+
+      setMilestoneSuccess("¡Hito registrado exitosamente! Tu score y plan han sido recalculados.");
+      setPage("tracking"); 
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => setMilestoneSuccess(""), 5000);
+    } catch (err) {
+      console.error("Error registrando hito", err);
+      setDataError("Hubo un problema registrando el hito. Por favor intenta de nuevo.");
+    }
+  };
+
   const handleLogout = async () => {
     await signOut();
     setAuth({ session: null, profile: null });
@@ -980,7 +1178,7 @@ export default function App() {
   const handleDismissNotification = () => markLeadsSeen();
 
   if (page === "landing") {
-    const openDashboard = () => navigate(getDefaultRouteForProfile(profile));
+    const openDashboard = () => navigateToPage(getInitialPageForProfile(profile));
 
     return (
       <LandingPage
@@ -1003,7 +1201,7 @@ export default function App() {
 
   if (!profile) {
     if (page === "auth") {
-      const authMode = location.pathname === "/registro" ? "signup" : "signin";
+      const authMode = pathname === "/registro" ? "signup" : "signin";
       return (
         <div className="app-shell auth-shell">
           <AuthPanel
@@ -1107,7 +1305,7 @@ export default function App() {
   }
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${page === "simulation" ? "simulation-shell" : ""}`}>
       <Navbar
         profile={profile}
         page={page}
@@ -1117,7 +1315,18 @@ export default function App() {
         }
         onLogout={handleLogout}
       />
-      {visibleError && <div className="error-message">{visibleError}</div>}
+      {visibleError && (
+        <div className="error-message dismissible-message">
+          <span>{visibleError}</span>
+          <button
+            type="button"
+            aria-label="Cerrar mensaje"
+            onClick={() => setDismissedError(visibleError)}
+          >
+            x
+          </button>
+        </div>
+      )}
 
       {/* Notificación para ejecutivos */}
       <NotificationToast
@@ -1143,7 +1352,7 @@ export default function App() {
           <section className="hero">
             <div className="hero-copy">
               <span className="eyebrow">Solución inmobiliaria</span>
-              <h1>ScoreLeads</h1>
+              <h1>RutaHogar</h1>
               {result && (
                 <div
                   className={
@@ -1167,7 +1376,7 @@ export default function App() {
               </p>
             </div>
 
-            <aside className="score-preview" aria-label="Resumen de ScoreLeads">
+            <aside className="score-preview" aria-label="Resumen de RutaHogar">
               <span className="preview-label">Flujo activo</span>
               <strong>Formulario - Score - Recomendaciones</strong>
               <p>Resultado orientativo: Alto, Medio o Bajo.</p>
@@ -1186,7 +1395,7 @@ export default function App() {
               <span className="eyebrow">Mapa del producto</span>
               <h2>Implementaciones planificadas</h2>
               <p>
-                Estas tarjetas muestran la visión completa de ScoreLeads.
+                Estas tarjetas muestran la visión completa de RutaHogar.
                 Actualmente están habilitados el objetivo inmobiliario y la
                 pre-evaluación financiera.
               </p>
@@ -1242,10 +1451,11 @@ export default function App() {
             targetCommune={userOnboarding?.comuna_interes}
             objective={userOnboarding?.objetivo_principal}
             onboardingData={userOnboarding}
-            birthDate={profile?.birth_date}
+            birthDate={profile?.birth_date || profile?.fecha_nacimiento}
             profile={profile}
             consentGranted={consentGranted}
             onConsentAccept={handleDataConsent}
+            onBirthDateSave={handleBirthDateSave}
             onResult={handleResult}
           />
         </section>
@@ -1266,22 +1476,47 @@ export default function App() {
           onGoalStatusChange={handleGoalStatusChange}
           onOpenGoalPlan={handleOpenGoalPlan}
           onStartEvaluation={startEvaluation}
+          onOpenHousingPlan={handleOpenHousingPlan}
+          onLogScoringEvent={handleLogScoringEvent}
+          onOpenMilestoneRegistration={() => setPage("register-milestone")}
+          successMessage={milestoneSuccess}
+        />
+      ) : page === "housing-plan" && profile.role === roles.user ? (
+        <HousingSavingsPlan
+          evaluation={currentEvaluation}
+          initialPieType={housingInitialPieType}
+          onBack={() => setPage("tracking")}
+          onSaveHousingProgress={handleSaveHousingProgress}
+          onLogScoringEvent={handleLogScoringEvent}
+        />
+      ) : page === "register-milestone" && profile.role === roles.user ? (
+        <RegisterMilestone
+          evaluation={currentEvaluation}
+          onBack={() => setPage("tracking")}
+          onRegister={handleRegisterMilestone}
         />
       ) : page === "monthly-plan" && profile.role === roles.user ? (
         <MonthlyPlan
           evaluation={currentEvaluation}
           goal={activeGoal}
-          onBack={() => setPage("tracking")}
+          onBack={() => navigateToPage("tracking")}
           onSaveProgress={handleSaveGoalProgress}
         />
       ) : page === "objective-review" && profile.role === roles.user ? (
         <ObjectiveReview
           evaluation={currentEvaluation}
-          onBack={() => setPage("tracking")}
+          onBack={() => navigateToPage("tracking")}
         />
       ) : page === "recommendations" && profile.role === roles.user ? (
         <Recommendations
+          evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
+          onStartEvaluation={startEvaluation}
+          onNavigate={navigateToPage}
+        />
+      ) : page === "simulation" && profile.role === roles.user ? (
+        <SimulationPage
           evaluation={currentEvaluation}
+          onboarding={userOnboarding}
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
           onRetryExplanation={handleRetryAiExplanation}

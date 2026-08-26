@@ -7,14 +7,14 @@ backend/ .env
 supabase/functions/.env.local
 supabase/.env
 supabase/.temp/
-backend/app/ai.py
+Makefile
 
 # Dependencies
 node_modules/
 frontend/node_modules/
 
 # Build output
-frontend/dist/
+frontend/dist
 
 # Python cache
 **/__pycache__/
@@ -29,8 +29,16 @@ frontend/dist/
 
 stuff.txt
 
+# Retired orchestration artifacts — see docs/HANDBOOK.md
+story-work/
+
+# Agent worktrees and local server logs
+.claude/worktrees/
+backend/uvicorn.log
+
 backend/vercel.json
 
 *.zip
 
-/docs
+# Obsidian config in docs/
+docs/.obsidian/

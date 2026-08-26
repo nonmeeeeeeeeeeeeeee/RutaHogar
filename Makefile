@@ -17,7 +17,7 @@ help:
 
 install-backend:
 	python3 -m venv $(BACKEND_DIR)/.venv
-	$(BACKEND_DIR)/.venv/bin/pip install -r $(BACKEND_DIR)/requirements.txt
+	$(BACKEND_DIR)/.venv/bin/python -m pip install -r $(BACKEND_DIR)/requirements.txt
 
 install-frontend:
 	cd $(FRONTEND_DIR) && npm install

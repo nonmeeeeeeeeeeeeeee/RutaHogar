@@ -30,7 +30,14 @@ def base_payload(**overrides):
 
 
 def joined(result, key):
-    return " ".join(result.get(key, []))
+    items = result.get(key, [])
+    texts = []
+    for item in items:
+        if isinstance(item, dict):
+            texts.append(item.get("text", str(item)))
+        else:
+            texts.append(str(item))
+    return " ".join(texts)
 
 
 def test_joven_indefinido_sin_morosidad_buen_ahorro():
@@ -85,7 +92,11 @@ def test_complementario_valido_sin_morosidad_se_considera():
             relacion_complementario="conyuge",
         )
     )
+    assert con_complemento["financial_indicators"]["ingreso_total"] == 2400000, con_complemento
+    assert con_complemento["financial_indicators"]["ingreso_complementario_considerado"] == 1200000, con_complemento
+    assert con_complemento["base_score"] > sin_complemento["base_score"], con_complemento
     assert con_complemento["score"] > sin_complemento["score"], con_complemento
+    assert not con_complemento["blockers"], con_complemento
 
 
 def test_complementario_con_morosidad_no_mejora():
@@ -150,8 +161,10 @@ def test_patrimonio_declared_mejora_moderada():
             patrimonio_unit="clp",
         )
     )
-    assert con_patrimonio["score"] > sin_patrimonio["score"], con_patrimonio
+    assert con_patrimonio["score"] == sin_patrimonio["score"], con_patrimonio
+    assert con_patrimonio["base_score"] == sin_patrimonio["base_score"], con_patrimonio
     assert con_patrimonio["classification"] == sin_patrimonio["classification"], con_patrimonio
+    assert con_patrimonio["main_blocker"]["code"] == "pie_insuficiente", con_patrimonio
     assert "Patrimonio" in joined(con_patrimonio, "positive_indicators")
 
 
@@ -166,9 +179,10 @@ def test_vehiculo_como_patrimonio_mejora_leve():
             patrimonio_unit="clp",
         )
     )
-    assert con_vehiculo["score"] > sin_patrimonio["score"], con_vehiculo
-    assert con_vehiculo["score"] - sin_patrimonio["score"] <= 3, con_vehiculo
+    assert con_vehiculo["score"] == sin_patrimonio["score"], con_vehiculo
+    assert con_vehiculo["base_score"] == sin_patrimonio["base_score"], con_vehiculo
     assert con_vehiculo["classification"] == sin_patrimonio["classification"], con_vehiculo
+    assert con_vehiculo["main_blocker"]["code"] == "pie_insuficiente", con_vehiculo
     assert "respaldo patrimonial" in joined(con_vehiculo, "positive_indicators").lower()
 
 
@@ -197,8 +211,10 @@ def test_propiedad_como_patrimonio_mejora_moderada_sin_forzar_alto():
             patrimonio_unit="clp",
         )
     )
-    assert con_propiedad["score"] > sin_patrimonio["score"], con_propiedad
+    assert con_propiedad["score"] == sin_patrimonio["score"], con_propiedad
+    assert con_propiedad["base_score"] == sin_patrimonio["base_score"], con_propiedad
     assert con_propiedad["classification"] == "Bajo", con_propiedad
+    assert con_propiedad["main_blocker"]["code"] == "carga_total_alta", con_propiedad
     assert "Patrimonio" in joined(con_propiedad, "positive_indicators")
 
 

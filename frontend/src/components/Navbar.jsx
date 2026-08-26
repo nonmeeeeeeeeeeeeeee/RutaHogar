@@ -3,19 +3,16 @@ import { roleLabels, roles } from "../services/auth";
 
 const navByRole = {
   [roles.user]: [
-    { id: "landing", label: "Inicio" },
-    { id: "home", label: "Dashboard" },
     { id: "evaluate", label: "Precalificación" },
-    { id: "tracking", label: "Plan de Mejora" },
     { id: "recommendations", label: "Recomendaciones" },
+    { id: "simulation", label: "Simulación" },
+    { id: "tracking", label: "Plan de Mejora" },
     { id: "academia", label: "Academia" },
   ],
   [roles.sales]: [
-    { id: "landing", label: "Inicio" },
     { id: "leads", label: "Dashboard Leads" },
   ],
   [roles.admin]: [
-    { id: "landing", label: "Inicio" },
     { id: "admin", label: "Panel Admin" },
     { id: "leads", label: "Dashboard Leads" },
   ],
@@ -42,7 +39,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
           onClick={() => handleNavigate("landing")}
           aria-label="Ir al inicio"
         >
-          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
+          <img src="/brand/rutahogar/logo-rutahogar.svg" alt="RutaHogar" />
         </button>
 
         <div className="navbar-right">

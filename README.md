@@ -1,9 +1,24 @@
-# ScoreLeads
+# RutaHogar
 
-Software for pre-evaluating real-estate leads (React frontend + FastAPI backend).
-The current project focus is moving toward a final product version for year-end,
-prioritizing data consistency, correct persistence, traceability, and real user
-flows.
+Professional platform for real-estate financial prequalification (React
+frontend + FastAPI backend). RutaHogar is no longer documented as an MVP: it is
+a product-oriented system for explainable scoring, versioned rules,
+traceability, privacy, commercial prioritization, and financial improvement
+planning.
+
+RutaHogar does not approve mortgage loans and does not replace a formal bank
+evaluation. The score is orientative and explainable. AI-generated text may help
+summarize explanations or commercial guidance, but the score itself must remain
+determined by auditable rules unless the team explicitly instructs otherwise.
+
+Core safeguards:
+
+- Do not replace scoring rules with ML without explicit instruction.
+- Do not break the `POST /score` contract, localStorage fallback, conditional
+  Supabase behavior, or Groq integration.
+- Do not hardcode API keys or secrets.
+- Do not query external financial sources, banks, CMF, Dicom, or similar
+  services without explicit user consent and approved scope.
 
 Run backend:
 
@@ -25,8 +40,9 @@ npm run dev
 ```
 
 The frontend requires Node.js 20.19+ or 22.12+ because the current Vite
-toolchain does not support older Node versions. Node 22 is recommended; use
-`nvm use` from the repository root to pick the version declared in `.nvmrc`.
+toolchain does not support older Node versions. Node 22 is recommended. Check
+your local version with `node -v`; if it is lower than 20.19, use `nvm use`
+from the repository root to pick the version declared in `.nvmrc`.
 
 Or use Makefile targets from the repo root:
 
@@ -64,7 +80,7 @@ Opcionalmente puedes configurar el remitente si tienes un dominio verificado en
 Resend:
 
 ```bash
-supabase secrets set FEEDBACK_FROM_EMAIL="ScoreLeads <feedback@tu-dominio.cl>"
+supabase secrets set FEEDBACK_FROM_EMAIL="RutaHogar <feedback@tu-dominio.cl>"
 ```
 
 Para probar localmente con Supabase CLI, crea un archivo ignorado por git:
@@ -120,7 +136,7 @@ Notas de configuracion:
   en Project Settings -> General.
 - `RESEND_API_KEY`: API key de Resend.
 - `FEEDBACK_TO_EMAIL`: correo destino que recibira el feedback.
-- `FEEDBACK_FROM_EMAIL`: usa `ScoreLeads <onboarding@resend.dev>` mientras el
+- `FEEDBACK_FROM_EMAIL`: usa `RutaHogar <onboarding@resend.dev>` mientras el
   dominio propio no este verificado en Resend.
 
 El workflow configura los secrets de la Edge Function antes de desplegar:

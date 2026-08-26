@@ -1,4 +1,8 @@
-# DevOps — ScoreLeads MVP
+# DevOps — RutaHogar Plataforma Profesional
+
+RutaHogar ya no es MVP. Operar como plataforma profesional de precalificación
+financiera inmobiliaria, cuidando secretos, deploy reproducible, trazabilidad,
+privacidad y auditoría de scoring.
 
 ## Local setup
 
@@ -47,6 +51,10 @@ GROQ_API_KEY=gsk_...
 
 Entrypoints serverless: `api/score.py` y `backend/api/index.py` (shims que importan `app.main` con sys.path).
 
+No romper el endpoint `POST /score`, la compatibilidad con localStorage,
+Supabase condicional ni Groq. Los cambios de deploy deben preservar historial y
+trazabilidad de evaluaciones.
+
 ## Dependencias
 
 - Backend: `fastapi`, `uvicorn[standard]`, `pydantic`, `groq`.
@@ -70,3 +78,7 @@ Row Level Security activo con políticas por `auth.uid()`. Helper `public.get_my
 - No hay tests automatizados (pese a que playwright está en package.json).
 - No hay linting ni typecheck.
 - El backend no requiere base de datos local (todo vía Supabase HTTP).
+- Nunca hardcodear API keys, tokens Supabase, claves Groq ni secrets de correo.
+- No imprimir secrets en logs de deploy o workflows.
+- No habilitar consultas a datos financieros externos sin consentimiento
+  explícito y aprobación de alcance.
