@@ -1,6 +1,6 @@
 # HU 7 - Gestión del catálogo de proyectos inmobiliarios
 
-> **🗓 Planificada - Sprint 1.** Permite al administrador inmobiliario registrar y mantener un catálogo de proyectos y vincularlos con ejecutivos, para que el sistema recomiende leads según los proyectos realmente disponibles.
+> **⚠️ Implementada, pendiente de merge - Sprint 1.** Permite al administrador inmobiliario registrar y mantener un catálogo de proyectos y vincularlos con ejecutivos, para que el sistema recomiende leads según los proyectos realmente disponibles.
 
 ---
 
@@ -12,7 +12,7 @@
 | **Puntos de Historia** | 5 |
 | **Actor** | Administrador inmobiliario |
 | **Sprint** | Sprint 1 |
-| **Estado** | 🗓 Planificada |
+| **Estado** | ⚠️ Implementada, pendiente de merge ([PR #69](https://github.com/nonmeeeeeeeeeeeeeee/RutaHogar/pull/69)) |
 
 ---
 
@@ -52,14 +52,25 @@
 
 ## Estado frente al código
 
-Verificación criterio por criterio contra el código entregado. ✅ implementado · ⚠️ parcial · ❌ no implementado.
+Implementada en la rama `feature/sprint1/HU7`, **pendiente de merge** en
+[PR #69](https://github.com/nonmeeeeeeeeeeeeeee/RutaHogar/pull/69). Las citas de abajo apuntan a esa
+rama, no a `develop`: en `develop` el catálogo todavía no existe.
 
-| Criterio | Estado | Evidencia |
-| :------- | :----- | :-------- |
-| `E1` | ❌ | No existe panel de proyectos ni persistencia. El catálogo es `frontend/src/data/mockProjects.js`, 8 proyectos fijos en código. |
-| `E2` | ❌ | Sin formulario de creación o edición, no hay validación que impedir. |
-| `E3` | ❌ | No existe vinculación de ejecutivos a proyectos en el modelo de datos. |
-| `E4` | ❌ | `mockProjects.js` tiene un campo `estado`, pero ningún flujo de matching lo consume para excluir proyectos agotados. |
+| Criterio | Estado | Evidencia (rama `feature/sprint1/HU7`) |
+| :------- | :----- | :------------------------------------ |
+| `E1` | ✅ | `frontend/src/components/AdminProjectCatalog.jsx` es el panel de proyectos; `services/projectService.js:347` `createProject` persiste en la tabla `proyectos` (`supabase/migrations/20260729_project_catalog.sql:29`). |
+| `E2` | ✅ | `services/projectValidation.js:13` `validateProject` exige cada campo obligatorio y rechaza rangos de precio invertidos, cero o no numéricos. Cubierto por `services/__tests__/projectCatalog.test.js`. |
+| `E3` | ✅ | `projectService.js:530` `assignExecutive` y `:574` `unassignExecutive`, sobre la tabla `proyecto_ejecutivos` (`migration:64`). |
+| `E4` | ✅ | `projectService.js:342` `getAvailableProjects` filtra con `filterAvailable`, que excluye el estado `agotado` (`constants/proyectos.js`). Cubierto por el test `filterAvailable`. |
+
+**Más allá de los criterios:** la implementación es multi-tenant. La migración crea `inmobiliarias`,
+`proyectos` y `proyecto_ejecutivos` con políticas RLS por inmobiliaria
+(`migration:314` en adelante), lo que satisface la salvaguarda **S6** del handbook para estas tablas.
+Existe rollback en `supabase/rollback/20260729_project_catalog_rollback.sql`.
+
+**En `develop` hoy:** solo `frontend/src/data/mockProjects.js`, 8 proyectos fijos usados por la
+simulación de [[HU6-simulacion-compatibilidad|HU 6]]. Cuando PR #69 entre, esta sección pasa a
+✅ Implementada y las citas dejan de necesitar la advertencia de rama.
 
 > Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
 > es un criterio no verificado, no un criterio cumplido.

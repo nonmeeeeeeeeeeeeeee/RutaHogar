@@ -15,7 +15,7 @@ documento fuente del backlog. El detalle por historia está en [[UserStories/ind
 | HU 4 | Generación de plan de mejora personalizado | Importante | 8 | [[UserStories/HU4-plan-de-mejora\|HU 4]] ⚠️ |
 | HU 5 | Academia financiera contextual | Esencial | 8 | [[UserStories/HU5-academia-financiera\|HU 5]] ✅ |
 | HU 6 | Simulación de compatibilidad y alternativas accesibles | Esencial | 8 | [[UserStories/HU6-simulacion-compatibilidad\|HU 6]] ⚠️ |
-| HU 7 | Gestión del catálogo de proyectos inmobiliarios | Esencial | 5 | [[UserStories/HU7-catalogo-de-proyectos\|HU 7]] |
+| HU 7 | Gestión del catálogo de proyectos inmobiliarios | Esencial | 5 | [[UserStories/HU7-catalogo-de-proyectos\|HU 7]] ⚠️ |
 | HU 8 | Detector de beneficios habitacionales aplicables | Importante | 5 | [[UserStories/HU8-beneficios-habitacionales\|HU 8]] |
 | HU 9 | Cotización orientativa por proyecto | Esencial | 5 | [[UserStories/HU9-cotizacion-orientativa\|HU 9]] ⚠️ |
 | HU 10 | Matching lead-proyecto para ejecutivos comerciales | Importante | 5 | [[UserStories/HU10-matching-lead-proyecto\|HU 10]] ⚠️ |

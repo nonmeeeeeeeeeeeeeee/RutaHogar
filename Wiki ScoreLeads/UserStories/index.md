@@ -3,11 +3,12 @@
 Backlog aprobado para los Sprints 1 a 3. Cada historia tiene su propia página con la descripción y
 los criterios de aceptación transcritos del documento fuente del backlog.
 
-**Estado:** ✅ Implementada · ⚠️ Parcial · 🗓 Planificada · 📌 Reservada
+**Estado:** ✅ Implementada · ⚠️ Parcial o pendiente de merge · 🗓 Planificada · 📌 Reservada
 
-> El estado refleja lo que el código hace hoy, verificado criterio por criterio con citas a
+> El estado refleja lo que el código hace hoy en `develop`, verificado criterio por criterio con citas a
 > `archivo:línea` en la sección **Estado frente al código** de cada página. Un criterio sin
-> evidencia citable es un criterio no verificado.
+> evidencia citable es un criterio no verificado. Cuando una historia está construida pero su PR
+> sigue abierto, su página lo dice y cita la rama.
 
 ---
 
@@ -19,7 +20,7 @@ los criterios de aceptación transcritos del documento fuente del backlog.
 | [[HU4-plan-de-mejora\|HU 4]] | Generación de plan de mejora personalizado | Importante | 8 | Lead | ⚠️ |
 | [[HU5-academia-financiera\|HU 5]] | Academia financiera contextual | Esencial | 8 | Lead | ✅ |
 | [[HU6-simulacion-compatibilidad\|HU 6]] | Simulación de compatibilidad y alternativas accesibles | Esencial | 8 | Lead | ⚠️ |
-| [[HU7-catalogo-de-proyectos\|HU 7]] | Gestión del catálogo de proyectos inmobiliarios | Esencial | 5 | Administrador inmobiliario | 🗓 |
+| [[HU7-catalogo-de-proyectos\|HU 7]] | Gestión del catálogo de proyectos inmobiliarios | Esencial | 5 | Administrador inmobiliario | ⚠️ |
 | [[HU8-beneficios-habitacionales\|HU 8]] | Detector de beneficios habitacionales aplicables | Importante | 5 | Lead | 🗓 |
 | [[HU9-cotizacion-orientativa\|HU 9]] | Cotización orientativa por proyecto | Esencial | 5 | Lead | ⚠️ |
 | [[HU10-matching-lead-proyecto\|HU 10]] | Matching lead-proyecto para ejecutivos comerciales | Importante | 5 | Ejecutivo comercial | ⚠️ |

@@ -61,5 +61,7 @@ Verificación criterio por criterio contra el código entregado. ✅ implementad
 | `E3` | ⚠️ | La tarjeta del lead en `DashboardLeads.jsx` muestra clasificación y score; no muestra capacidad estimada, pie ni bloqueador principal juntos. |
 | `E4` | ❌ | No existe la noción de oportunidad reorientable en la UI. |
 
+**Nota de dependencia.** El catálogo del que depende esta historia ya está construido en `feature/sprint1/HU7` ([PR #69](https://github.com/nonmeeeeeeeeeeeeeee/RutaHogar/pull/69)); las citas de arriba describen `develop`, donde todavía no está.
+
 > Esta tabla se revisa cuando cambia el código de la historia. Un criterio sin evidencia citable
 > es un criterio no verificado, no un criterio cumplido.
