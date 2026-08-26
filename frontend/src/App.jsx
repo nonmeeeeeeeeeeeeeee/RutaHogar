@@ -539,8 +539,13 @@ export default function App() {
 
       // `result` es estado propio del panel de resultado y no deriva de
       // `evaluations`: sin esto el reintento persiste la explicación pero la
-      // vista sigue mostrando la anterior.
-      setResult((prev) => (prev ? { ...prev, ai_explanation: explanation } : prev));
+      // vista sigue mostrando la anterior. Solo se refresca si el snapshot
+      // visible es el de la evaluación reintentada.
+      setResult((prev) =>
+        prev && prev.evaluation_id === evaluation.id
+          ? { ...prev, ai_explanation: explanation }
+          : prev,
+      );
 
       if (updated?.id) {
         setEvaluations((prev) =>
@@ -937,6 +942,9 @@ export default function App() {
       });
 
       setResultSaved(true);
+      // El snapshot visible queda ligado a la evaluación guardada: sin esto no
+      // hay forma de saber si `result` y `currentEvaluation` son lo mismo.
+      setResult((prev) => (prev ? { ...prev, evaluation_id: savedEvaluation.id } : prev));
       setEvaluations((prev) => {
         const entry = { ...savedEvaluation, created_at: savedEvaluation.created_at || new Date().toISOString() };
         return [entry, ...prev.filter((item) => item.id !== entry.id)].slice(0, 25);
@@ -1391,7 +1399,11 @@ export default function App() {
           {result && (
         <Result
           data={result}
-          onRetryExplanation={currentEvaluation ? handleRetryAiExplanation : undefined}
+          onRetryExplanation={
+            currentEvaluation && result?.evaluation_id === currentEvaluation.id
+              ? handleRetryAiExplanation
+              : undefined
+          }
         />
       )}
 
