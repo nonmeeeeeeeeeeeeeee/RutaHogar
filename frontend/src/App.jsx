@@ -537,6 +537,11 @@ export default function App() {
         ai_explanation: explanation,
       });
 
+      // `result` es estado propio del panel de resultado y no deriva de
+      // `evaluations`: sin esto el reintento persiste la explicación pero la
+      // vista sigue mostrando la anterior.
+      setResult((prev) => (prev ? { ...prev, ai_explanation: explanation } : prev));
+
       if (updated?.id) {
         setEvaluations((prev) =>
           prev.map((item) => (item.id === updated.id ? updated : item)),
