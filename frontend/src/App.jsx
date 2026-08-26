@@ -926,6 +926,10 @@ export default function App() {
     const financialInput = buildFinancialInput(input);
 
     try {
+      // Se siembra la ref en el mismo tick: el efecto corre después del
+      // render y un fallo síncrono (sesión ausente) llegaría antes, con la
+      // ref todavía apuntando al resultado anterior.
+      resultRef.current = resultSnapshot;
       setResult(resultSnapshot);
       setResultSaved(null);
 
