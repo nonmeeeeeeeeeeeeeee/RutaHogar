@@ -28,13 +28,8 @@ Covers the initial data capture step: a guided, multi-step web form that collect
 
 ### E1 — Successful form completion
 
-<<<<<<< Updated upstream:Wiki ScoreLeads/UserStories/HU1-FinancialDataEntry.md
-**Given** the user accesses the ScoreLeads platform for the first time,  
-**When** they complete all required fields (income, debts, contract type, age) and accept the data consent,  
-=======
 **Given** the user accesses the RutaHogar platform for the first time,  
-**When** they complete all required fields (income, debts, contract type, number of dependants, age) and accept the data consent,  
->>>>>>> Stashed changes:Wiki ScoreLeads/UserStories/HdU1-FinancialDataEntry.md
+**When** they complete all required fields (income, debts, contract type, age) and accept the data consent,
 **Then** the system registers their profile and automatically redirects them to their assessment result.
 
 ---
