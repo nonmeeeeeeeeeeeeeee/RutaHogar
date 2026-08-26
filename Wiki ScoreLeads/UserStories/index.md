@@ -36,7 +36,7 @@ All user stories for the RutaHogar platform, following the backlog approved for 
 | [[HU24-FraudulentLeadReporting\|HU 24]] | Report Fraudulent Users/Leads | Desirable | 5 | Sales Executive | Sprint 3 | 🗓 |
 | [[HU25-SubsidySimulation\|HU 25]] | Housing Subsidy Simulation | Desirable | 5 | Lead | Sprint 3 | 🗓 |
 | [[HU26-CreditTermSimulation\|HU 26]] | Credit-Term Variation Simulation | Optional | 3 | Lead | Sprint 3 | 🗓 |
-| [[HU27-ConversionDashboard\|HU 27]] | Sales Conversion-Rate Dashboard | Desirable | 5 | Real Estate Admin / Executive | Sprint 3 | 🗓 |
+| [[HU27-ConversionDashboard\|HU 27]] | Sales Conversión-Rate Dashboard | Desirable | 5 | Real Estate Admin / Executive | Sprint 3 | 🗓 |
 | [[HU28-DemographicVisualization\|HU 28]] | Demographic & Socioeconomic Visualization | Optional | 1 | Sales Executive / Admin | Sprint 3 | 🗓 |
 | [[HU29-MobileLeadExperience\|HU 29]] | Mobile Experience for the Lead | Essential | 5 | Lead | Sprint 1 | 🔜 |
 | [[HU30-MobileExecutiveDashboard\|HU 30]] | Mobile-Adaptable Executive Dashboard | Essential | 5 | Sales Executive | Sprint 1 | 🔜 |
@@ -87,7 +87,7 @@ Full actor detail (proficiency levels and justifications) is in [[Actores\|Actor
 ## Related pages
 
 - [[Distribucion\|Distribución / Sprints]] — sprint plan, SP totals, spikes.
-- [[Riesgos\|Riesgos técnicos]] — 9 technical risks with the priority formula.
+- [[Riesgos\|Riesgos técnicos]] — 9 technical risks with the priority fórmula.
 - [[AtributosDeCalidad\|Atributos de calidad (RNF)]] — 8 quality attributes with SMART goals.
 - [[Actores\|Actores / Roles]] — the 4 system actors in detail.
 - [[../informes_entregas/E4 - GPI Plan de Proyecto 2026\|E4 — Plan de Proyecto 2026]] — the source entregable.
