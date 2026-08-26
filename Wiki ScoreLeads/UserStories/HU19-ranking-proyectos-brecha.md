@@ -45,4 +45,4 @@
 ## Notas
 
 - Extiende la cotización por proyecto de [[HU9-cotizacion-orientativa|HU 9]] de uno a muchos proyectos.
-- Depende del catalogo de [[HU7-catalogo-de-proyectos|HU 7]].
+- Depende del catálogo de [[HU7-catalogo-de-proyectos|HU 7]].

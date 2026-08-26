@@ -24,9 +24,9 @@
 
 ## Criterios de aceptación
 
-### E1 - Catalogo educativo
+### E1 - Catálogo educativo
 
-**Dado** que el usuario accede a la sección Academia, **cuando** visualiza el modulo, **entonces** el sistema debe mostrar artículos o cápsulas organizadas por tema.
+**Dado** que el usuario accede a la sección Academia, **cuando** visualiza el módulo, **entonces** el sistema debe mostrar artículos o cápsulas organizadas por tema.
 
 ### E2 - Contenido según situación del usuario
 

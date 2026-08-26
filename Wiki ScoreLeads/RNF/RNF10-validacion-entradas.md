@@ -31,4 +31,4 @@
 ## Notas
 
 - El documento fuente lista este requisito por separado, aunque corresponde al criterio E1 de [[RNF1-seguridad-basica|RNF 1]]. Se documenta aparte por fidelidad al listado y se verifica una sola vez.
-- El handbook lo formula como norma de arquitectura: validar en el borde y confiar en el interior.
+- El handbook lo fórmula como norma de arquitectura: validar en el borde y confiar en el interior.

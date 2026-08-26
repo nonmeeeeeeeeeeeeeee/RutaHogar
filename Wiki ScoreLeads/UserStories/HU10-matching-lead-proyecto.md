@@ -45,7 +45,7 @@
 ## Notas
 
 - Los criterios de matching (capacidad estimada, comuna, rango de precio, pie, clasificación, bloqueador principal) están definidos en [Spike 1 - E4](../../docs/research/spike1-e4-lead-project-matching-criteria.md), que lleva el contrato congelado contra el que se debe programar.
-- Requiere el catalogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos están disponibles.
+- Requiere el catálogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos están disponibles.
 - Complementa el dashboard priorizado [[HU2-priorizacion-leads|HU 2]] agregando una vista centrada en proyecto.
 
 ---

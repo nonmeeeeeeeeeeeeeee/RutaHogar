@@ -44,6 +44,6 @@
 
 ## Notas
 
-- E2 es una expresión directa de la salvaguarda S7 del handbook: el sistema no aprueba creditos.
+- E2 es una expresión directa de la salvaguarda S7 del handbook: el sistema no aprueba créditos.
 - Los parámetros FOGAES ya documentados están en [Spike 1 - E4](../../docs/research/spike1-e4-lead-project-matching-criteria.md).
 - El enlace de E4 apunta a [[HU5-academia-financiera|HU 5]]. La simulación avanzada del impacto es [[HU26-simulacion-subsidios|HU 26]].

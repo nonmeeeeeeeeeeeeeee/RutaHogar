@@ -18,7 +18,7 @@
 
 ## Historia de usuario
 
-> **Como** ejecutivo comercial inmobiliario, **quiero** visualizar una cartera de leads precalificados y priorizados con apoyo de IA, **para** concentrar mi tiempo en los prospectos con mayor probabilidad de avanzar en el proceso de compra y entender rapidamente el contexto financiero de cada lead.
+> **Como** ejecutivo comercial inmobiliario, **quiero** visualizar una cartera de leads precalificados y priorizados con apoyo de IA, **para** concentrar mi tiempo en los prospectos con mayor probabilidad de avanzar en el proceso de compra y entender rápidamente el contexto financiero de cada lead.
 
 ---
 
@@ -34,7 +34,7 @@
 
 ### E3 - Filtro por nivel de prioridad
 
-**Dado** que el ejecutivo necesita organizar su día, **cuando** usa la herramienta de filtro, **entonces** el sistema debe permitir segmentar la vista por categorias Alto, Medio o Bajo de forma inmediata.
+**Dado** que el ejecutivo necesita organizar su día, **cuando** usa la herramienta de filtro, **entonces** el sistema debe permitir segmentar la vista por categorías Alto, Medio o Bajo de forma inmediata.
 
 ### E4 - Acción comercial sugerida
 

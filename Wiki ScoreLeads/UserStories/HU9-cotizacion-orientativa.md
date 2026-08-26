@@ -1,6 +1,6 @@
 # HU 9 - Cotización orientativa por proyecto
 
-> **⚠️ Parcial - Sprint 1.** Permite al lead seleccionar un proyecto del catalogo y revisar si es compatible con su situación financiera, con la brecha principal y el ajuste mínimo sugerido.
+> **⚠️ Parcial - Sprint 1.** Permite al lead seleccionar un proyecto del catálogo y revisar si es compatible con su situación financiera, con la brecha principal y el ajuste mínimo sugerido.
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### E1
 
-**Dado** que el usuario selecciona un proyecto del catalogo, **cuando** lo evalue, **entonces** el sistema debe mostrar su compatibilidad financiera.
+**Dado** que el usuario selecciona un proyecto del catálogo, **cuando** lo evalue, **entonces** el sistema debe mostrar su compatibilidad financiera.
 
 ### E2
 
@@ -44,7 +44,7 @@
 
 ## Notas
 
-- Depende del catalogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos existen.
+- Depende del catálogo de [[HU7-catalogo-de-proyectos|HU 7]] para saber qué proyectos existen.
 - La lógica de compatibilidad vive en `backend/app/scoring_engine/project_fit.py`; la brecha principal de E2 se apoya en `blockers.py`.
 - El ranking de alternativas ordenadas por brecha es [[HU19-ranking-proyectos-brecha|HU 19]].
 

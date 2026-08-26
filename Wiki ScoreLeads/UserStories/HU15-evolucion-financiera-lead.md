@@ -30,7 +30,7 @@
 
 ### E2 - Visualización de evolución
 
-**Dado** que existen evaluaciones historicas, **cuando** el ejecutivo revise el perfil del lead, **entonces** el sistema debe mostrar cambios en score, capacidad de compra o bloqueador principal.
+**Dado** que existen evaluaciones históricas, **cuando** el ejecutivo revise el perfil del lead, **entonces** el sistema debe mostrar cambios en score, capacidad de compra o bloqueador principal.
 
 ### E3 - Oportunidad de seguimiento
 

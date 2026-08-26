@@ -34,7 +34,7 @@
 
 ### E3 - Visualización de gráficos en el tiempo
 
-**Dado** que quiero medir cómo han evolucionado las métricas de venta en el tiempo (semana a semana, mes a mes, año a año), **cuando** ingreso a la pestaña de evaluaciones historicas, **entonces** se deben desplegar distintos gráficos en función del tiempo seleccionado mostrando cómo han cambiado las ventas en el tiempo desde que se usa la aplicación.
+**Dado** que quiero medir cómo han evolucionado las métricas de venta en el tiempo (semana a semana, mes a mes, año a año), **cuando** ingreso a la pestaña de evaluaciones históricas, **entonces** se deben desplegar distintos gráficos en función del tiempo seleccionado mostrando cómo han cambiado las ventas en el tiempo desde que se usa la aplicación.
 
 ---
 
