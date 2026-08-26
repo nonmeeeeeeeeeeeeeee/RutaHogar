@@ -2,7 +2,7 @@
 
 Reviewed: 2026-08-16
 Scope: definition of the criteria, variables, thresholds and frozen contract for matching a lead against the real estate project catalog. Chilean mortgage underwriting norms as of August 2026.
-Deliverable status: **criteria definition + frozen contract. No production code written.** Implementation is owned by [[UserStories/HU13-LeadProjectMatching|HU 13]].
+Deliverable status: **criteria definition + frozen contract. No production code written.** Implementation is owned by [[UserStories/HU10-matching-lead-proyecto\|HU 10]].
 
 Research tracks: independent desk research (Banco Central, CMF Educa, FOGAES, bank published terms) plus a parallel agent review of the existing `scoring_engine` against those norms. Where the two tracks disagreed, the divergence and its resolution are recorded in §11.
 
@@ -28,13 +28,13 @@ Research tracks: independent desk research (Banco Central, CMF Educa, FOGAES, ba
 - **Scoring engine changes.** The financial score, its weights, and `classification` are untouched. E4 consumes them.
 - **The `/score` contract.** Capacity is added as *new keys inside the existing* `financial_indicators` dict — additive only. No field removed, no type changed, no endpoint added (guardrail #5).
 - **`PRECIOS_REFERENCIA_UF`.** Untouched (guardrail #7). The capacity model is preference-independent and does not read it.
-- **Rate / UF / term scenarios.** Owned by [[UserStories/HU20-EconomicSimulation|HU 20]] and [[UserStories/HU26-CreditTermSimulation|HU 26]]. Matching uses one base scenario (§8.2).
-- **Subsidy eligibility rules.** Owned by Spike 1 E2 / [[UserStories/HU25-SubsidySimulation|HU 25]]. E4 only emits a flag (§4.4).
+- **Rate / UF / term scenarios.** Owned by [[UserStories/HU18-simulador-escenarios-hipotecarios\|HU 18]] and [[UserStories/HU29-comparador-costo-credito\|HU 29]]. Matching uses one base scenario (§8.2).
+- **Subsidy eligibility rules.** Owned by Spike 1 E2 / [[UserStories/HU26-simulacion-subsidios\|HU 26]]. E4 only emits a flag (§4.4).
 - **UI.** The lead card layout is HU 13's.
 
 ### What this document claims for reuse
 
-`capacidad_compra_estimada_uf` is defined here but is **also the primitive Spike 1 E2 needs** for [[UserStories/HU9-CompatibilitySimulation|HU 9]] ("comparar capacidad de compra, valor de vivienda, ahorro, deuda y ajustes mínimos"). Whoever writes E2 must consume this definition rather than introduce a second capacity formula.
+`capacidad_compra_estimada_uf` is defined here but is **also the primitive Spike 1 E2 needs** for [[UserStories/HU6-simulacion-compatibilidad\|HU 6]] ("comparar capacidad de compra, valor de vivienda, ahorro, deuda y ajustes mínimos"). Whoever writes E2 must consume this definition rather than introduce a second capacity formula.
 
 ---
 
@@ -76,7 +76,7 @@ Every constant carries provenance. Rows are split by **kind**, because market va
 | `RATIO_CARGA_TOTAL_MAX` | `0.45` | [CMF Educa](https://www.cmfchile.cl/educa/621/w3-article-27502.html) + `blockers.py:106` (`carga_total_alta`) | 2026-08-16 | Only with the blocker |
 | `RATIO_DIVIDENDO_SALUDABLE` | `0.25` | CMF Educa; BancoEstado/Enlace Inmobiliario; Scotiabank. **Copy only — never used in calculation** | 2026-08-16 | — |
 | `PLAZO_REFERENCIA_ANIOS` | `30` | Most commonly offered term (Bci, Scotiabank, BancoEstado 8–30). Overridable by a declared `plazo_credito_hipotecario` | 2026-08-16 | — |
-| `EDAD_MAX_FIN_CREDITO` | `70` | ScoreLeads policy: `blockers.py:173` + [[UserStories/HU26-CreditTermSimulation|HU 26]] E2. **More conservative than the market** (Renta Nacional 76a364d; Scotiabank up to 79 with insurance) — deliberately kept | 2026-08-16 | — |
+| `EDAD_MAX_FIN_CREDITO` | `70` | ScoreLeads policy: `blockers.py:173` + [[UserStories/HU29-comparador-costo-credito\|HU 29]] E2. **More conservative than the market** (Renta Nacional 76a364d; Scotiabank up to 79 with insurance) — deliberately kept | 2026-08-16 | — |
 | `PLAZO_MINIMO_VIABLE_ANIOS` | `5` | Below this the quote is not meaningful → `requires_info` | 2026-08-16 | — |
 
 ### 3.3 Canonical unit: UF
@@ -219,7 +219,7 @@ afinidad <  45 -> "Marginal"
 
 **The 45-vs-15 asymmetry is the point.** Capacity carries three times the weight of classification, and that *is* HU 13 E2 ("capacity beats classification") expressed numerically: a `Medio` lead sitting comfortably above `precio_max` scores ~92 and outranks an `Alto` lead scraping `precio_min` at ~55. Weighted equally, E2 would be unimplementable and the panel would merely re-sort the existing HU 2 dashboard.
 
-**Calibration status: v1, asserted from domain reasoning, not fitted.** There is no conversion history to calibrate against. Revisit once [[UserStories/HU27-ConversionDashboard|HU 27]] produces real outcome data.
+**Calibration status: v1, asserted from domain reasoning, not fitted.** There is no conversion history to calibrate against. Revisit once [[UserStories/HU16-dashboard-conversion\|HU 16]] produces real outcome data.
 
 ---
 
@@ -271,7 +271,7 @@ Steps 2–3 reuse the `main_gap` vocabulary (`"income"` / `"down_payment"`) alre
 
 ## 7. Re-orientable opportunity
 
-[[UserStories/HU13-LeadProjectMatching|HU 13]] E4: *a user who can buy a project different from their declared objective must show as a re-orientable opportunity.*
+[[UserStories/HU10-matching-lead-proyecto\|HU 10]] E4: *a user who can buy a project different from their declared objective must show as a re-orientable opportunity.*
 
 `commercial_priority.py` already emits a `reorient` action (`score >= 70 AND project_fit = "Fuera de alcance"`), but it is **lead-global and cannot name an alternative**. It says "reorient this person" and stops. Matching closes that gap. **`commercial_priority.py` is left untouched** — the HU 2 dashboard's behavior does not change and no shipped `/score` path needs re-verification.
 
@@ -318,7 +318,7 @@ Computed by a new `backend/app/scoring_engine/purchase_capacity.py`. Purely addi
 }
 ```
 
-**`capacidad_supuestos` travels with the number, by design.** Without it, a capacity persisted in June and read in December is uninterpretable — you cannot tell whether it is low because the lead is weak or because the rate moved. This is what makes [[UserStories/HU16-EvaluationAudit|HU 16]] / [[UserStories/HU33-ImmutableEvaluationHistory|HU 33]] auditability real, and it costs one dict.
+**`capacidad_supuestos` travels with the number, by design.** Without it, a capacity persisted in June and read in December is uninterpretable — you cannot tell whether it is low because the lead is weak or because the rate moved. This is what makes [[RNF/RNF4-auditoria-tecnica\|RNF 4]] / [[RNF/RNF5-historial-inmutable\|RNF 5]] auditability real, and it costs one dict.
 
 **`version` is separate from `ALGORITHM_VERSION`**, so matching criteria can be revised (once HU 27 supplies conversion data) without forcing a scoring-engine version bump.
 
@@ -362,7 +362,7 @@ Two separate arrays rather than one array with an `excluido` flag — a single a
 | Layer | Owns | Why |
 | :---- | :--- | :-- |
 | **Backend** `scoring_engine/purchase_capacity.py` | Capacity math | Pure financial computation belonging beside `indicators.py`; versioned under `ALGORITHM_VERSION`; persisted per evaluation → auditable (HU 16 / HU 33) |
-| **Frontend** `services/leadProjectMatching.js` | Affinity join | The catalog lives in the frontend + Supabase ([[UserStories/HU17-ProjectCatalog|HU 17]]); guardrail #5 forbids new FastAPI endpoints, so the backend cannot see `proyectos` |
+| **Frontend** `services/leadProjectMatching.js` | Affinity join | The catalog lives in the frontend + Supabase ([[UserStories/HU7-catalogo-de-proyectos\|HU 7]]); guardrail #5 forbids new FastAPI endpoints, so the backend cannot see `proyectos` |
 
 **Known cost — two sources of truth.** Constants would be defined in Python and could drift if re-declared in JS. Mitigation: this document is **normative**; both constant blocks must carry a comment naming it; and the frontend re-declares **only the affinity weights** (§5.2), never the capacity constants — capacity arrives pre-computed from the backend. Duplication is therefore confined to a table the backend never uses.
 

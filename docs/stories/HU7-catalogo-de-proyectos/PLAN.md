@@ -1,10 +1,10 @@
-# PLAN — HU 17: Real Estate Project Catalog Management
+# PLAN — HU 7: Gestion del catalogo de proyectos inmobiliarios
 
-- **Story:** HU 17 — Real Estate Project Catalog Management
+- **Story:** HU 7 — Gestion del catalogo de proyectos inmobiliarios
 - **Actor:** Real Estate Admin (role `admin`, scoped by `inmobiliaria_id`)
-- **Source story:** `C:\Dev\ScoreLeads\ScoreLeads\Wiki ScoreLeads\UserStories\HU17-ProjectCatalog.md`
+- **Source story:** `Wiki ScoreLeads/UserStories/HU7-catalogo-de-proyectos.md`
 - **Status / Sprint:** 🔜 Sprint 1 · Category Essential · 5 SP
-- **Required by:** HU 13 (Lead–Project Matching) — co-Sprint-1, **not implemented**
+- **Required by:** HU 10 (matching lead-proyecto) — co-Sprint-1, **not implemented**
 
 ---
 
