@@ -5,6 +5,7 @@ const navByRole = {
   [roles.user]: [
     { id: "evaluate", label: "Precalificación" },
     { id: "recommendations", label: "Recomendaciones" },
+    { id: "simulation", label: "Simulación" },
     { id: "tracking", label: "Plan de Mejora" },
     { id: "academia", label: "Academia" },
   ],
@@ -39,7 +40,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
           onClick={() => handleNavigate("landing")}
           aria-label="Ir al inicio"
         >
-          <img src="/Logo ScoreLeads.png" alt="ScoreLeads" />
+          <img src="/brand/rutahogar/logo-rutahogar.svg" alt="RutaHogar" />
         </button>
 
         <div className="navbar-right">

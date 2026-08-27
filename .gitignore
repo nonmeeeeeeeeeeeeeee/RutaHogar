@@ -41,5 +41,7 @@ backend/uvicorn.log
 
 backend/vercel.json
 
+*.zip
+
 # Obsidian config in docs/
 docs/.obsidian/
