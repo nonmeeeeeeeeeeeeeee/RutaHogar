@@ -21,9 +21,16 @@ import { filterAvailable, validateProject } from "./projectValidation";
 //     tipo,                        // 'departamento' | 'casa'
 //     precio_min_uf, precio_max_uf,
 //     estado,                      // 'disponible' | 'en_construccion' | 'agotado'
+//     descripcion,                 // opcional, null si el admin no la cargó
+//     entrega_estimada,            // opcional, 'YYYY-MM' o null
 //     ejecutivos: [{ ejecutivo_id, email, nombre, estado, source }],
 //     created_at, updated_at
 //   }
+//
+// Enmienda aditiva (CATALOGO-UNICO, docs/stories/CATALOGO-UNICO/PLAN.md):
+// `descripcion` y `entrega_estimada` son OPCIONALES y llegan de la simulación,
+// que antes las leía de un mock. Ningún campo previo cambió de nombre ni de
+// tipo, así que el contrato congelado sigue siendo el mismo para HU 13.
 //
 // Notas para quien consuma esto:
 //  1. getAvailableProjects() excluye solo 'agotado' (HU 7 E4) y recorta
@@ -44,7 +51,7 @@ const CATALOG_KEY = "scoreleads_project_catalog";
 const LOCAL_INMOBILIARIA_NOMBRE = "Inmobiliaria Andes (demo)";
 
 const projectColumns =
-  "id, inmobiliaria_id, nombre, comuna, tipo, precio_min_uf, precio_max_uf, estado, created_at, updated_at";
+  "id, inmobiliaria_id, nombre, comuna, tipo, precio_min_uf, precio_max_uf, estado, descripcion, entrega_estimada, created_at, updated_at";
 
 function newId() {
   return window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now());
@@ -104,6 +111,8 @@ function buildLocalProject(catalog, row) {
     precio_min_uf: Number(row.precio_min_uf),
     precio_max_uf: Number(row.precio_max_uf),
     estado: row.estado,
+    descripcion: row.descripcion || null,
+    entrega_estimada: row.entrega_estimada || null,
     ejecutivos: catalog.asignaciones
       .filter((item) => item.proyecto_id === row.id)
       .map((item) => ({
@@ -181,6 +190,8 @@ function buildRemoteProject(row, assignments, namesById, inmobiliariaNames) {
     precio_min_uf: Number(row.precio_min_uf),
     precio_max_uf: Number(row.precio_max_uf),
     estado: row.estado,
+    descripcion: row.descripcion || null,
+    entrega_estimada: row.entrega_estimada || null,
     ejecutivos: assignments
       .filter((item) => item.proyecto_id === row.id)
       .map((item) => ({
@@ -356,6 +367,8 @@ export async function createProject(input) {
     precio_min_uf: Number(input.precio_min_uf),
     precio_max_uf: Number(input.precio_max_uf),
     estado: input.estado,
+    descripcion: String(input.descripcion ?? "").trim() || null,
+    entrega_estimada: String(input.entrega_estimada ?? "").trim() || null,
   };
 
   if (PROVIDER === "local") {
@@ -395,6 +408,8 @@ export async function updateProject(id, input) {
     precio_min_uf: Number(input.precio_min_uf),
     precio_max_uf: Number(input.precio_max_uf),
     estado: input.estado,
+    descripcion: String(input.descripcion ?? "").trim() || null,
+    entrega_estimada: String(input.entrega_estimada ?? "").trim() || null,
   };
 
   if (PROVIDER === "local") {

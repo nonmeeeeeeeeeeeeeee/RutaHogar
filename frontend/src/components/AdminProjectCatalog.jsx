@@ -68,6 +68,8 @@ const emptyForm = {
   estado: "disponible",
   precio_min_uf: "",
   precio_max_uf: "",
+  descripcion: "",
+  entrega_estimada: "",
 };
 
 function formatUfRange(project) {
@@ -255,6 +257,8 @@ export default function AdminProjectCatalog() {
       estado: project.estado,
       precio_min_uf: String(project.precio_min_uf),
       precio_max_uf: String(project.precio_max_uf),
+      descripcion: project.descripcion || "",
+      entrega_estimada: project.entrega_estimada || "",
     });
     setModal({ mode: "edit", project });
   };
@@ -1015,6 +1019,38 @@ export default function AdminProjectCatalog() {
                 )}
                 {formErrors.precio_max_uf && (
                   <span className="field-warning">{formErrors.precio_max_uf}</span>
+                )}
+              </div>
+
+              <div className="field-wrap">
+                <div className="field-label-row">
+                  <label>Entrega estimada</label>
+                  <FieldTooltip text="Mes de entrega del proyecto. Se muestra al usuario en la simulación; no afecta el matching ni el score. Déjalo vacío si aún no está comprometido." />
+                </div>
+                <input
+                  type="month"
+                  value={form.entrega_estimada}
+                  onChange={(event) => updateField("entrega_estimada", event.target.value)}
+                />
+                {formErrors.entrega_estimada && (
+                  <span className="field-warning">{formErrors.entrega_estimada}</span>
+                )}
+              </div>
+
+              <div className="field-wrap">
+                <div className="field-label-row">
+                  <label>Descripción</label>
+                  <FieldTooltip text="Texto de vitrina que el usuario ve junto al proyecto en la simulación. Opcional, máximo 500 caracteres." />
+                </div>
+                <textarea
+                  rows={3}
+                  maxLength={500}
+                  value={form.descripcion}
+                  onChange={(event) => updateField("descripcion", event.target.value)}
+                  placeholder="Ej: Departamento cercano a servicios y conectividad."
+                />
+                {formErrors.descripcion && (
+                  <span className="field-warning">{formErrors.descripcion}</span>
                 )}
               </div>
             </div>
