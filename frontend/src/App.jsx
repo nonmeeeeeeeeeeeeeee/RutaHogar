@@ -17,7 +17,6 @@ import ObjectiveReview from "./components/ObjectiveReview";
 import Onboarding from "./components/Onboarding";
 import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
-import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SimulationPage from "./components/SimulationPage";
 import SignupOffer from "./components/SignupOffer";
@@ -220,7 +219,7 @@ const mergeOnboardingData = (currentData, pendingData) => {
 };
 
 const getInitialPageForProfile = (profile) => {
-  if (!profile) return "landing";
+  if (!profile) return "auth";
   if (profile.role === roles.sales) return "leads";
   if (profile.role === roles.admin) return "admin";
   if (profile.role !== roles.user) return "home";
@@ -268,7 +267,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
   ].includes(path);
 
   if (!profile) {
-    if (unknownRoute) return { page: "landing", path: "/" };
+    if (unknownRoute) return { page: "auth", path: "/login" };
     if (path === "/login" || path === "/registro") return { page: "auth" };
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
@@ -276,12 +275,12 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
-    return { page: "landing", path: path === "/inicio" ? "/" : undefined };
+    return { page: "auth", path: path === "/" ? "/login" : undefined };
   }
 
   if (profile.role === roles.user) {
     if (unknownRoute) return { page: "home", path: "/inicio" };
-    if (path === "/") return { page: "landing" };
+    if (path === "/") return { page: "home", path: "/inicio" };
     if (path === "/inicio") return { page: "home" };
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return {
@@ -301,7 +300,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
   }
 
   if (profile.role === roles.sales) {
-    if (path === "/") return { page: "landing" };
+    if (path === "/") return { page: "leads", path: "/dashboard" };
     if (path === "/dashboard" || path === "/ejecutivo/leads" || path === "/inicio") {
       return { page: "leads", path: path === "/dashboard" ? undefined : "/dashboard" };
     }
@@ -309,7 +308,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
   }
 
   if (profile.role === roles.admin) {
-    if (path === "/") return { page: "landing" };
+    if (path === "/") return { page: "admin", path: "/admin" };
     if (path === "/admin") return { page: "admin" };
     if (path === "/dashboard" || path === "/ejecutivo/leads") return { page: "leads", path: "/dashboard" };
     if (path === "/inicio") return { page: "admin", path: "/admin" };
@@ -320,51 +319,12 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
 };
 
 const getRouteForPage = (page, profile, options = {}) => {
-  if (page === "landing") return "/";
+  if (page === "landing") return "/landing.html";
   if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
   if (page === "anon-onboarding" || page === "anon-evaluate") return "/precalificacion";
-  if (!profile) return "/";
+  if (!profile) return "/login";
   return getPrivatePathForPage(page);
 };
-
-const futureModules = [
-  {
-    title: "Objetivo inmobiliario",
-    status: "Disponible",
-    description:
-      "Captura objetivo de compra, comuna deseada, tipo de propiedad y plazo estimado para contextualizar la preevaluación.",
-  },
-  {
-    title: "Pre-evaluación financiera",
-    status: "Disponible",
-    description:
-      "Formulario guiado, score preliminar, clasificación y recomendaciones básicas para el usuario.",
-  },
-  {
-    title: "Recomendaciones inteligentes",
-    status: "Disponible",
-    description:
-      "Entrega recomendaciones orientativas basadas en la última preevaluación, sin reemplazar una evaluación bancaria formal.",
-  },
-  {
-    title: "Priorización comercial",
-    status: "Futuro",
-    description:
-      "Vista para equipos comerciales con leads ordenados por viabilidad y principales factores de riesgo.",
-  },
-  {
-    title: "Seguimiento financiero",
-    status: "Futuro",
-    description:
-      "Plan de preparación para leads aún no aptos, con metas de ahorro, deuda y continuidad laboral.",
-  },
-  {
-    title: "Integraciones",
-    status: "Futuro",
-    description:
-      "Conexiones con CRM, bancos, documentos y fuentes de datos cuando la integración esté disponible.",
-  },
-];
 
 export default function App() {
   const storedAuth = useMemo(() => getStoredAuth(), []);
@@ -719,9 +679,12 @@ export default function App() {
 
   const handleAnonOnboardingComplete = (answers) => {
     const data = { ...answers, updated_at: new Date().toISOString() };
+    if (answers.birth_day && answers.birth_month && answers.birth_year) {
+      data.birth_date = `${answers.birth_year}-${answers.birth_month.padStart(2, "0")}-${answers.birth_day.padStart(2, "0")}`;
+    }
     sessionStorage.setItem(ANON_ONBOARDING_KEY, JSON.stringify(data));
     setAnonOnboarding(data);
-    setPage("anon-evaluate");
+    navigateToPage("anon-evaluate");
   };
 
   const handleAnonResult = (scoreResult, input) => {
@@ -787,7 +750,7 @@ export default function App() {
 
   const handleContinueWithout = () => {
     clearAnonSession();
-    navigateToPage("landing");
+    navigateToPage("auth");
   };
 
   const startEvaluation = () => {
@@ -858,7 +821,7 @@ export default function App() {
       );
     }
     setResult(null);
-    navigateToPage("home");
+    navigateToPage("evaluate");
   };
 
   const handleProfileOnboardingSave = async (answers) => {
@@ -1202,7 +1165,10 @@ export default function App() {
     setConsentGranted(false);
     setResult(null);
     setResultSaved(null);
-    navigateToPage("landing", { replace: true });
+    setOnboarding(null);
+    setAnonOnboarding(null);
+    sessionStorage.removeItem(ANON_ONBOARDING_KEY);
+    navigateToPage("auth", { replace: true });
   };
 
   const handleNotificationClick = () => navigateToPage("leads");
@@ -1245,7 +1211,7 @@ export default function App() {
               })
             }
             onAuth={handleAuth}
-            onBack={() => navigateToPage("landing")}
+            onEvalAnon={() => navigateToPage("anon-onboarding")}
           />
         </div>
       );
@@ -1254,13 +1220,22 @@ export default function App() {
     if (page === "anon-onboarding") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
-          <div className="app-shell">
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("auth")} />
+          <section className="evaluation-panel">
+            <div className="section-heading compact">
+              <span className="eyebrow">Disponible</span>
+              <h1>Pre-evaluación financiera</h1>
+              <p>
+                Completa todos los campos para calcular un score orientativo. El
+                resultado no equivale a aprobación bancaria.
+              </p>
+            </div>
             <Onboarding
               isAnon
               onComplete={handleAnonOnboardingComplete}
+              onBirthDateSave={handleBirthDateSave}
             />
-          </div>
+          </section>
         </div>
       );
     }
@@ -1268,49 +1243,47 @@ export default function App() {
     if (page === "anon-evaluate") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
-          <div className="app-shell">
-            <section className="evaluation-panel">
-              <button className="secondary-button" type="button" onClick={() => navigateToPage("anon-onboarding")}>
-                Volver
-              </button>
-              <div className="section-heading compact">
-                <span className="eyebrow">Disponible</span>
-                <h1>Pre-evaluación financiera</h1>
-                <p>
-                  Completa todos los campos para calcular un score orientativo. El
-                  resultado no equivale a aprobación bancaria.
-                </p>
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("auth")} />
+          <section className="evaluation-panel">
+            <button className="secondary-button" type="button" onClick={() => navigateToPage("anon-onboarding")}>
+              Volver
+            </button>
+            <div className="section-heading compact">
+              <span className="eyebrow">Disponible</span>
+              <h1>Pre-evaluación financiera</h1>
+              <p>
+                Completa todos los campos para calcular un score orientativo. El
+                resultado no equivale a aprobación bancaria.
+              </p>
+            </div>
+            {anonOnboarding && (
+              <div className="context-summary">
+                <strong>Contexto inicial</strong>
+                <span>
+                  {anonOnboarding.comuna_interes} ·{" "}
+                  {plazoLabels[anonOnboarding.plazo_compra] || anonOnboarding.plazo_compra}
+                </span>
+                <button
+                  className="secondary-button compact-button"
+                  type="button"
+                  onClick={() => navigateToPage("anon-onboarding")}
+                >
+                  Editar contexto
+                </button>
               </div>
-              {anonOnboarding && (
-                <div className="context-summary">
-                  <strong>Contexto inicial</strong>
-                  <span>
-                    {anonOnboarding.comuna_interes} ·{" "}
-                    {plazoLabels[anonOnboarding.plazo_compra] || anonOnboarding.plazo_compra}
-                  </span>
-                  <button
-                    className="secondary-button compact-button"
-                    type="button"
-                    onClick={() => navigateToPage("anon-onboarding")}
-                  >
-                    Editar contexto
-                  </button>
-                </div>
-              )}
-              <ScoreForm
-                targetCommune={anonOnboarding?.comuna_interes}
-                objective={anonOnboarding?.objetivo_principal}
-                onboardingData={anonOnboarding}
-                birthDate={null}
-                profile={null}
-                consentGranted={true}
-                isAnon
-                onConsentAccept={() => {}}
-                onResult={handleAnonResult}
-              />
-            </section>
-          </div>
+            )}
+            <ScoreForm
+              targetCommune={anonOnboarding?.comuna_interes}
+              objective={anonOnboarding?.objetivo_principal}
+              onboardingData={anonOnboarding}
+              birthDate={anonOnboarding?.birth_date || null}
+              profile={null}
+              consentGranted={true}
+              isAnon
+              onConsentAccept={() => {}}
+              onResult={handleAnonResult}
+            />
+          </section>
         </div>
       );
     }
@@ -1318,8 +1291,8 @@ export default function App() {
     if (page === "signup-offer") {
       return (
         <div className="anon-shell">
-          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("landing")} />
-          <div className="app-shell">
+          <AnonHeader onLogin={() => navigateToPage("auth")} onHome={() => navigateToPage("auth")} />
+          <section className="evaluation-panel">
             <SignupOffer
               result={anonResult}
               anonBirthDate={anonInput?.birth_date}
@@ -1328,12 +1301,18 @@ export default function App() {
               loading={signupOfferLoading}
               error={signupOfferError}
             />
-          </div>
+          </section>
         </div>
       );
     }
 
-    return <LandingPage onStart={() => navigateToPage("anon-onboarding")} onLogin={() => navigateToPage("auth")} />;
+    return (
+      <div className="app-shell auth-shell">
+        <AuthPanel
+          onAuth={handleAuth}
+        />
+      </div>
+    );
   }
 
   return (
@@ -1347,6 +1326,7 @@ export default function App() {
         }
         onLogout={handleLogout}
       />
+      <main className="content"><div className="content-inner">
       {visibleError && (
         <div className="error-message dismissible-message">
           <span>{visibleError}</span>
@@ -1368,10 +1348,22 @@ export default function App() {
       />
 
       {page === "onboarding" && profile.role === roles.user ? (
-        <Onboarding
-          initialData={userOnboarding}
-          onComplete={handleOnboardingComplete}
-        />
+        <section className="evaluation-panel">
+          <div className="section-heading compact">
+            <span className="eyebrow">Disponible</span>
+            <h1>Pre-evaluación financiera</h1>
+            <p>
+              Completa todos los campos para calcular un score orientativo. El
+              resultado no equivale a aprobación bancaria.
+            </p>
+          </div>
+          <Onboarding
+            initialData={userOnboarding}
+            onComplete={handleOnboardingComplete}
+            isEditing
+            onBirthDateSave={handleBirthDateSave}
+          />
+        </section>
       ) : page === "dataconsent" && profile.role === roles.user ? (
         <DataConsent
           profile={profile}
@@ -1380,84 +1372,168 @@ export default function App() {
           onBack={() => navigateToPage(consentGranted ? "evaluate" : "onboarding")}
         />
       ) : page === "home" ? (
-        <>
-          <section className="hero">
-            <div className="hero-copy">
-              <span className="eyebrow">Solución inmobiliaria</span>
-              <h1>RutaHogar</h1>
-              {result && (
-                <div
-                  className={
-                    resultSaved === false ? "error-message" : "success-message"
-                  }
-                >
-                  {resultSaved === false
-                    ? `Score calculado: ${formatScore(result.score)} / ${result.classification}. No se pudo guardar en historial.`
-                    : resultSaved === true
-                      ? `Precalificación guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
-                      : `Score calculado: ${formatScore(result.score)} / ${result.classification}. Guardando historial...`}
-                </div>
-              )}
-              <p>
-                Plataforma para preevaluar leads inmobiliarios antes de iniciar
-                una evaluación bancaria formal. El foco del producto es entregar
-                una pre-evaluación financiera clara, rápida y orientativa.
-              </p>
-              <p className="hero-note">
-                Sin documentos, sin claves bancarias y sin aprobación bancaria.
-              </p>
-            </div>
-
-            <aside className="score-preview" aria-label="Resumen de RutaHogar">
-              <span className="preview-label">Flujo activo</span>
-              <strong>Formulario - Score - Recomendaciones</strong>
-              <p>Resultado orientativo: Alto, Medio o Bajo.</p>
-            </aside>
-          </section>
+        <section className="evaluation-panel">
+          <div className="section-heading">
+            <span className="eyebrow">Mi preparación financiera</span>
+            <h1>
+              Hola{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+            </h1>
+            <p>Este es tu resumen de preparación para comprar vivienda.</p>
+          </div>
 
           {result && (
-        <Result
-          data={result}
-          onRetryExplanation={
-            currentEvaluation && result?.evaluation_id === currentEvaluation.id
-              ? handleRetryAiExplanation
-              : undefined
-          }
-        />
-      )}
+            <div
+              className={
+                resultSaved === false ? "error-message" : "success-message"
+              }
+            >
+              {resultSaved === false
+                ? `Score calculado: ${formatScore(result.score)} / ${result.classification}. No se pudo guardar en historial.`
+                : resultSaved === true
+                  ? `Precalificación guardada: ${formatScore(result.score)} / ${result.classification}. Puedes revisar el detalle en Perfil.`
+                  : `Score calculado: ${formatScore(result.score)} / ${result.classification}. Guardando historial...`}
+            </div>
+          )}
 
-          <section className="section-block">
-            <div className="section-heading">
-              <span className="eyebrow">Mapa del producto</span>
-              <h2>Implementaciones planificadas</h2>
-              <p>
-                Estas tarjetas muestran la visión completa de RutaHogar.
-                Actualmente están habilitados el objetivo inmobiliario y la
-                pre-evaluación financiera.
-              </p>
+          <div className="dashboard-status-grid">
+            <div className="dashboard-card">
+              <span className="dashboard-card-label">Score financiero orientativo</span>
+              {currentScore ? (
+                <div className={`dashboard-score score-${currentScore.classification?.toLowerCase()}`}>
+                  <strong>{currentScore.score}</strong>
+                  <span>{currentScore.classification}</span>
+                </div>
+              ) : (
+                <p className="dashboard-empty">Sin evaluación aún</p>
+              )}
             </div>
 
-            <div className="module-grid">
-              {futureModules.map((module) => (
-                <article
-                  className={`module-card ${module.status === "Disponible" ? "is-active" : ""}`}
-                  key={module.title}
-                >
-                  <div>
-                    <span className="module-status">{module.status}</span>
-                    <h3>{module.title}</h3>
-                  </div>
-                  <p>{module.description}</p>
-                </article>
-              ))}
+            <div className="dashboard-card">
+              <span className="dashboard-card-label">Objetivo de compra</span>
+              {userOnboarding?.comuna_interes ? (
+                <div className="dashboard-card-value">
+                  <strong>
+                    {userOnboarding.tipo_propiedad === "departamento" ? "Departamento" :
+                     userOnboarding.tipo_propiedad === "casa" ? "Casa" :
+                     userOnboarding.tipo_propiedad === "indiferente" ? "Indiferente" :
+                     "Sin definir"}{" "}
+                    en {userOnboarding.comuna_interes}
+                  </strong>
+                  <span>
+                    {plazoLabels[userOnboarding.plazo_compra] || userOnboarding.plazo_compra || "Plazo sin definir"}
+                  </span>
+                </div>
+              ) : (
+                <p className="dashboard-empty">Completa el cuestionario para definir tu objetivo</p>
+              )}
             </div>
-          </section>
-        </>
+
+            <div className="dashboard-card">
+              <span className="dashboard-card-label">Estado actual</span>
+              {currentScore ? (
+                <div className={`dashboard-status-badge status-${currentScore.classification?.toLowerCase()}`}>
+                  {currentScore.classification === "Alto" && "Compatible"}
+                  {currentScore.classification === "Medio" && "Cercano"}
+                  {currentScore.classification === "Bajo" && "Requiere ajuste"}
+                </div>
+              ) : onboardingCompleted ? (
+                <div className="dashboard-status-badge status-pendiente">Pendiente de evaluación</div>
+              ) : (
+                <div className="dashboard-status-badge status-pendiente">Sin datos suficientes</div>
+              )}
+            </div>
+
+            <div className="dashboard-card">
+              <span className="dashboard-card-label">Principal brecha</span>
+              {currentEvaluation?.result?.improvement_plan?.length > 0 ? (
+                <div className="dashboard-card-value">
+                  <strong>{currentEvaluation.result.improvement_plan[0].title || "Revisa tu plan de mejora"}</strong>
+                </div>
+              ) : currentScore ? (
+                <p className="dashboard-empty">Sin brechas detectadas</p>
+              ) : (
+                <p className="dashboard-empty">Realiza tu pre-evaluación para ver brechas</p>
+              )}
+            </div>
+          </div>
+
+          <div className="dashboard-next-action">
+            <span className="dashboard-card-label">Tu siguiente mejor acción</span>
+            {!onboardingCompleted ? (
+              <div className="dashboard-action-card" onClick={() => navigateToPage("onboarding")}>
+                <div>
+                  <strong>Completa tu perfil financiero</strong>
+                  <p>Responde el cuestionario para obtener tu score orientativo.</p>
+                </div>
+                <span className="dashboard-action-arrow">→</span>
+              </div>
+            ) : !currentScore ? (
+              <div className="dashboard-action-card" onClick={startEvaluation}>
+                <div>
+                  <strong>Realiza tu pre-evaluación</strong>
+                  <p>Calcula tu score financiero orientativo en unos minutos.</p>
+                </div>
+                <span className="dashboard-action-arrow">→</span>
+              </div>
+            ) : currentScore?.classification === "Bajo" ? (
+              <div className="dashboard-action-card" onClick={() => navigateToPage("tracking")}>
+                <div>
+                  <strong>Revisa tu plan de mejora</strong>
+                  <p>Tu score indica áreas de mejora. Conoce los pasos para avanzar.</p>
+                </div>
+                <span className="dashboard-action-arrow">→</span>
+              </div>
+            ) : (
+              <div className="dashboard-action-card" onClick={() => navigateToPage("simulation")}>
+                <div>
+                  <strong>Simula proyectos compatibles</strong>
+                  <p>Compara propuestas referenciales o ingresa un valor manual.</p>
+                </div>
+                <span className="dashboard-action-arrow">→</span>
+              </div>
+            )}
+          </div>
+
+          <div className="dashboard-quick-access">
+            <div className="dashboard-access-card" onClick={() => navigateToPage("simulation")}>
+              <span className="dashboard-access-icon">📊</span>
+              <div>
+                <strong>Simulación</strong>
+                <p>Compara proyectos referenciales o ingresa un valor manual.</p>
+              </div>
+            </div>
+
+            <div className="dashboard-access-card" onClick={() => navigateToPage("tracking")}>
+              <span className="dashboard-access-icon">📋</span>
+              <div>
+                <strong>Plan de mejora</strong>
+                <p>Revisa metas de ahorro, deuda y próximos pasos.</p>
+              </div>
+            </div>
+
+            <div className="dashboard-access-card" onClick={() => navigateToPage("academia")}>
+              <span className="dashboard-access-icon">📚</span>
+              <div>
+                <strong>Academia</strong>
+                <p>Aprende conceptos como pie, dividendo, deuda y crédito hipotecario.</p>
+              </div>
+            </div>
+
+            <div className="dashboard-access-card" onClick={() => navigateToPage("recommendations")}>
+              <span className="dashboard-access-icon">💡</span>
+              <div>
+                <strong>Recomendaciones</strong>
+                <p>Consulta acciones sugeridas según tu perfil.</p>
+              </div>
+            </div>
+          </div>
+
+          <p className="hero-note">
+            RutaHogar no aprueba créditos hipotecarios. Los resultados son referenciales y no reemplazan una evaluación bancaria formal.
+          </p>
+        </section>
       ) : page === "evaluate" ? (
         <section className="evaluation-panel">
-          <button className="secondary-button" onClick={() => navigateToPage("home")}>
-            Volver al inicio
-          </button>
           <div className="section-heading compact">
             <span className="eyebrow">Disponible</span>
             <h1>Pre-evaluación financiera</h1>
@@ -1572,6 +1648,7 @@ export default function App() {
           </div>
         </section>
       )}
+      </div></main>
     </div>
   );
 }

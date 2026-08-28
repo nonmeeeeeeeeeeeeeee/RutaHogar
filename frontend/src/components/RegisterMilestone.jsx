@@ -97,28 +97,28 @@ export default function RegisterMilestone({ evaluation, onBack, onRegister }) {
         <button
           className={`card-button ${activeType === 'ahorro' ? 'active' : ''}`}
           onClick={() => { setActiveType('ahorro'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'ahorro' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'ahorro' ? '#45a68e' : '#2D8A4E', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
           <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💰 Aumento de Ahorro</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He logrado ahorrar más dinero para mi pie.</p>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#E8E5DF" }}>He logrado ahorrar más dinero para mi pie.</p>
         </button>
 
         <button
           className={`card-button ${activeType === 'deuda' ? 'active' : ''}`}
           onClick={() => { setActiveType('deuda'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'deuda' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'deuda' ? '#45a68e' : '#2D8A4E', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
           <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💳 Reducción de Deuda</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He pagado parte o la totalidad de mis deudas.</p>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#E8E5DF" }}>He pagado parte o la totalidad de mis deudas.</p>
         </button>
 
         <button
           className={`card-button ${activeType === 'laboral' ? 'active' : ''}`}
           onClick={() => { setActiveType('laboral'); setError(""); }}
-          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'laboral' ? '#45a68e' : '#246354', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
+          style={{ flex: 1, padding: "1.5rem", borderRadius: "8px", border: "none", background: activeType === 'laboral' ? '#45a68e' : '#2D8A4E', color: "white", cursor: "pointer", textAlign: "left", transition: "background 0.2s" }}
         >
           <h3 style={{ margin: "0 0 0.5rem 0", fontSize: "1.1rem", color: "white" }}>💼 Mejora Laboral</h3>
-          <p style={{ margin: 0, fontSize: "0.9rem", color: "#e2e8f0" }}>He cambiado mi tipo de contrato o antigüedad.</p>
+          <p style={{ margin: 0, fontSize: "0.9rem", color: "#E8E5DF" }}>He cambiado mi tipo de contrato o antigüedad.</p>
         </button>
       </div>
 

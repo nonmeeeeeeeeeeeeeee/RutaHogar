@@ -32,7 +32,6 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
   const adjustment = useMemo(() => getClassificationAdjustment(data), [data]);
   const factors = useMemo(() => getUserResultFactors(data), [data]);
 
-  // HU12 - E3: los términos financieros detectados en el texto abren la Academia.
   const openInAcademy = () => onNavigate?.("academia");
 
   if (!data) {
@@ -53,10 +52,12 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
 
   return (
     <section className="section-block recommendations-panel">
-      <div className="section-heading">
-        <span className="eyebrow">Recomendaciones inteligentes</span>
-        <h1>Orientación personalizada</h1>
-        <p>Resumen basado en tu última preevaluación, incluyendo compatibilidad, factores principales y recomendaciones generales.</p>
+      <div className="page-head">
+        <div>
+          <span className="eyebrow">Recomendaciones inteligentes</span>
+          <h1>Orientación personalizada</h1>
+          <p>Resumen basado en tu última preevaluación, incluyendo compatibilidad, factores principales y recomendaciones generales.</p>
+        </div>
       </div>
 
       <div className="recommendation-summary">
@@ -77,14 +78,14 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
       </div>
 
       {data.user_explanation_deterministic ? (
-        <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
-          <strong>Explicación orientativa</strong>
+        <section className="recommendation-ai section-gap">
+          <strong><i className="ti ti-info-circle"></i> Explicación orientativa</strong>
           <p>{data.user_explanation_deterministic}</p>
         </section>
       ) : null}
 
-      <section className="recommendation-ai" style={{ marginBottom: "1.5rem" }}>
-        <strong>Explicación mejorada con IA</strong>
+      <section className="recommendation-ai section-gap">
+        <strong><i className="ti ti-sparkles"></i> Explicación mejorada con IA</strong>
 
         <AiExplanationBlock
           text={evaluation?.result?.ai_explanation}
@@ -101,12 +102,18 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
         <div className="recommendation-grid">
           {factors.length ? (
             <section>
-              <strong>Factores determinantes de tu resultado</strong>
-              <ul>
+              <strong><i className="ti ti-chart-bar"></i> Factores determinantes de tu resultado</strong>
+              <ul className="factor-list">
                 {factors.map((factor, index) => (
-                  <li key={`${factor.title}-${index}`}>
-                    <strong>{factor.title}</strong>
-                    {factor.description ? <p>{factor.description}</p> : null}
+                  <li className="factor-item" key={`${factor.title}-${index}`}>
+                    <span className={`factor-dot ${Number(factor.score) >= 70 ? "ok" : Number(factor.score) >= 40 ? "warn" : "bad"}`} />
+                    <div className="factor-info">
+                      <span className="factor-name">{factor.title}</span>
+                      {factor.description ? <span className="factor-desc">{factor.description}</span> : null}
+                    </div>
+                    {Number.isFinite(Number(factor.score)) && (
+                      <span className="factor-score">{factor.score}</span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -115,7 +122,7 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
 
           {hasObjectData(data.project_fit) ? (
             <section>
-              <strong>Compatibilidad con tu objetivo inmobiliario</strong>
+              <strong><i className="ti ti-home-heart"></i> Compatibilidad con tu objetivo inmobiliario</strong>
               <ul>
                 <li>Estado: {data.project_fit.classification || data.project_fit.status || "Sin dato"}</li>
                 <li>Brecha de ingreso: {formatClp(data.project_fit.income_gap)}</li>
@@ -129,65 +136,55 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
 
       <div className="recommendation-grid">
         <section>
-          <strong>Recomendaciones personalizadas</strong>
+          <strong><i className="ti ti-lightbulb"></i> Recomendaciones personalizadas</strong>
           <ul>
             {data.recommendations.map((item) => (
               <li key={item.text}>
-                {item.text}
-                {item.benefit && <p className="benefit"><b>Beneficio esperado: </b>{item.benefit}</p>}
+                <i className="ti ti-circle-check recommendation-icon"></i>
+                <div>
+                  {item.text}
+                  {item.benefit && <p className="benefit"><b>Beneficio esperado: </b>{item.benefit}</p>}
+                </div>
               </li>
             ))}
           </ul>
         </section>
 
         <section>
-          <strong>Acciones sugeridas</strong>
+          <strong><i className="ti ti-checkbox"></i> Acciones sugeridas</strong>
           <ul>
             {data.actions.map((item) => (
-              <li key={item}><LinkedText text={item} onOpenArticle={openInAcademy} /></li>
+              <li key={item}><i className="ti ti-arrow-right recommendation-icon"></i><LinkedText text={item} onOpenArticle={openInAcademy} /></li>
             ))}
           </ul>
         </section>
       </div>
 
       {evaluation?.result?.improvement_plan?.length > 0 && (
-        <div className="improvement-plan-section" style={{ marginTop: "2rem", marginBottom: "2rem" }}>
-          <h2 style={{ fontSize: "1.4rem", color: "var(--color-neutral-900)" }}>Plan de Mejora Estratégico</h2>
-          <p style={{ marginBottom: "1rem", color: "var(--color-neutral-700)" }}>Priorizado por impacto según tu perfil actual.</p>
-          <div className="plan-grid" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {evaluation.result.improvement_plan.map((item, idx) => (
-              <div 
-                key={idx} 
-                className="plan-card" 
-                style={{ 
-                  padding: "1.2rem", 
-                  borderRadius: "8px", 
-                  border: `1px solid ${item.impact_level === 'Alto' ? '#ffcccc' : item.impact_level === 'Medio' ? '#fff2cc' : '#cce5ff'}`,
-                  backgroundColor: `${item.impact_level === 'Alto' ? '#fff0f0' : item.impact_level === 'Medio' ? '#fffdf0' : '#f0f8ff'}`,
-                  boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                  <strong style={{ fontSize: "1.1rem", color: "var(--color-neutral-900)" }}>{item.category}</strong>
-                  <span style={{ 
-                    fontWeight: "600", 
-                    padding: "4px 10px", 
-                    borderRadius: "12px", 
-                    backgroundColor: item.impact_level === 'Alto' ? '#ef4444' : item.impact_level === 'Medio' ? '#eab308' : '#3b82f6',
-                    color: item.impact_level === 'Medio' ? '#000' : '#fff',
-                    fontSize: "0.85rem"
-                  }}>
-                    Impacto: {item.impact_level}
-                  </span>
-                </div>
-                <p style={{ margin: "0 0 0.75rem 0", lineHeight: "1.5", color: "var(--color-neutral-800)" }}>{item.description}</p>
-                {item.expected_benefit && (
-                  <div style={{ fontSize: "0.95rem", color: "var(--color-neutral-700)", marginTop: "0.5rem", borderTop: "1px dashed rgba(0,0,0,0.1)", paddingTop: "0.75rem" }}>
-                    <strong>Beneficio esperado:</strong> {item.expected_benefit}
+        <div className="improvement-plan-section section-gap">
+          <h2><i className="ti ti-road"></i> Plan de mejora estratégico</h2>
+          <p>Priorizado por impacto según tu perfil actual.</p>
+          <div className="next-steps-grid">
+            {evaluation.result.improvement_plan.map((item, idx) => {
+              const impactLevel = item.impact_level || "";
+              const impactClass = impactLevel === "Alto" ? "alto" : impactLevel === "Medio" ? "medio" : "bajo";
+              return (
+                <div className={`plan-card plan-card--${impactClass}`} key={idx}>
+                  <div className="plan-card-header">
+                    <strong>{item.category}</strong>
+                    <span className={`impact-badge impact-badge--${impactClass}`}>
+                      Impacto: {item.impact_level}
+                    </span>
                   </div>
-                )}
-              </div>
-            ))}
+                  <p className="plan-card-desc">{item.description}</p>
+                  {item.expected_benefit && (
+                    <div className="plan-card-benefit">
+                      <strong>Beneficio esperado:</strong> {item.expected_benefit}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -195,10 +192,11 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
       {evaluation && <BankingChecklist evaluation={evaluation} />}
 
       <div className="warning-note">
+        <i className="ti ti-alert-triangle"></i>
         Esta orientación no reemplaza una evaluación bancaria formal.
       </div>
 
-      <div style={{ textAlign: "center", marginTop: "1.5rem" }}>
+      <div className="recommendations-cta">
         <button className="primary-button" type="button" onClick={() => onNavigate?.("tracking")}>
           Ir al plan de mejora
         </button>
