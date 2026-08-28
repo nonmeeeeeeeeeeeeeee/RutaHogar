@@ -22,6 +22,8 @@ Contrato congelado que expone [[HU7-ProjectCatalog|HU 7]] y consume
   tipo,                        // 'departamento' | 'casa'
   precio_min_uf, precio_max_uf,
   estado,                      // 'disponible' | 'en_construccion' | 'agotado'
+  descripcion,                 // opcional · texto de vitrina, null si no se cargó
+  entrega_estimada,            // opcional · 'YYYY-MM', null si no se comprometió
   ejecutivos: [
     { ejecutivo_id, email, nombre, estado, source }
     // estado: 'vinculado' | 'pendiente'   ·   source: 'manual' | 'crm'
@@ -35,6 +37,32 @@ el admin global puede pedir una inmobiliaria concreta o todas.
 `getAvailableProjects()` es el feed del matching.
 
 **Cambiar un nombre de campo rompe una especificación ya congelada** (Spike 1 E4 §8.4).
+
+### Enmienda aditiva — campos comerciales (CATALOGO-UNICO)
+
+`descripcion` y `entrega_estimada` se agregaron cuando la página de simulación
+dejó de leer su propio arreglo hardcodeado (`frontend/src/data/mockProjects.js`,
+ya eliminado) y pasó a leer este catálogo. Sin ellos, dos datos que el usuario
+final ya veía se habrían perdido en la consolidación. Ver
+`docs/stories/CATALOGO-UNICO/PLAN.md`.
+
+Es una enmienda **aditiva**: ningún campo previo cambió de nombre ni de tipo, así
+que HU 13 se especifica igual con o sin ella.
+
+- Ambos son **opcionales** y llegan `null` en toda fila anterior a la migración
+  `supabase/migrations/20260827090000_proyectos_campos_comerciales.sql`. No hay
+  backfill: la UI no renderiza nada cuando faltan. **Nunca asumir que existen.**
+- `entrega_estimada` es `text` con formato `'YYYY-MM'`, no `date`: la entrega se
+  cotiza por mes y un `date` obligaría a inventar un día que nadie declaró. El
+  formato está garantizado por un `check` en la base y validado en
+  `projectValidation.js`.
+- `descripcion` es texto de vitrina, tope 500 caracteres. No participa en ninguna
+  decisión.
+- **Ninguno de los dos es señal de afinidad.** En particular, cruzar
+  `entrega_estimada` con el `plazo_compra` del lead sería una regla nueva del
+  matching, con su propia fila de penalización y una redistribución del
+  presupuesto de 100 puntos: es una decisión de diseño de HU 13, no un efecto
+  secundario de esta migración.
 
 ---
 
@@ -111,6 +139,30 @@ No cambiar esos valores sin actualizar el spike.
 Los demás cubren a propósito: proyecto agotado (E4) y sobre el tope FOGAES, venta
 en verde dentro del feed, comuna fuera de `PRECIOS_REFERENCIA_UF`, y proyecto de
 precio único.
+
+`20260827090100_demo_projects_seed.sql` agrega otros 8 proyectos a *Inmobiliaria Andes
+(demo)*: son los que la página de simulación traía hardcodeados antes de
+CATALOGO-UNICO, todos de precio único y con `descripcion` y `entrega_estimada`
+cargadas. Se insertan con `on conflict do nothing`, así que re-ejecutar el seed
+no pisa ediciones hechas después desde `/admin/proyectos`.
+
+---
+
+## Consumidores actuales
+
+Además del panel de administración (HU 7) y del matching (HU 13), la página de
+simulación (`frontend/src/components/SimulationPage.jsx`) consume
+`getAvailableProjects()` a través del adaptador
+`frontend/src/lib/simulation/projectAdapter.js`, que traduce el vocabulario del
+catálogo al de la simulación (`tipo` → `tipo_vivienda`, `precio_min_uf` →
+`valor_uf`, `descripcion` → `descripcion_corta`).
+
+El cálculo de escenario necesita **un** número y el catálogo guarda un **rango**.
+El adaptador usa `precio_min_uf` — la unidad más barata — y la UI etiqueta el
+resultado `"desde X UF"`, de modo que nadie lea un escenario como el precio del
+proyecto. El rango completo viaja junto al valor puntual: el adaptador no pierde
+información. Cuando `precio_min_uf == precio_max_uf` el proyecto tiene precio
+único y la etiqueta muestra la cifra desnuda.
 
 ---
 
