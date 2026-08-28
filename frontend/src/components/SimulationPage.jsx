@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { mockProjects } from "../data/mockProjects";
 import {
   buildAccessibleAlternatives,
   buildComparisonInsights,
@@ -8,6 +7,12 @@ import {
   getMaxValueRange,
   getScenarioFromManualValue,
 } from "../lib/simulation/compatibility";
+import {
+  catalogProjectsToSimulation,
+  formatDeliveryMonth,
+  formatProjectPrice,
+} from "../lib/simulation/projectAdapter";
+import { getAvailableProjects } from "../services/projectService";
 import { CLP_FORMATTER } from "../services/financialTracking";
 import { plazoLabels, propertyLabels } from "../constants";
 
@@ -61,7 +66,7 @@ function getGapLabel(gap) {
 
 function getProjectLabel(project) {
   if (!project) return "Valor manual";
-  return `${project.nombre} · ${project.comuna} · ${formatUf(project.valor_uf)}`;
+  return `${project.nombre} · ${project.comuna} · ${formatProjectPrice(project)}`;
 }
 
 function projectToComparable(project, context, ufValueClp) {
@@ -334,7 +339,10 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
   );
   const ufValueClp = Number(context.uf_value_clp) || 40695;
   const [mode, setMode] = useState("project");
-  const [selectedProjectId, setSelectedProjectId] = useState(mockProjects[0]?.id || "");
+  const [projects, setProjects] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState("");
   const [compareProjectId, setCompareProjectId] = useState("");
   const [manualUf, setManualUf] = useState("");
   const [comparison, setComparison] = useState(null);
@@ -348,13 +356,44 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
   });
   const comparisonRef = useRef(null);
 
+  // El catálogo (HU 7) es la única fuente de proyectos. Antes se leía un
+  // arreglo hardcodeado en el bundle, que quedó fuera de sincronía con lo que
+  // el administrador mantiene. Ver docs/stories/CATALOGO-UNICO/PLAN.md.
+  useEffect(() => {
+    let active = true;
+
+    getAvailableProjects()
+      .then((rows) => {
+        if (!active) return;
+        setProjects(catalogProjectsToSimulation(rows));
+      })
+      .catch((err) => {
+        if (!active) return;
+        setProjectsError(err.message || "No se pudieron cargar los proyectos.");
+      })
+      .finally(() => {
+        if (active) setProjectsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!projects.length) return;
+    setSelectedProjectId((prev) =>
+      prev && projects.some((project) => project.id === prev) ? prev : projects[0].id,
+    );
+  }, [projects]);
+
   const selectedProject = useMemo(
-    () => mockProjects.find((project) => project.id === selectedProjectId) || mockProjects[0] || null,
-    [selectedProjectId],
+    () => projects.find((project) => project.id === selectedProjectId) || projects[0] || null,
+    [projects, selectedProjectId],
   );
   const compareProject = useMemo(
-    () => mockProjects.find((project) => project.id === compareProjectId) || null,
-    [compareProjectId],
+    () => projects.find((project) => project.id === compareProjectId) || null,
+    [compareProjectId, projects],
   );
 
   const manualScenario = useMemo(
@@ -382,8 +421,8 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
     [context, scenario],
   );
   const alternatives = useMemo(
-    () => buildAccessibleAlternatives(mockProjects, context, onboarding, 4),
-    [context, onboarding],
+    () => buildAccessibleAlternatives(projects, context, onboarding, 4),
+    [context, onboarding, projects],
   );
   const maxRange = useMemo(() => getMaxValueRange(context), [context]);
   const hasManualValue = mode !== "manual" || Number(manualUf) > 0;
@@ -429,7 +468,7 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
       setComparison((prev) => (prev?.source === "project-selector" ? null : prev));
       return;
     }
-    const nextProject = mockProjects.find((project) => project.id === projectId);
+    const nextProject = projects.find((project) => project.id === projectId);
     const nextResult = projectToComparable(nextProject, context, ufValueClp);
     if (!currentComparable || !nextResult) {
       setComparison({ error: true });
@@ -451,6 +490,8 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
       comuna: project.comuna,
       tipo_vivienda: project.tipo_vivienda,
       valor_uf: project.valor_uf,
+      precio_min_uf: project.precio_min_uf,
+      precio_max_uf: project.precio_max_uf,
       valor_clp: item.valueClp,
       selected_at: new Date().toISOString(),
     };
@@ -482,6 +523,12 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
   if (!evaluation) {
     return <RecommendationEmpty onStartEvaluation={onStartEvaluation} />;
   }
+
+  const hasProjects = projects.length > 0;
+  const catalogNotice = projectsLoading
+    ? "Cargando proyectos del catálogo…"
+    : projectsError ||
+      (hasProjects ? "" : "No hay proyectos disponibles en el catálogo por ahora. Puedes simular con un valor manual.");
 
   const typePreference =
     propertyLabels[onboarding?.tipo_propiedad] ||
@@ -533,15 +580,21 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
             {mode === "project" ? (
               <label className="simulator-field">
                 Proyecto referencial
-                <select value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)}>
-                  {mockProjects.map((project) => (
+                <select
+                  value={selectedProjectId}
+                  disabled={!hasProjects}
+                  onChange={(event) => setSelectedProjectId(event.target.value)}
+                >
+                  {hasProjects ? null : <option value="">Sin proyectos disponibles</option>}
+                  {projects.map((project) => (
                     <option key={project.id} value={project.id}>
                       {getProjectLabel(project)}
                     </option>
                   ))}
                 </select>
                 <span className="field-help">
-                  Los proyectos mostrados son referenciales para simulación y pueden no representar disponibilidad real.
+                  {catalogNotice ||
+                    "Los proyectos mostrados son referenciales para simulación y pueden no representar disponibilidad real. El precio parte en la unidad más económica del proyecto."}
                 </span>
               </label>
             ) : (
@@ -561,9 +614,15 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
 
             <label className="simulator-field compare-field">
               Comparar con otro proyecto
-              <select value={compareProjectId} onChange={(event) => handleCompareProjectChange(event.target.value)}>
-                <option value="">Selecciona proyecto para comparar</option>
-                {mockProjects.map((project) => (
+              <select
+                value={compareProjectId}
+                disabled={!hasProjects}
+                onChange={(event) => handleCompareProjectChange(event.target.value)}
+              >
+                <option value="">
+                  {hasProjects ? "Selecciona proyecto para comparar" : "Sin proyectos disponibles"}
+                </option>
+                {projects.map((project) => (
                   <option key={project.id} value={project.id}>
                     {getProjectLabel(project)}
                   </option>
@@ -744,6 +803,19 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
               <span className="eyebrow">Escenario evaluado</span>
               <h2>{scenario.label}</h2>
               <p>{scenario.comuna || "Valor ingresado manualmente"} · {scenario.tipo_vivienda || "Tipo no especificado"}</p>
+              {scenario.project ? (
+                <>
+                  <p>
+                    {formatProjectPrice(scenario.project)}
+                    {scenario.project.entrega_estimada
+                      ? ` · Entrega estimada: ${formatDeliveryMonth(scenario.project.entrega_estimada)}`
+                      : ""}
+                  </p>
+                  {scenario.project.descripcion_corta ? (
+                    <p className="simulation-estimate-note">{scenario.project.descripcion_corta}</p>
+                  ) : null}
+                </>
+              ) : null}
             </div>
             <span className={`simulation-status ${statusClass[scenarioResult.status] || "adjust"}`}>
               {scenarioResult.status}
@@ -788,7 +860,9 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
         </div>
       ) : (
         <div className="warning-box">
-          Ingresa un valor de vivienda en UF para calcular el escenario manual.
+          {mode === "project"
+            ? catalogNotice || "Selecciona un proyecto para calcular el escenario."
+            : "Ingresa un valor de vivienda en UF para calcular el escenario manual."}
         </div>
       )}
 
@@ -807,7 +881,7 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
               <span className="eyebrow">Proyecto objetivo referencial</span>
               <strong>{targetProject.nombre}</strong>
               <small>
-                {targetProject.comuna} · {propertyLabels[targetProject.tipo_vivienda] || targetProject.tipo_vivienda} · {formatUf(targetProject.valor_uf)}
+                {targetProject.comuna} · {propertyLabels[targetProject.tipo_vivienda] || targetProject.tipo_vivienda} · {formatProjectPrice(targetProject)}
               </small>
             </div>
             <button className="secondary-button compact-button" type="button" onClick={handleClearTargetProject}>
@@ -815,6 +889,12 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
             </button>
           </div>
         ) : null}
+
+        {hasProjects ? null : (
+          <div className="warning-box">
+            {catalogNotice}
+          </div>
+        )}
 
         <div className="alternative-grid">
           {alternatives.map((item) => (
@@ -825,11 +905,14 @@ export default function SimulationPage({ evaluation, onboarding, onStartEvaluati
                 <h3>{item.project.nombre}</h3>
                 <p>{item.project.comuna} · {propertyLabels[item.project.tipo_vivienda] || item.project.tipo_vivienda}</p>
               </div>
-              <strong>{formatUf(item.valueUf)} · {formatClp(item.valueClp)}</strong>
+              <strong>{formatProjectPrice(item.project)} · {formatClp(item.valueClp)}</strong>
               <p>Brecha principal: {getGapLabel(item.mainGap)}</p>
               <p>Pie mínimo: {formatUfClp(item.pieMinimoUf, item.pieMinimo)}</p>
               {item.preference.communeMatch ? <span className="alternative-benefit">Coincide con tu comuna objetivo</span> : null}
               {item.preference.typeMatch ? <span className="alternative-benefit">Coincide con tu tipo de vivienda</span> : null}
+              {item.project.entrega_estimada ? (
+                <p>Entrega estimada: {formatDeliveryMonth(item.project.entrega_estimada)}</p>
+              ) : null}
               <small>{item.project.descripcion_corta}</small>
               <div className="alternative-actions">
                 <button

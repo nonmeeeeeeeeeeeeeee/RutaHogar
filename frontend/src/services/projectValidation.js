@@ -10,6 +10,12 @@ function toNumber(value) {
   return Number(value);
 }
 
+const DESCRIPCION_MAX_LENGTH = 500;
+
+// 'YYYY-MM'. Espejo exacto de proyectos_entrega_estimada_check en
+// 20260827_proyectos_campos_comerciales.sql.
+const entregaEstimadaPattern = /^\d{4}-(0[1-9]|1[0-2])$/;
+
 export function validateProject(input = {}) {
   const errors = {};
   const nombre = String(input.nombre ?? "").trim();
@@ -19,6 +25,8 @@ export function validateProject(input = {}) {
   const inmobiliariaId = String(input.inmobiliaria_id ?? "").trim();
   const precioMin = toNumber(input.precio_min_uf);
   const precioMax = toNumber(input.precio_max_uf);
+  const descripcion = String(input.descripcion ?? "").trim();
+  const entregaEstimada = String(input.entrega_estimada ?? "").trim();
 
   if (!nombre) errors.nombre = "Ingresa el nombre del proyecto.";
   if (!inmobiliariaId) errors.inmobiliaria_id = "Selecciona la inmobiliaria del proyecto.";
@@ -55,6 +63,17 @@ export function validateProject(input = {}) {
     precioMin > precioMax
   ) {
     errors.precio_max_uf = "El precio máximo debe ser mayor o igual al mínimo.";
+  }
+
+  // Campos comerciales (CATALOGO-UNICO): siempre opcionales. Las filas
+  // anteriores a la migración los tienen en NULL y deben seguir siendo
+  // editables sin rellenarlos.
+  if (descripcion.length > DESCRIPCION_MAX_LENGTH) {
+    errors.descripcion = `La descripción no puede superar los ${DESCRIPCION_MAX_LENGTH} caracteres.`;
+  }
+
+  if (entregaEstimada && !entregaEstimadaPattern.test(entregaEstimada)) {
+    errors.entrega_estimada = "Usa el formato AAAA-MM, con un mes entre 01 y 12.";
   }
 
   return { ok: Object.keys(errors).length === 0, errors };
