@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import AcademiaFinanciera from "./components/AcademiaFinanciera";
 import AdminPanel from "./components/AdminPanel";
+import AdminProjectCatalog from "./components/AdminProjectCatalog";
 import AnonHeader from "./components/AnonHeader";
 import AuthPanel from "./components/AuthPanel";
 import DashboardLeads from "./components/DashboardLeads";
@@ -19,6 +20,7 @@ import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
+import SetPassword from "./components/SetPassword";
 import SimulationPage from "./components/SimulationPage";
 import SignupOffer from "./components/SignupOffer";
 import RegisterMilestone from "./components/RegisterMilestone";
@@ -244,6 +246,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "profile") return "/perfil";
   if (page === "leads") return "/dashboard";
   if (page === "admin") return "/admin";
+  if (page === "admin-projects") return "/admin/proyectos";
   return "/inicio";
 };
 
@@ -265,7 +268,12 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/dashboard",
     "/ejecutivo/leads",
     "/admin",
+    "/admin/proyectos",
+    "/definir-password",
   ].includes(path);
+
+  // Enlace de recuperación / invitación: vale con o sin sesión previa.
+  if (path === "/definir-password") return { page: "set-password" };
 
   if (!profile) {
     if (unknownRoute) return { page: "landing", path: "/" };
@@ -273,7 +281,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/admin/proyectos", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "landing", path: path === "/inicio" ? "/" : undefined };
@@ -311,6 +319,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
   if (profile.role === roles.admin) {
     if (path === "/") return { page: "landing" };
     if (path === "/admin") return { page: "admin" };
+    if (path === "/admin/proyectos") return { page: "admin-projects" };
     if (path === "/dashboard" || path === "/ejecutivo/leads") return { page: "leads", path: "/dashboard" };
     if (path === "/inicio") return { page: "admin", path: "/admin" };
     return { page: "admin", path: "/admin" };
@@ -321,6 +330,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
 
 const getRouteForPage = (page, profile, options = {}) => {
   if (page === "landing") return "/";
+  if (page === "set-password") return "/definir-password";
   if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
   if (page === "anon-onboarding" || page === "anon-evaluate") return "/precalificacion";
   if (!profile) return "/";
@@ -482,6 +492,9 @@ export default function App() {
   useEffect(() => {
     const route = resolveRouteForPath(pathname, profile, Boolean(anonOnboarding));
     setPage(route.page);
+    // En /definir-password el hash trae los tokens de Supabase: limpiarlo aquí
+    // dejaría al usuario sin sesión de recuperación.
+    if (route.page === "set-password") return;
     if ((route.path && route.path !== pathname) || window.location.href.includes("#")) {
       updateBrowserPath(route.path || pathname, { replace: true });
     }
@@ -1209,6 +1222,14 @@ export default function App() {
 
   const handleDismissNotification = () => markLeadsSeen();
 
+  if (page === "set-password") {
+    return (
+      <div className="app-shell auth-shell">
+        <SetPassword onGoToLogin={() => navigateToPage("auth")} />
+      </div>
+    );
+  }
+
   if (page === "landing") {
     const openDashboard = () => navigateToPage(getInitialPageForProfile(profile));
 
@@ -1563,6 +1584,8 @@ export default function App() {
         <DashboardLeads evaluations={evaluations} />
       ) : page === "admin" && profile.role === roles.admin ? (
         <AdminPanel evaluations={evaluations} profile={profile} />
+      ) : page === "admin-projects" && profile.role === roles.admin ? (
+        <AdminProjectCatalog />
       ) : (
         <section className="section-block">
           <div className="section-heading">

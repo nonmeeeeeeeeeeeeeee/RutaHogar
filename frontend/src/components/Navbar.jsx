@@ -14,6 +14,7 @@ const navByRole = {
   ],
   [roles.admin]: [
     { id: "admin", label: "Panel Admin" },
+    { id: "admin-projects", label: "Proyectos" },
     { id: "leads", label: "Dashboard Leads" },
   ],
 };
