@@ -26,7 +26,7 @@ import { useLeads } from "./hooks/useLeads";
 import { normalizeDisplayList, normalizeDisplayText, normalizeImprovementPlan, sanitizeAiText } from "./utils/text";
 import { createGoal, getGoals, updateGoalProgress, updateGoalStatus } from "./services/goalsService";
 import { getStoredAuth, roles, signOut, signUp, updateStoredProfile } from "./services/auth";
-import { buildHousingNotViableRecommendation, buildHousingPlanSnapshot, calculateHousingSavings, getHousingPropertyPrice } from "./services/housingSavingsPlanService";
+import { buildHousingPlanSnapshot, calculateHousingSavings, getHousingPropertyPrice } from "./services/housingSavingsPlanService";
 import { appendScoringEvent } from "./services/getScoringHistory";
 import {
   getConsent,
@@ -984,19 +984,22 @@ export default function App() {
       const price = getHousingPropertyPrice(currentEvaluation);
       const housingInfo = price > 0 ? calculateHousingSavings(input, price) : null;
 
-      if (!housingInfo || housingInfo.error || !housingInfo.isViable) {
-        const recommendation =
-          housingInfo && !housingInfo.error
-            ? buildHousingNotViableRecommendation(housingInfo).message
-            : "";
-        setDataError(
-          recommendation ||
-            "El plan no es viable actualmente. Ajusta deuda, ingreso o escenario antes de aceptar.",
-        );
-        return;
+      let snapshot;
+      if (housingInfo && !housingInfo.error && housingInfo.isViable) {
+        snapshot = buildHousingPlanSnapshot(housingInfo, housingPieType || "minimo");
+      } else {
+        snapshot = {
+          pie_type: housingPieType || "minimo",
+          property_price: price || 0,
+          pie_required: 0,
+          monthly_target: 0,
+          months: 0,
+          gap: 0,
+          current_savings: Number(input.ahorro_disponible) || 0,
+          progress: null,
+        };
       }
 
-      const snapshot = buildHousingPlanSnapshot(housingInfo, housingPieType || "minimo");
       const updatedEvaluation = await acceptEvaluationPlan(
         currentEvaluation.id,
         userId || profile?.email || "local-user",
@@ -1019,12 +1022,9 @@ export default function App() {
           },
         });
       }
-      setDataError(
-        "Plan de ahorro confirmado. Ya puedes registrar tu ahorro mes a mes.",
-      );
     } catch (err) {
       console.error(err);
-      setDataError("No pudimos activar el plan. Intentalo nuevamente.");
+      setDataError("No pudimos activar el plan. Inténtalo nuevamente.");
     }
   };
 
@@ -1624,6 +1624,7 @@ export default function App() {
           evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onStartEvaluation={startEvaluation}
           onNavigate={navigateToPage}
+          onRetryExplanation={handleRetryAiExplanation}
         />
       ) : page === "simulation" && profile.role === roles.user ? (
         <SimulationPage
