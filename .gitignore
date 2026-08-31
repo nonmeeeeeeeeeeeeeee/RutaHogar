@@ -1,5 +1,6 @@
 frontend/.env.local
 backend/.venv/
+backend/venv/
 frontend/.env
 backend/ .env
 .env
