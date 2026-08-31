@@ -1,5 +1,7 @@
 # Entregable 1 — Justificación de Propuesta de Solución
 
+> **Documento entregado — congelado.** Este informe usa la numeración vigente a su fecha de entrega y se conserva tal como fue presentado. No se actualiza con cambios posteriores del backlog.
+
 | **Proyecto**         | **RutaHogar** [Grupo 15-SJ] |
 | :------------------- | :--------------------------- |
 | **Descripción breve** | El producto está orientado a empresas inmobiliarias y leads inmobiliarios, ya que el problema radica principalmente en la dificultad de identificar tempranamente qué leads tienen reales probabilidades de compra, lo que genera pérdida de tiempo y baja eficiencia para las inmobiliarias, y frustración en los clientes. El problema se busca resolver mediante una plataforma de scoring predictivo y acompañamiento digital que evalúa y clasifica a los leads en tiempo real. Agrega valor a través de una mejor priorización comercial, reducción del tiempo perdido en prospectos no viables y preparación progresiva de futuros compradores. Se diferencia de alternativas como Creditú, lidz.ai y tuhipotecario.cl, siendo su característica distintiva la intervención temprana en el embudo, no sólo evaluando, sino también guiando y transformando leads desde el inicio. |

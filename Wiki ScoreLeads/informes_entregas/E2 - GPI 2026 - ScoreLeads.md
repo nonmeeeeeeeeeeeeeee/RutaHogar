@@ -1,4 +1,7 @@
 # Historias de Usuario (Corregidas)
+
+> **Documento entregado — congelado.** Este informe usa la numeración vigente a su fecha de entrega y se conserva tal como fue presentado. No se actualiza con cambios posteriores del backlog.
+
 ## RutaHogar - Campus San Joaquín
 
 ---
