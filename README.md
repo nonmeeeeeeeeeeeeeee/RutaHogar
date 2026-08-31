@@ -1,14 +1,14 @@
-# RutaHogar
+# ScoreLeads
 
 Professional platform for real-estate financial prequalification (React
-frontend + FastAPI backend). RutaHogar is no longer documented as an MVP: it is
+frontend + FastAPI backend). ScoreLeads is no longer documented as an MVP: it is
 a product-oriented system for explainable scoring, versioned rules,
 traceability, privacy, commercial prioritization, and financial improvement
 planning.
 
-RutaHogar does not approve mortgage loans and does not replace a formal bank
+ScoreLeads does not approve mortgage loans and does not replace a formal bank
 evaluation. The score is orientative and explainable. AI-generated text may help
-summarize explanations or commercial guidance, but the score itself must remain
+summarize explanations or commercial guidance, but the score itself must remain  
 determined by auditable rules unless the team explicitly instructs otherwise.
 
 Core safeguards:
@@ -80,7 +80,7 @@ Opcionalmente puedes configurar el remitente si tienes un dominio verificado en
 Resend:
 
 ```bash
-supabase secrets set FEEDBACK_FROM_EMAIL="RutaHogar <feedback@tu-dominio.cl>"
+supabase secrets set FEEDBACK_FROM_EMAIL="ScoreLeads <feedback@tu-dominio.cl>"
 ```
 
 Para probar localmente con Supabase CLI, crea un archivo ignorado por git:
@@ -127,6 +127,14 @@ FEEDBACK_TO_EMAIL
 FEEDBACK_FROM_EMAIL
 ```
 
+Las funciones que se despliegan a mano usan ademas:
+
+```text
+EJECUTIVO_FROM_EMAIL
+APP_URL
+ARCO_NOTIFICATION_EMAIL
+```
+
 Notas de configuracion:
 
 - `SUPABASE_ACCESS_TOKEN`: token personal para la CLI de Supabase. Se crea en
@@ -136,8 +144,30 @@ Notas de configuracion:
   en Project Settings -> General.
 - `RESEND_API_KEY`: API key de Resend.
 - `FEEDBACK_TO_EMAIL`: correo destino que recibira el feedback.
-- `FEEDBACK_FROM_EMAIL`: usa `RutaHogar <onboarding@resend.dev>` mientras el
+- `FEEDBACK_FROM_EMAIL`: usa `ScoreLeads <onboarding@resend.dev>` mientras el
   dominio propio no este verificado en Resend.
+- `EJECUTIVO_FROM_EMAIL`: remitente del correo que `create-executive` envia al
+  ejecutivo con el enlace para definir su contrasena. Mismo criterio que el
+  anterior. **Con el remitente sandbox `onboarding@resend.dev`, Resend solo
+  entrega al correo de la propia cuenta Resend**: para que un ejecutivo real
+  reciba el enlace hay que verificar un dominio y configurar esta variable.
+- `APP_URL`: base del enlace de recuperacion que genera `create-executive`
+  (redirige a `/definir-password`). Por defecto
+  `https://score-leads-one.vercel.app`; en local, `http://localhost:5173`.
+- `ARCO_NOTIFICATION_EMAIL`: destinatario de las notificaciones de solicitudes
+  ARCO que envia `notify-admin-arco`. **Si no se define, la funcion usa un
+  correo personal hardcodeado en el codigo**, asi que conviene fijarlo siempre
+  en produccion.
+- `EJECUTIVO_TEST_PASSWORD_MODE` (opcional, solo pruebas): con el valor exacto
+  `"true"`, `create-executive` devuelve `password_temporal` para poder entrar
+  sin depender del correo. **Si no esta en `"true"` no hay contrasena de
+  respaldo**: si falla el envio, el ejecutivo queda sin acceso hasta que se
+  arregle el correo. Dejarlo sin definir en produccion.
+
+> **Ojo:** el workflow solo despliega `submit-feedback`. Las funciones
+> `create-executive` y `notify-admin-arco` se despliegan a mano, y sus secrets
+> (`EJECUTIVO_FROM_EMAIL`, `APP_URL`) se configuran con `supabase secrets set`.
+> Los secrets son acumulativos: definir unos no borra los otros.
 
 El workflow configura los secrets de la Edge Function antes de desplegar:
 

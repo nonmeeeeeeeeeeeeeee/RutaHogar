@@ -1,5 +1,6 @@
 frontend/.env.local
 backend/.venv/
+backend/venv/
 frontend/.env
 backend/ .env
 .env
@@ -15,6 +16,9 @@ frontend/node_modules/
 
 # Build output
 frontend/dist
+
+# Generado por `make story-graph` a partir del wiki; se comparte como archivo suelto
+docs/story-graph.html
 
 # Python cache
 **/__pycache__/
@@ -38,5 +42,9 @@ backend/uvicorn.log
 
 backend/vercel.json
 
+*.zip
+
 # Obsidian config in docs/
 docs/.obsidian/
+
+Makefile
