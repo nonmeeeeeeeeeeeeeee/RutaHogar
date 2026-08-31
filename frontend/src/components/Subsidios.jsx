@@ -2,15 +2,6 @@ import React, { useMemo } from "react";
 import { buildRecommendations } from "../services/recommendationService";
 import { ACADEMY_BENEFIT_CAPSULES } from "../constants/academyContent";
 
-const BENEFIT_LABELS = {
-  FOGAES: "FOGAES",
-  DS49: "Fondo Solidario (DS49)",
-  PADHI: "PADHI",
-  DS1: "Subsidio Clase Media (DS1)",
-  LEASING: "Leasing Habitacional",
-  LEY_21748: "Ley 21.748",
-};
-
 function ConditionList({ items, variant }) {
   if (!items || items.length === 0) return null;
   return (
@@ -18,14 +9,14 @@ function ConditionList({ items, variant }) {
       {items.map((item) => (
         <li key={item} className={`benefit-condition benefit-condition--${variant}`}>
           <span className="benefit-condition-icon">{variant === "met" ? "\u2713" : "\u2717"}</span>
-          {BENEFIT_LABELS[item] || item}
+          {item}
         </li>
       ))}
     </ul>
   );
 }
 
-export default function SimulacionBeneficios({ evaluation, onNavigate }) {
+export default function Subsidios({ evaluation, onNavigate }) {
   const data = useMemo(() => buildRecommendations(evaluation), [evaluation]);
   const openBenefitCapsule = (academyModule) => {
     const articleId = ACADEMY_BENEFIT_CAPSULES[academyModule];
@@ -58,7 +49,7 @@ export default function SimulacionBeneficios({ evaluation, onNavigate }) {
   return (
     <section className="section-block simulation-panel">
       <div className="section-heading">
-        <span className="eyebrow">Simulación</span>
+        <span className="eyebrow">Subsidios</span>
         <h1>Beneficios habitacionales</h1>
         <p>{summary}</p>
       </div>
@@ -70,7 +61,7 @@ export default function SimulacionBeneficios({ evaluation, onNavigate }) {
         </div>
         <p className="simulation-summary-text">
           {eligibleCount > 0
-            ? "Tu perfil podría calificar para algunos de estos beneficios. Revisa los detalles abaixo."
+            ? "Tu perfil podría calificar para algunos de estos beneficios. Revisa los detalles abajo."
             : "Ningún beneficio es compatible actualmente, pero algunos requisitos pueden fortalecerse."}
         </p>
       </div>

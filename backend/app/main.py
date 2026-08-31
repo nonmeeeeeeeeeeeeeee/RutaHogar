@@ -49,10 +49,19 @@ EXTRA_FRONTEND_ORIGINS = [
     if origin.strip()
 ]
 
+# En entornos de despliegue real (Vercel production/preview) no exponer el regex
+# de IP LAN usado para desarrollo; solo en ejecución local o Vercel development.
+_is_deployed = os.environ.get("VERCEL_ENV") in {"production", "preview"}
+_ALLOW_ORIGIN_REGEX = (
+    r"https://.*\.vercel\.app"
+    if _is_deployed
+    else r"https://.*\.vercel\.app|http://\d+\.\d+\.\d+\.\d+:517[3-6]"
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=LOCAL_FRONTEND_ORIGINS + EXTRA_FRONTEND_ORIGINS,
-    allow_origin_regex=r"https://.*\.vercel\.app|http://\d+\.\d+\.\d+\.\d+:517[3-6]",
+    allow_origin_regex=_ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

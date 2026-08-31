@@ -1,5 +1,6 @@
 from .constants import (
     FOGAES_MAX_PROPERTY_UF,
+    FOGAES_MAX_UF_CON_SUBSIDIO,
     FOGAES_MIN_PIE_RATIO,
     DS49_MIN_AHORRO_UF,
     DS49_MIN_EDAD,
@@ -40,7 +41,7 @@ CONDITION_LABELS = {
     "tramo_II_rsh": "RSH hasta el 80% (Tramo II)",
     "tramo_III_ahorro": "Ahorro mínimo de 80 UF (Tramo III)",
     "tramo_III_tope": "Valor de propiedad hasta 2.200 UF (Tramo III)",
-    "tramo_III_rsh": "RSH inscrito con límite de renta (Tramo III)",
+    "tramo_III_rsh": "Estar inscrito en el RSH (Tramo III)",
     "tramo_compatible": "Cumplir con los requisitos de al menos un tramo",
     "inscrito_rui": "Estar inscrito en el Registro Único de Inscritos (RUI)",
     "sin_beneficio_previo": "No haber sido beneficiario previo de vivienda o subsidio estatal",
@@ -115,13 +116,18 @@ def _detect_fogaes(data: dict, indicators: dict) -> dict:
             "Considera alternativas dentro del rango cubierto."
         )
 
+    fogaes_subsidio_aviso = (
+        f"Importante: si el FOGAES se combina con un subsidio habitacional, "
+        f"el valor máximo de la vivienda es de {int(FOGAES_MAX_UF_CON_SUBSIDIO)} UF."
+    )
+
     return {
         "type": "FOGAES",
         "name": "FOGAES — Financiamiento para Vivienda Nueva",
         "eligible": eligible,
         "conditions_met": conditions_met,
         "conditions_not_met": conditions_not_met,
-        "notes": notes,
+        "notes": f"{notes} {fogaes_subsidio_aviso}",
         "academy_module": "fogaes",
     }
 
@@ -132,7 +138,6 @@ def _detect_ds49(data: dict, indicators: dict) -> dict:
     propiedad_previa = _is_truthy(data.get("propiedad_previa"))
     ahorro_uf = _positive_float(data.get("ahorro_uf"))
     grupo_familiar_rsh = _is_truthy(data.get("grupo_familiar_rsh"))
-    es_adulto_mayor = edad >= 60
 
     conditions_met = []
     conditions_not_met = []
@@ -142,8 +147,7 @@ def _detect_ds49(data: dict, indicators: dict) -> dict:
     else:
         conditions_not_met.append(_label("edad_minima"))
 
-    rsh_max = 100 if es_adulto_mayor else DS49_RSH_VULNERABLE_MAX
-    if rsh_tramo > 0 and rsh_tramo <= rsh_max:
+    if rsh_tramo > 0 and rsh_tramo <= DS49_RSH_VULNERABLE_MAX:
         conditions_met.append(_label("vulnerabilidad_rsh"))
     else:
         conditions_not_met.append(_label("vulnerabilidad_rsh"))
@@ -259,12 +263,13 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
     tramo_nombre = None
 
     if rsh_tramo > 0 and valor_propiedad_uf > 0:
-        rsh_effective_max = 100 if es_adulto_mayor else None
+        tramo_i_rsh_max = DS1_TRAMO_I_RSH_ADULTO_MAYOR if es_adulto_mayor else DS1_TRAMO_I_RSH_MAX
+        tramo_ii_rsh_max = DS1_TRAMO_II_RSH_ADULTO_MAYOR if es_adulto_mayor else DS1_TRAMO_II_RSH_MAX
 
         if (
             ahorro_uf >= DS1_TRAMO_I_AHORRO_UF
             and valor_propiedad_uf <= DS1_TRAMO_I_TOPE_UF
-            and rsh_tramo <= (rsh_effective_max or DS1_TRAMO_I_RSH_MAX)
+            and rsh_tramo <= tramo_i_rsh_max
         ):
             tramo = "I"
             tramo_nombre = "Tramo I"
@@ -274,7 +279,7 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
         elif (
             ahorro_uf >= DS1_TRAMO_II_AHORRO_UF
             and valor_propiedad_uf <= DS1_TRAMO_II_TOPE_UF
-            and rsh_tramo <= (rsh_effective_max or DS1_TRAMO_II_RSH_MAX)
+            and rsh_tramo <= tramo_ii_rsh_max
         ):
             tramo = "II"
             tramo_nombre = "Tramo II"
@@ -304,6 +309,13 @@ def _detect_ds1(data: dict, indicators: dict) -> dict:
             f"Tu perfil podría ser compatible con el Subsidio Clase Media (DS1), {tramo_nombre}. "
             "Esta información es referencial."
         )
+        if tramo == "III":
+            notes += (
+                " Para el Tramo III basta con estar inscrito en el RSH si te encuentras dentro "
+                "del 90%. Si tu RSH supera el 90%, debes consultar directamente en el MINVU el "
+                "límite de renta máxima aplicable, ya que varía periódicamente y según la cantidad "
+                "de integrantes del hogar."
+            )
     else:
         missing = [c for c in conditions_not_met]
         notes = (
@@ -404,7 +416,7 @@ def _detect_ley_21748(data: dict, indicators: dict) -> dict:
     if eligible:
         notes = (
             f"Tu perfil podría beneficiarse con la Ley N° 21.748: reducción de "
-            f"{LEY_21748_TASA_REDUCCION_PB} puntos base en la tasa de interés. "
+            f"{int(LEY_21748_TASA_REDUCCION_PB * 100)} puntos base en la tasa de interés. "
             "Esta información es referencial."
         )
     else:

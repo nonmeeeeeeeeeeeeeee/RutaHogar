@@ -18,7 +18,7 @@ import ObjectiveReview from "./components/ObjectiveReview";
 import Onboarding from "./components/Onboarding";
 import ProfilePage from "./components/ProfilePage";
 import Recommendations from "./components/Recommendations";
-import SimulacionBeneficios from "./components/SimulacionBeneficios";
+import Subsidios from "./components/Subsidios";
 import Result from "./components/Result";
 import ScoreForm from "./components/ScoreForm";
 import SetPassword from "./components/SetPassword";
@@ -241,7 +241,7 @@ const getPrivatePathForPage = (page) => {
   if (page === "home") return "/inicio";
   if (page === "evaluate" || page === "onboarding" || page === "dataconsent") return "/precalificacion";
   if (page === "recommendations") return "/recomendaciones";
-  if (page === "simulacion") return "/simulacion";
+  if (page === "subsidios") return "/subsidios";
   if (page === "simulation") return "/comparar-proyectos";
   if (page === "academia") return "/academia";
   if (page === "tracking" || page === "monthly-plan" || page === "objective-review") return "/plan-mejora";
@@ -253,6 +253,11 @@ const getPrivatePathForPage = (page) => {
 };
 
 const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
+  // La sección de beneficios habitacionales antes vivía en /simulacion; hoy
+  // es /subsidios. Redirigir para no romper bookmarks/URLs previas.
+  if (pathname && normalizePathname(pathname) === "/simulacion") {
+    return { page: "subsidios", path: "/subsidios" };
+  }
   const path = normalizePathname(pathname);
   const unknownRoute = ![
     "/",
@@ -262,7 +267,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     "/precalificacion",
     "/pre-evaluacion",
     "/recomendaciones",
-    "/simulacion",
+    "/subsidios",
     "/comparar-proyectos",
     "/academia",
     "/plan-mejora",
@@ -284,7 +289,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (path === "/precalificacion" || path === "/pre-evaluacion") {
       return { page: hasAnonOnboarding ? "anon-evaluate" : "anon-onboarding", path: "/precalificacion" };
     }
-    if (["/recomendaciones", "/simulacion", "/comparar-proyectos", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/admin/proyectos", "/ejecutivo/leads"].includes(path)) {
+    if (["/recomendaciones", "/subsidios", "/comparar-proyectos", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/admin/proyectos", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
     return { page: "auth", path: path === "/" ? "/login" : undefined };
@@ -301,7 +306,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
       };
     }
     if (path === "/recomendaciones") return { page: "recommendations" };
-    if (path === "/simulacion") return { page: "simulacion" };
+    if (path === "/subsidios") return { page: "subsidios" };
     if (path === "/comparar-proyectos") return { page: "simulation" };
     if (path === "/academia") return { page: "academia" };
     if (path === "/plan-mejora") return { page: "tracking" };
@@ -1655,8 +1660,8 @@ export default function App() {
           onNavigate={navigateToPage}
           onRetryExplanation={handleRetryAiExplanation}
         />
-      ) : page === "simulacion" && profile.role === roles.user ? (
-        <SimulacionBeneficios
+      ) : page === "subsidios" && profile.role === roles.user ? (
+        <Subsidios
           evaluation={result && resultSaved !== true ? { result, input: null, onboarding: userOnboarding } : currentEvaluation}
           onNavigate={navigateToPage}
         />

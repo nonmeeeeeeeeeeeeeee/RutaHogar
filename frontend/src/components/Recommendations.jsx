@@ -266,15 +266,15 @@ export default function Recommendations({ evaluation, onStartEvaluation, onNavig
         </div>
       )}
 
-      {data.housing_benefits?.applicable_benefits?.length > 0 && (
-        <div className="simulation-teaser" style={{ marginTop: "1.5rem", marginBottom: "1.5rem", padding: "1.2rem", borderRadius: "8px", border: "1px solid #d7e0ea", background: "#f9fafb" }}>
-          <strong>Simulaci&#243;n de beneficios habitacionales</strong>
-          <p style={{ margin: "0.4rem 0 0.8rem 0", color: "#526174", fontSize: "0.95rem" }}>
+      {data.housing_benefits?.applicable_benefits?.some((b) => b.eligible) && (
+        <div className="simulation-teaser">
+          <strong>Subsidios habitacionales</strong>
+          <p>
             Descubre qu&#233; beneficios como FOGAES, DS49, DS1 o Ley 21.748 podr&#237;an ser compatibles con tu perfil.
           </p>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <button type="button" className="secondary-button" onClick={() => onNavigate?.("simulacion")}>
-              Ver simulaci&#243;n completa
+          <div className="simulation-teaser-actions">
+            <button type="button" className="secondary-button" onClick={() => onNavigate?.("subsidios")}>
+              Ver subsidios en detalle
             </button>
             {data.housing_benefits.applicable_benefits
               .filter((b) => b.eligible)

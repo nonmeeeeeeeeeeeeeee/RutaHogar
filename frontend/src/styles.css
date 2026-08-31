@@ -10069,7 +10069,25 @@ th {
 /* ── Teaser (in Recommendations) ──────────────────────── */
 
 .simulation-teaser {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+  padding: 1.2rem;
+  border-radius: 8px;
+  border: 1px solid #d7e0ea;
+  background: #f9fafb;
   transition: border-color 0.2s;
+}
+
+.simulation-teaser p {
+  margin: 0.4rem 0 0.8rem 0;
+  color: #526174;
+  font-size: 0.95rem;
+}
+
+.simulation-teaser-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .simulation-teaser:hover {
