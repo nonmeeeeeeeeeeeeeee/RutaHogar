@@ -283,7 +283,8 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
     if (["/recomendaciones", "/simulacion", "/academia", "/plan-mejora", "/perfil", "/historial", "/dashboard", "/admin", "/admin/proyectos", "/ejecutivo/leads"].includes(path)) {
       return { page: "auth", path: "/login" };
     }
-    return { page: "auth", path: path === "/" ? "/login" : undefined };
+    if (path === "/") return { page: "landing" };
+    return { page: "auth" };
   }
 
   if (profile.role === roles.user) {
@@ -328,7 +329,7 @@ const resolveRouteForPath = (pathname, profile, hasAnonOnboarding) => {
 };
 
 const getRouteForPage = (page, profile, options = {}) => {
-  if (page === "landing") return "/landing.html";
+  if (page === "landing") return "/";
   if (page === "set-password") return "/definir-password";
   if (page === "auth") return options.authMode === "signup" ? "/registro" : "/login";
   if (page === "anon-onboarding" || page === "anon-evaluate") return "/precalificacion";

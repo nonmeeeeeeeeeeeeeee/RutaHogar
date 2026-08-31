@@ -44,7 +44,7 @@ export default function Navbar({ profile, page, currentScore, onNavigate, onLogo
 
   return (
     <aside className="sidebar" role="navigation" aria-label="Navegación principal">
-      <a className="sidebar-brand" href="/" onClick={(e) => { e.preventDefault(); handleNavigate("landing"); }}>
+      <a className="sidebar-brand" href="/inicio" onClick={(e) => { e.preventDefault(); handleNavigate("home"); }}>
         <span className="sidebar-brand__pill">
           <img className="sidebar-brand__logo" src="/brand/rutahogar/logo-rutahogar.svg" alt="RutaHogar" />
         </span>
